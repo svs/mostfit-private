@@ -8,7 +8,7 @@ class Payments < Application
       display @payments
     elsif @client
       @payments = @client.payments(:order => [:received_on, :id])
-      partial :list      
+      partial :list, :pmts => @payments      
     end
   end
 
