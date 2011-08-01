@@ -385,6 +385,14 @@ class Loans < Application
     redirect url_for_loan(loan)
   end
 
+
+  def fix_prepayments(id)
+    @loan = Loan.get(id)
+    raise NotFound unless @loan
+    @loan.correct_prepayments
+    redirect url_for_loan(@loan), :message => {:notice => "Prepayments fixed (hopefully)"}
+  end
+
   def reallocate(id)
     debugger
     @loan = Loan.get(id)
