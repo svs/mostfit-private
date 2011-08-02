@@ -63,6 +63,7 @@
           %tr{ :class => cycle('odd','even') }
             - fee = 0
             %td
+              %input{:type => "checkbox",:name => "#{loan.id}"}
               %b= link_to client.name, resource(branch, center, client)            
             %td
               = link_to loan.id, url(:quick_link, "loans", loan.id)
@@ -157,6 +158,8 @@
     %tr{:style => 'border-bottom: 2px solid; border-top: 1px solid;' }  
     %tr
       %td
+        %button{:onclick => 'javascript: a = []; $(":checked").each(function(){a.push(this.name)});alert(a);document.location = "/loans/bulk_reallocate?style=prorata&ids=" + a.join("_");'}
+          Bulk Reallocate
       %td
       %td.numeric
       %td.numeric

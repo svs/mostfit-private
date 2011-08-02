@@ -1,5 +1,5 @@
 class Loans < Application
-  before :get_context, :exclude => ['redirect_to_show', 'approve', 'disburse', 'reject', 'write_off_reject', 'write_off_suggested', 'collection_sheet']
+  before :get_context, :exclude => ['redirect_to_show', 'approve', 'disburse', 'reject', 'write_off_reject', 'write_off_suggested', 'collection_sheet', 'bulk_reallocate']
   provides :xml, :yaml, :js
   
   def index
@@ -393,8 +393,29 @@ class Loans < Application
     redirect url_for_loan(@loan), :message => {:notice => "Prepayments fixed (hopefully)"}
   end
 
+
+  def bulk_reallocate
+    failures = []
+    r = params[:ids].split("_").map do |id|
+      loan = Loan.get(id)
+      if loan
+        status, ps = loan.reallocate(params[:style].to_sym, session.user)
+        failures << id unless status
+        status
+      else
+        failures << id
+        false
+      end
+    end
+    if r.include?(false)
+      msg = {:error => "#{failures.join(",")} not reallocated"}
+    else
+      msg = {:notice => "all well"}
+    end
+    redirect request.env["HTTP_REFERER"].split("?")[0], :message => msg
+  end
+
   def reallocate(id)
-    debugger
     @loan = Loan.get(id)
     raise NotFound unless @loan
     debugger
