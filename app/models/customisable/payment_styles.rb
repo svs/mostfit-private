@@ -168,15 +168,6 @@ module Mostfit
   
       def scheduled_interest_up_to(date);  get_scheduled(:total_interest,  date); end
 
-      def pay_prorata(total, received_on)
-        #adds up the principal and interest amounts that can be paid with this amount and prorates the amount
-        int  = scheduled_interest_up_to(received_on)
-        int -= interest_received_up_to(received_on)
-        prin = total - int
-        [int, prin]
-      end
-
-
     end #BulletLoanWithPeriodicInterest
 
     module CustomPrincipal
