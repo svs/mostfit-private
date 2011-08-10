@@ -5,6 +5,10 @@ class DuplicateClientsReport < Report
     self.date = Date.today
   end
 
+  def self.name
+    "Duplicate Clients Report"
+  end
+
   def name
     "Duplicate clients as of #{self.start_date}"
   end
@@ -59,7 +63,6 @@ class DuplicateClientsReport < Report
       if client.account_number and client.account_number.length>0 and client.account_number.to_i>0
         puts client.id
         if account_numbers.key?(client.account_number)
-          debugger 
           duplicates[:same_account_number].push([client, account_numbers[client.account_number]])
         else
           account_numbers[client.account_number] = client

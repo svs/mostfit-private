@@ -415,7 +415,6 @@ class Loans < Application
   def reallocate(id)
     @loan = Loan.get(id)
     raise NotFound unless @loan
-    debugger
     status, @payments = @loan.reallocate(params[:style].to_sym, session.user)
     if status
       redirect url_for_loan(@loan), :message => {:notice => "Loan payments succesfully reallocated"}
@@ -443,7 +442,6 @@ class Loans < Application
     if request.method == :get
       display @loan, :layout => layout?
     else
-      debugger
       staff = StaffMember.get(params[:received_by])
       raise ArgumentError.new("No staff member selected") unless staff
       raise ArgumentError.new("No applicable fee for penalty") if (params[:fee].blank? and (not params[:penalty_amount].blank?))
@@ -531,7 +529,6 @@ class Loans < Application
     end
     attrs[:client_id] = params[:client_id] if params[:client_id]
     attrs[:insurance_policy] = params[:insurance_policy] if params[:insurance_policy]
-    debugger
     attrs[:repayment_style_id] ||= loan_product.repayment_style.id
     [klass, attrs]
   end
