@@ -80,39 +80,26 @@ Merb::BootLoader.before_app_loads do
   require 'lib/extensions.rb'
 
   Merb::Plugins.config[:exceptions] = {
-    :email_addresses => [''],
-    :app_name        => "Mostfit",
+    :email_addresses => ['svs@intellecap.net', 'janmejay.rai@intellecap.net','krishnan.mani@intellecap.net'],
+    :app_name        => "SAHAYOG",
     :environments    => ['production', 'development'],
-    :email_from      => "",
+    :email_from      => "support@mostfit.org",
     :mailer_config => {
       :host   => 'smtp.gmail.com',
       :port   => '587',
-      :user   => '',
-      :pass   => '',
+      :user   => 'support@mostfit.org',
+      :pass   => 'M05tf!t',
       :auth   => :plain,
       :tls    => true
     },
-    :mailer_delivery_method => :net_smtp
+    :mailer_delivery_method => :sendmail
   }
 
 end
 
 Merb::BootLoader.after_app_loads do
   # This will get executed after your app's classes have been loaded.
-  # Activate SSL Support
-  Net::SMTP.enable_tls(OpenSSL::SSL::VERIFY_NONE)
  
-  # Every application eventually evolves until it can send mail.
-  # Configure Merb Mailer
-  # Merb::Mailer.config = {
-  #   :host   => 'smtp.gmail.com',
-  #   :port   => '587',
-  #   :user   => 'sidleypatang@gmail.com',
-  #   :pass   => 's8s4a7m2',
-  #   :auth   => :plain,
-  #   :tls    => true
-  # }
-
   loan_types = Loan.descendants
 
   begin; $holidays = Holiday.all.map{|h| [h.date, h]}.to_hash; rescue; end
