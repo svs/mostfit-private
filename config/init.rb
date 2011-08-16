@@ -87,8 +87,8 @@ Merb::BootLoader.before_app_loads do
     :mailer_config => {
       :host   => 'smtp.gmail.com',
       :port   => '587',
-      :user   => 'support@mostfit.org',
-      :pass   => 'M05tf!t',
+      :user   => 'production@mostfit.org',
+      :pass   => 'm0stf1t97',
       :auth   => :plain,
       :tls    => true
     },
