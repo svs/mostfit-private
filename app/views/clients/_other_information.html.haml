@@ -1,0 +1,182 @@
+- data_not_recorded = ''
+%table
+  %tr
+    %td{:colspan => '2'}
+      %h1==Residence and assets
+  %tr
+    %td
+      Survey date for residence
+    %td
+      = date_select_for @client, :residence_survey_date, :nullable => true, :min_date => Date.today-36500, :max_date => Date.today
+    %td
+      Residing since
+    %td
+      = date_select_for @client, :residing_since_date, :nullable => true, :min_date => Date.today-36500, :max_date => Date.today
+    %td
+      Size of residence
+    %td
+      = select :residence_size, :collection => [[:small, 'Small'], [:medium, 'Medium'], [:large, 'Large']], :prompt => 'Select size'
+  %tr
+    %td
+      Ownership
+    %td
+      = select :residence_ownership, :collection => [[:own, 'Own'], [:inherited, 'Inherited'], [:rented_or_state_owned, 'Rented or state-owned']], :prompt => 'Choose ownership'
+    %td
+      Roof construction
+    %td
+      = select :roof_construction, :collection => [[:cement, 'Cement'], [:tiled, 'Tiled'], [:tin, 'Tin']], :prompt => 'Choose material'
+    %td
+      Wall construction
+    %td
+      = select :walls_construction, :collection => [[:cement, 'Cement'], [:brick, 'Brick'], [:mud, 'Mud']], :prompt => 'Choose material'
+  %tr
+    %td
+      Electricity connection
+    %td
+      = check_box :power_connection
+    %td
+      Cooking Gas
+    %td
+      = check_box :cooking_gas_connection
+    %td
+      Independent toilet
+    %td
+      = check_box :independent_toilet
+  %tr
+    %td
+      Assets
+    %td{:colspan => 5}
+      - Client::CLIENT_ASSETS.each do |a|
+        = check_box :name => "client[assets][]", :value => a, :checked => @client.assets ? (@client.assets.include?(a) ? true : false) : false
+        = a.to_s.camelcase(' ')
+  %tr
+    %td
+      Other assets
+    %td{:colspan => 5}
+      = text_field(:other_assets, :size => 80)
+%table
+  %tr
+    %td{:colspan => '2'}
+      %h1==Land cultivated
+  %tr
+    %td
+      %table{:width => '100%'}
+      %tr
+        %th
+          %i Irrigated land (in acres)
+        %th
+          own
+        %th
+          leased
+        %th
+          shared
+      %tr
+        %td
+          Fertile
+        %td
+          = text_field(:irrigated_land_own_fertile, :size => 10)
+        %td
+          = text_field(:irrigated_land_leased_fertile, :size => 10)
+        %td
+          = text_field(:irrigated_land_shared_fertile, :size => 10)
+      %tr
+        %td
+          Semifertile
+        %td
+          = text_field(:irrigated_land_own_semifertile, :size => 10)
+        %td
+          = text_field(:irrigated_land_leased_semifertile, :size => 10)
+        %td
+          = text_field(:irrigated_land_shared_semifertile, :size => 10)
+      %tr
+        %td
+          Wasteland
+        %td
+          = text_field(:irrigated_land_own_wasteland, :size => 10)
+        %td
+          = text_field(:irrigated_land_leased_wasteland, :size => 10)
+        %td
+          = text_field(:irrigated_land_shared_wasteland, :size => 10)
+      %br/
+  %tr
+    %td
+      %table{:width => '100%'}
+      %tr
+        %th
+          %i Not irrigated land (in acres)
+        %th
+          own
+        %th
+          leased
+        %th
+          shared
+      %tr
+        %td
+          Fertile
+        %td
+          = text_field(:not_irrigated_land_own_fertile, :size => 10)
+        %td
+          = text_field(:not_irrigated_land_leased_fertile, :size => 10)
+        %td
+          = text_field(:not_irrigated_land_shared_fertile, :size => 10)
+      %tr
+        %td
+          Semifertile
+        %td
+          = text_field(:not_irrigated_land_own_semifertile, :size => 10)
+        %td
+          = text_field(:not_irrigated_land_leased_semifertile, :size => 10)
+        %td
+          = text_field(:not_irrigated_land_shared_semifertile, :size => 10)
+      %tr
+        %td
+          Wasteland
+        %td
+          = text_field(:not_irrigated_land_own_wasteland, :size => 10)
+        %td
+          = text_field(:not_irrigated_land_leased_wasteland, :size => 10)
+        %td
+          = text_field(:not_irrigated_land_shared_wasteland, :size => 10)
+%table
+  %tr
+    %td{:colspan => '3'}
+      %h1==Bank accounts and insurance
+  %tr
+    %td
+      Bank name:
+    %td
+      = text_field(:bank_name, :size => 20)
+    %td
+      Branch:
+    %td
+      = text_field(:bank_branch, :size => 20)
+    %td
+      Account number:
+    %td
+      = text_field(:account_number, :size => 20)
+  %tr
+    %td
+      Insured value
+    %td
+      = text_field(:insured_value)
+    %td
+      Insurer
+    %td
+      = text_field(:insurer)
+  %tr
+    %td
+      Premium
+    %td
+      = text_field(:insurance_premium)
+    %td
+      Premium payment frequency
+    %td
+      = select :premium_payment_frequency, :collection => [[data_not_recorded, 'Choose'], [:monthly, 'Monthly'], [:quarterly, 'Quarterly'], [:half_yearly, 'Every six months'], [:annually, 'Annually']]
+/ %table
+/   %tr
+/     %td
+/       KYC Documents supplied:
+/     %td
+/       - KYC_DOCUMENTS.each do |a|
+/         = check_box :name => "client[kyc_documents_supplied][]", :value => a, :checked => @client.kyc_documents_supplied ? (@client.kyc_documents_supplied.include?(a) ? true : false) : false
+/         = a.to_s.camelcase(' ')

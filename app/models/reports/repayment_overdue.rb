@@ -32,9 +32,9 @@ class RepaymentOverdue < Report
       client_ids = histories.map{|x| x.client_id}
       clients  = Client.all(:id => client_ids, :fields => [:id, :name]).map{|x| [x.id, x]}.to_hash
       loans    = Loan.all(:client_id => client_ids, :fields => [:id, :client_id, :amount]).aggregate(:id, :amount).to_hash
-      payments[:principal] = Payment.all(:loan_id => loans.keys, :type => :principal).aggregate(:loan_id, :amount.sum).to_hash
-      payments[:interest]  = Payment.all(:loan_id => loans.keys, :type => :interest).aggregate(:loan_id, :amount.sum).to_hash
-      payments[:fees]      = Payment.all(:loan_id => loans.keys, :type => :fees).aggregate(:loan_id, :amount.sum).to_hash
+      payments[:principal] = Payment.all(:loan_id => loans.keys, :type => :principal, :received_on.lte => @date).aggregate(:loan_id, :amount.sum).to_hash
+      payments[:interest]  = Payment.all(:loan_id => loans.keys, :type => :interest, :received_on.lte => @date).aggregate(:loan_id, :amount.sum).to_hash
+      payments[:fees]      = Payment.all(:loan_id => loans.keys, :type => :fees, :received_on.lte => @date).aggregate(:loan_id, :amount.sum).to_hash
     end
     
     histories = histories.group_by{|x| x.center_id}
@@ -82,7 +82,7 @@ class RepaymentOverdue < Report
 
     # client fee dues
     Fee.all(:payable_on => [:client_date_joined, :client_grt_pass_date]).each{|fee| 
-      client_paid    = Payment.all(:type => :fees, :fee => fee, :amount => fee.amount).aggregate(:client_id)
+      client_paid    = Payment.all(:type => :fees, :fee => fee, :amount => fee.amount, , :received_on.lte => @date).aggregate(:client_id)
       
       hash           = {:client_type => fee.client_types, :fields => [:id], :center => @center}
       hash[:id]      = Loan.all(:fields => [:id, :client_id], :id => funder_loan_ids).map{|x| x.client_id} if @funder

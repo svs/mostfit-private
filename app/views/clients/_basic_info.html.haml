@@ -1,25 +1,25 @@
-%table.tall.shaded
+%table.form
   - if @center.blank? 
     %tr
-      %th
+      %td
         For center:
       %td
         = select_center_for @client, :center
   - elsif not @client.new? 
     %tr
-      %th
+      %td
         For center:
       %td
         = select :center_id, :collection => Center.all(:branch => @client.center.branch), :value_method => :id, :text_method => :name, :selected => @client.center.id.to_s
   -else
     %tr
-      %th 
+      %td 
         For center
       %td
         = @center.name
         %input{:id => "client_center_id", :value => "#{@center.id}", :type => "hidden"}
   %tr
-    %th
+    %td
       Group name
     %td
       %select{:id => "client_group_id", :name => "client[client_group_id]"}
@@ -31,7 +31,7 @@
         Add new group
       %div#new_client_group_form
   %tr
-    %th
+    %td
       Name:
     %td
       = text_field :name, :size => 40
@@ -43,13 +43,17 @@
         - Client.flags.each do |f|
           = f
           = check_box :name => "tags[#{f}]", :checked => @client.tags && @client.tags.include?(f)
+    %td
+      Father's name:
+    %td
+      = text_field :fathers_name, :size => 30
   %tr
-    %th
+    %td
       Client Type
     %td
       = select :client_type_id, :collection => ClientType.all, :value_method => :id, :text_method => :type
   %tr
-    %th
+    %td
       Reference:
     %td
       = text_field(:reference, :size => 40, :value => ((@client.reference.blank? and @center) ? "#{@branch.code}#{@center.code}" : @client.reference))
@@ -59,52 +63,69 @@
         %br/
         for this reason it is advisable to use a government ID as reference
   %tr
-    %th
+    %td
       Date of birth:
     %td
       = date_select_for @client, :date_of_birth, :nullable => true, :min_date => Date.today-36500, :max_date => Date.today-1000
   %tr
-    %th
+    %td
+      Place of birth:
+    %td
+      = text_field :place_of_birth, :size => 20
+    %td
+      Nationality
+    %td
+      = text_field :nationality, :value => "Indian", :size => 20
+  %tr
+    %td
       Date joined
     %td
       = date_select_for @client, :date_joined, :max_date => Date.today
   - if not @client.new? or (@client.new? and mfi = Mfi.first and mfi.allow_grt_date_on_form)
     %tr
-      %th
+      %td
         Date of sucessful group recognization test:
       %td
         = date_select_for @client, :grt_pass_date, :nullable => true, :max_date => Date.today
   %tr
-    %th
+    %td
+      Marital status:
+    %td
+      = select(:marital_status, :collection => [['', 'choose'], ["married", 'Married'], ["single", 'Single'], ["divorced", 'Divorced'], ["widow", 'Widow']])
+    %td
       Spouse name:
     %td
-      = text_field :spouse_name, :size => 40
+      = text_field :spouse_name, :size => 30
   %tr
-    %th
+    %td
       Address:
     %td
       ~ text_area :address, :rows => 6, :cols => 38
+    %td
+      Phone:
+    %td
+      = text_field :phone_number, :size => 12 
   %tr
-    %th
+    %td
       Occupation
     %td
       = select :occupation_id, :collection => Occupation.all, :value_method => :id, :text_method => :name, :prompt => "---"
   - if not @client.new?
     %tr
-      %th
+      %td
         Active:
       %td
         = check_box :active
         &nbsp;&nbsp;
         %span.greytext inactive member are not counted for attendancy
     %tr#inactive_options{:style => @client.active ? "display: none" : "display: block"}
-      %th
+      %td
         Reason
       %td
         = select :inactive_reason, :collection => INACTIVE_REASONS.reject{|x| x.blank?}.map{|x| [x.to_s, x.to_s.camelcase(' ')]}, :prompt => "Select reason for being inactive"
      
   %tr
-    %th
+    %td
       Photo
     %td
       = image_tag @client.picture.url(:medium)

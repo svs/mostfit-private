@@ -107,3 +107,5 @@ LONG_DATE_PATTERN = "%B %d, %Y"
 FULL_DATE_PATTERN = "%A, %B %d, %Y"
 FORMAT_REG_EXP = /[- . \/]/
 
+DATA_NOT_RECORDED = ''
+KYC_DOCUMENTS =[ :voter_id_card, :driving_licence, :ration_card, :electricity_bill, :telephone_bill, :cooking_gas_connection, :bank_passbook_with_photo]

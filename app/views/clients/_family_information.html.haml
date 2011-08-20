@@ -1,0 +1,138 @@
+- data_not_recorded = ''
+%table
+  %tr
+    %td{:colspan => '2'}
+      %h1==Family details
+  %tr
+    %td
+      Number of family members:
+    %td
+      = text_field(:number_of_family_members, :size => 10)
+%table
+  %tr
+    %td
+      Sl.
+    %td
+      1.
+    %td
+      2.
+    %td
+      3.
+    %td
+      4.
+  %tr
+    %td
+      Name
+    %td
+      = text_field :family_1_name, :size => 10
+    %td
+      = text_field :family_2_name, :size => 10
+    %td
+      = text_field :family_3_name, :size => 10
+    %td
+      = text_field :family_4_name, :size => 10
+  %tr
+    - gender_prompt = 'Choose'
+    - gender_choice = [['', gender_prompt], [:male, 'Male'], [:female, 'Female']]
+    %td
+      Gender
+    %td
+      = select :family_1_gender, :collection => gender_choice
+    %td
+      = select :family_2_gender, :collection => gender_choice
+    %td
+      = select :family_3_gender, :collection => gender_choice
+    %td
+      = select :family_4_gender, :collection => gender_choice
+  %tr
+    %td
+      Age
+    %td
+      = text_field :family_1_age, :size => 3
+    %td
+      = text_field :family_2_age, :size => 3
+    %td
+      = text_field :family_3_age, :size => 3
+    %td
+      = text_field :family_4_age, :size => 3
+  %tr
+    - relationship_prompt = 'Choose'
+    - relationships = [[data_not_recorded, relationship_prompt], [:spouse, 'Spouse'], [:brother, 'Brother'], [:sister, 'Sister'], [:father, 'Father'], [:mother, 'Mother'], [:son, 'Son'], [:daughter, 'Daughter']]
+    %td
+      Relationship
+    %td
+      = select :family_1_relationship, :collection => relationships
+    %td
+      = select :family_2_relationship, :collection => relationships
+    %td
+      = select :family_3_relationship, :collection => relationships
+    %td
+      = select :family_4_relationship, :collection => relationships
+  %tr
+    - marital_status_prompt = 'Choose'
+    - marital_status = [['', marital_status_prompt], [:married, 'Married'], [:single, 'Single'], [:divorced, 'Divorced'], [:widow, 'Widow']]
+    %td
+      Marital status
+    %td
+      = select :family_1_marital_status, :collection => marital_status
+    %td
+      = select :family_2_marital_status, :collection => marital_status
+    %td
+      = select :family_3_marital_status, :collection => marital_status
+    %td
+      = select :family_4_marital_status, :collection => marital_status
+  %tr
+    %td
+      Occupation
+    %td
+      = text_field :family_1_occupation, :size => 10
+    %td
+      = text_field :family_2_occupation, :size => 10
+    %td
+      = text_field :family_3_occupation, :size => 10
+    %td
+      = text_field :family_4_occupation, :size => 10
+  %tr
+    %td
+      Education
+    %td
+      = text_field :family_1_education, :size => 10
+    %td
+      = text_field :family_2_education, :size => 10
+    %td
+      = text_field :family_3_education, :size => 10
+    %td
+      = text_field :family_4_education, :size => 10
+  %tr
+    %td
+      Source of income
+    %td
+      = text_field :family_1_source_of_income, :size => 10
+    %td
+      = text_field :family_2_source_of_income, :size => 10
+    %td
+      = text_field :family_3_source_of_income, :size => 10
+    %td
+      = text_field :family_4_source_of_income, :size => 10
+  %tr
+    %td
+      NREGA
+    %td
+      = text_field :family_1_nrega, :size => 10
+    %td
+      = text_field :family_2_nrega, :size => 10
+    %td
+      = text_field :family_3_nrega, :size => 10
+    %td
+      = text_field :family_4_nrega, :size => 10
+  %tr
+    %td
+      Monthly income
+    %td
+      = text_field :family_1_monthly_income, :size => 6
+    %td
+      = text_field :family_2_monthly_income, :size => 6
+    %td
+      = text_field :family_3_monthly_income, :size => 6
+    %td
+      = text_field :family_4_monthly_income, :size => 6
