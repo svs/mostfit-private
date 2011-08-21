@@ -82,7 +82,7 @@ class RepaymentOverdue < Report
 
     # client fee dues
     Fee.all(:payable_on => [:client_date_joined, :client_grt_pass_date]).each{|fee| 
-      client_paid    = Payment.all(:type => :fees, :fee => fee, :amount => fee.amount, , :received_on.lte => @date).aggregate(:client_id)
+      client_paid    = Payment.all(:type => :fees, :fee => fee, :amount => fee.amount, :received_on.lte => @date).aggregate(:client_id)
       
       hash           = {:client_type => fee.client_types, :fields => [:id], :center => @center}
       hash[:id]      = Loan.all(:fields => [:id, :client_id], :id => funder_loan_ids).map{|x| x.client_id} if @funder
