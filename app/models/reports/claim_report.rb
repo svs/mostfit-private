@@ -12,6 +12,10 @@ class ClaimReport < Report
     "Claim Report "
   end
 
+  def name
+    "Claim Report from #{@from_date} to #{@to_date}"
+  end
+
   def generate
     branches, centers, claims = {}, {}, {}
     params = {:claim_submission_date.gte => from_date, :claim_submission_date.lte => to_date, :order => [:claim_submission_date]}
