@@ -6,6 +6,6 @@
 = form_for(@repayment_style, :action => url(:repayment_style, @repayment_style)) do
   = partial :fields, :button_text => "Update"
 
-= link_to 'Show', url(:repayment_style, @repayment_style)
+= link_to 'Show', url(:edit_repayment_style, @repayment_style)
 |
 = link_to 'Back', url(:repayment_styles)
