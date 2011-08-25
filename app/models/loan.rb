@@ -15,7 +15,7 @@ class Loan
   before :save,    :update_loan_cache
   after  :create,  :update_cycle_number
   before :destroy, :verified_cannot_be_deleted
-
+  before :valid?,    :set_loan_product_parameters
   before :save, :set_bullet_installments
 
   def rs
@@ -201,12 +201,12 @@ class Loan
     first_payment = payments.select{|p| [:prinicpal, :interest].include?(p.type)}.sort_by{|p| p.received_on}[0]
     self.c_actual_first_payment_date = first_payment.received_on if first_payment
     st = self.get_status
-    self.c_last_status = st
+    self.c_last_status = STATUSES.index(st) + 1
     self.c_principal_received = payments.select{|p| p.type == :principal}.reduce(0){|s,p| s + p.amount}
     self.c_interest_received = payments.select{|p| p.type == :principal}.reduce(0){|s,p| s + p.amount}
     last_payment = payments.select{|p| [:prinicpal, :interest].include?(p.type)}.sort_by{|p| p.received_on}.reverse[0]
     self.c_last_payment_received_on = last_payment.received_on if last_payment
-    self.c_maturity_date = c_last_payment_received_on if (STATUSES.index(st) > 5 and last_payment)
+    self.c_maturity_date = (STATUSES.index(st) > 5 and last_payment) ? c_last_payment_received_on : nil
     self.c_last_payment_id = last_payment.id if last_payment
     true
   end
@@ -1028,6 +1028,8 @@ class Loan
     total_principal_due = total_interest_due = total_principal_paid = total_interest_paid = 0
     repayed=false
     dates.each_with_index do |date,i|
+      $debug = true if i == 53
+      debugger if $debug
       current   = date == Date.today ? true : (((dates[[i,0].max] < Date.today and dates[[dates.size - 1,i+1].min] > Date.today) or 
                    (i == dates.size - 1 and dates[i] < Date.today)))
       scheduled = get_scheduled(:all, date)
@@ -1145,7 +1147,7 @@ class Loan
   end
 
   def set_loan_product_parameters
-    repayment_style = self.loan_product.repayment_style unless repayment_style
+    self.repayment_style = self.loan_product.repayment_style unless self.repayment_style
   end
 
   def interest_calculation(balance)
@@ -1248,6 +1250,7 @@ class Loan
 
   # TODO these should logically be private.
   def get_from_cache(cache, column, date)
+    debugger if $debug
     date = Date.parse(date) if date.is_a? String
     return 0 if cache.blank?
     if cache.has_key?(date)
@@ -1257,9 +1260,9 @@ class Loan
       keys = cache.keys.sort
       if date < keys.min
         col = cache[keys.min].merge(:balance => amount, :total_balance => total_to_be_received)
-        rv = (column == :all ? col : col[column])
+        rv = (column == :all ? Marshal.load(Marshal.dump(col)) : Marshal.load(Marshal.dump(col[column])))
       elsif date >= keys.max
-        rv = (column == :all ? cache[keys.max] : cache[keys.max][column])
+        rv = (column == :all ? Marshal.load(Marshal.dump(cache[keys.max])) : Marshal.load(Marshal.dump(cache[keys.max][column])))
       else
         keys.each_with_index do |k,i|
           if keys[[i+1,keys.size - 1].min] > date
@@ -1526,6 +1529,7 @@ module Loaner
       _scheduled_disbursal_date = scheduled_disbursal_date
       _fp_date = scheduled_first_payment_date
       _original_amount = amount
+
       # recreate the original loan
       self.scheduled_first_payment_date = original_first_payment_date
       self.amount = original_amount

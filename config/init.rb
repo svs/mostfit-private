@@ -83,12 +83,12 @@ Merb::BootLoader.before_app_loads do
     :email_addresses => ['svs@intellecap.net', 'janmejay.rai@intellecap.net','krishnan.mani@intellecap.net'],
     :app_name        => "SAHAYOG",
     :environments    => ['production', 'development'],
-    :email_from      => "support@mostfit.org",
+    :email_from      => "production@mostfit.org",
     :mailer_config => {
       :host   => 'smtp.gmail.com',
       :port   => '587',
-      :user   => 'support@mostfit.org',
-      :pass   => 'M05tf!t',
+      :user   => 'production@mostfit.org',
+      :pass   => 'm0stf1t97',
       :auth   => :plain,
       :tls    => true
     },
