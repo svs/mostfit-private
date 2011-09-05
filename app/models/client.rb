@@ -18,6 +18,7 @@ class Client
   after  :save,   :levy_fees
   
   property :id,              Serial
+  property :as_of,           Date, :nullable => false
   property :reference,       String, :length => 100, :nullable => false, :index => true
   property :name,            String, :length => 100, :nullable => false, :index => true
   property :date_of_birth,   Date,   :index => true, :lazy => true
@@ -29,6 +30,7 @@ class Client
   property :caste, Enum.send('[]', *['', 'sc', 'st', 'obc', 'general']), :default => '', :nullable => true, :lazy => true
   property :place_of_birth,  String, :length => 100, :index => true, :lazy => true
   property :nationality,     String, :length => 100, :index => true, :lazy => true
+  property :kyc_documents,   Flag.send('[]',*KYC_DOCUMENTS)
 
   property :active,          Boolean, :default => true, :nullable => false, :index => true
   property :inactive_reason, Enum.send('[]', *INACTIVE_REASONS), :nullable => true, :index => true, :default => ''
@@ -55,7 +57,7 @@ class Client
   property :family_1_education, String, :lazy => true
   property :family_1_nrega, String, :lazy => true
   property :family_1_source_of_income, String, :lazy => true
-  property :family_1_monthly_income, String, :lazy => true
+  property :family_1_monthly_income, Integer, :lazy => true
   property :family_2_name, String, :lazy => true
   property :family_2_gender, Enum.send('[]', *GENDER), :lazy => true, :nullable => true
   property :family_2_age, Integer, :lazy => true
@@ -65,7 +67,7 @@ class Client
   property :family_2_education, String, :lazy => true
   property :family_2_nrega, String, :lazy => true
   property :family_2_source_of_income, String, :lazy => true
-  property :family_2_monthly_income, String, :lazy => true
+  property :family_2_monthly_income, Integer, :lazy => true
   property :family_3_name, String, :lazy => true
   property :family_3_gender, Enum.send('[]', *GENDER), :lazy => true, :nullable => true
   property :family_3_age, Integer, :lazy => true
@@ -75,7 +77,7 @@ class Client
   property :family_3_education, String, :lazy => true
   property :family_3_nrega, String, :lazy => true
   property :family_3_source_of_income, String, :lazy => true
-  property :family_3_monthly_income, String, :lazy => true
+  property :family_3_monthly_income, Integer, :lazy => true
   property :family_4_name, String, :lazy => true
   property :family_4_gender, Enum.send('[]', *GENDER), :lazy => true, :nullable => true
   property :family_4_age, Integer, :lazy => true
@@ -85,7 +87,17 @@ class Client
   property :family_4_education, String, :lazy => true
   property :family_4_nrega, String, :lazy => true
   property :family_4_source_of_income, String, :lazy => true
-  property :family_4_monthly_income, String, :lazy => true
+  property :family_4_monthly_income, Integer, :lazy => true
+
+  property :total_monthly_income, Integer, :lazy => true
+  property :total_annual_income, Integer, :lazy => true
+
+  property :monthly_expenditure, Text, :lazy => true
+  property :total_monthly_expenditure, Integer, :lazy => true
+  property :total_annual_expenditure, Integer, :lazy => true
+  property :total_monthly_savings, Integer, :lazy => true
+  property :total_annual_savings, Integer, :lazy => true
+  property :other_loan_details, Text, :lazy => true
 
   property :residence_survey_date, Date, :lazy => true
   property :residing_since_date, Date, :lazy => true
@@ -182,6 +194,8 @@ class Client
   belongs_to :created_by_staff,  :child_key => [:created_by_staff_member_id], :model => 'StaffMember'
   belongs_to :verified_by,       :child_key => [:verified_by_user_id],        :model => 'User'
 
+  is :versioned, :on => :as_of
+
   has_attached_file :picture,
     :styles => {:medium => "300x300>", :thumb => "60x60#"},
     :url => "/uploads/:class/:id/:attachment/:style/:basename.:extension",
@@ -242,6 +256,7 @@ class Client
       all(:conditions => ["reference=? or name like ?", q, q+'%'], :limit => per_page)
     end
   end
+
 
   def pay_fees(amount, date, received_by, created_by)
     @errors = []

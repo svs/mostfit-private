@@ -172,11 +172,11 @@
       Premium payment frequency
     %td
       = select :premium_payment_frequency, :collection => [[data_not_recorded, 'Choose'], [:monthly, 'Monthly'], [:quarterly, 'Quarterly'], [:half_yearly, 'Every six months'], [:annually, 'Annually']]
-/ %table
-/   %tr
-/     %td
-/       KYC Documents supplied:
-/     %td
-/       - KYC_DOCUMENTS.each do |a|
-/         = check_box :name => "client[kyc_documents_supplied][]", :value => a, :checked => @client.kyc_documents_supplied ? (@client.kyc_documents_supplied.include?(a) ? true : false) : false
-/         = a.to_s.camelcase(' ')
+  %table
+    %tr
+      %td
+        KYC Documents supplied:
+      %td
+        - KYC_DOCUMENTS.each do |a|
+          = check_box :name => "client[kyc_documents][]", :value => a, :checked => @client.kyc_documents ? (@client.kyc_documents.include?(a) ? true : false) : false
+          = a.to_s.camelcase(' ')

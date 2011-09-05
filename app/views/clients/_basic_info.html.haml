@@ -1,4 +1,9 @@
 %table.form
+  %tr
+    %th
+      As of
+    %td
+      = date_select_for(@client, :as_of)
   - if @center.blank? 
     %tr
       %td

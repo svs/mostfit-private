@@ -1,3 +1,23 @@
+:javascript
+  $(document).ready(function() {
+    $('.income').blur(calcSurplus);
+    $('.expenses').blur(calcSurplus);
+    });
+
+  function calcSurplus() {
+    total = 0;
+    $('.income').map(function(){return (isNaN(parseFloat($(this).attr('value'))) ? 0 : parseFloat($(this).attr('value')))}).each(function(){total += this;});
+    $('#client_total_monthly_income').attr('value', total);
+    $('#client_total_annual_income').attr('value', total*12);
+    total_expenses = 0;
+    $('.expenses').map(function(){return (isNaN(parseFloat($(this).attr('value'))) ? 0 : parseFloat($(this).attr('value')))}).each(function(){total_expenses += this;});
+    $('#client_total_monthly_expenditure').attr('value', total_expenses);
+    $('#client_total_annual_expenditure').attr('value', total_expenses*12);
+    $('#client_total_monthly_savings').attr('value', total - total_expenses);
+    $('#client_total_annual_savings').attr('value', (total - total_expenses)*12);
+
+    }
+
 - data_not_recorded = ''
 %table
   %tr
@@ -129,10 +149,62 @@
     %td
       Monthly income
     %td
-      = text_field :family_1_monthly_income, :size => 6
+      = text_field :family_1_monthly_income, :size => 6, :class => "income"
     %td
-      = text_field :family_2_monthly_income, :size => 6
+      = text_field :family_2_monthly_income, :size => 6, :class => "income"
     %td
-      = text_field :family_3_monthly_income, :size => 6
+      = text_field :family_3_monthly_income, :size => 6, :class => "income"
     %td
-      = text_field :family_4_monthly_income, :size => 6
+      = text_field :family_4_monthly_income, :size => 6, :class => "income"
+  %tr
+    %th
+      Total Monthly Income
+    %td
+      = text_field :total_monthly_income, :size => 6
+    %th
+      Total Annual Income
+    %td
+      = text_field :total_annual_income, :size => 6
+  %tr
+    %th
+      Monthly Expenditure
+    - v = @client.monthly_expenditure ? Marshal.load(@client.monthly_expenditure) : {}
+    - ["health", "food", "installments", "others"] .each do |item|
+      %td
+        = item.capitalize
+      %td
+        = text_field :name => "client[monthly_expenditure][#{item}]", :value => v[item], :class => "expenses"
+  %tr
+    %th
+      Total Monthly Expenses
+    %td
+      = text_field :total_monthly_expenditure, :size => 6
+    %th
+      Total Annual Expenses
+    %td
+      = text_field :total_annual_expenditure, :size => 6
+  %tr
+    %th
+      Total Monthly Savings
+    %td
+      = text_field :total_monthly_savings, :size => 6
+    %th
+      Total Annual Savings
+    %td
+      = text_field :total_annual_savings, :size => 6
+  %tr
+    %th
+      Other loans
+    %td{:colspan => "6"}
+      - ks = ["name", "amount", "installment", "purpose"]
+      - v = @client.other_loan_details ? Marshal.load(@client.other_loan_details) : {}
+      %table
+        %tr
+          - ks.each do |item|
+            %th
+              = item.capitalize
+        - (1..4).each do |i|
+          %tr
+            - ks.each do |item|
+              %td
+                = text_field :name => "client[other_loan_details][#{i}][#{item}]", :value => (v[i.to_s] ? v[i.to_s][item] : "")
