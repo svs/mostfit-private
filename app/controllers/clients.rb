@@ -1,6 +1,7 @@
 class Clients < Application
   before :get_context, :exclude => ['redirect_to_show']
   provides :xml, :yaml, :js
+  before :do_params, :only => [:create, :update]
 
   def index
 #    @clients = @center.clients
@@ -61,6 +62,7 @@ class Clients < Application
   end
 
   def update(id, client)
+    debugger
     @client = Client.get(id)
     raise NotFound unless @client
     disallow_updation_of_verified_clients
@@ -116,6 +118,7 @@ class Clients < Application
     end
   end
 
+
   def levy_fees(id)
     @client = Client.get(id)
     raise NotFound unless @client
@@ -150,6 +153,12 @@ class Clients < Application
   
 
   private
+  
+  def do_params
+    params[:client][:monthly_expenditure] = Marshal.dump(params[:client][:monthly_expenditure])
+    params[:client][:other_loan_details] = Marshal.dump(params[:client][:other_loan_details])
+  end
+
   def get_context
     if params[:branch_id] and params[:center_id] 
       @branch = Branch.get(params[:branch_id]) 
