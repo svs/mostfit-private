@@ -18,7 +18,7 @@ class Client
   after  :save,   :levy_fees
   
   property :id,              Serial
-  property :as_of,           Date, :nullable => false
+  property :as_of,           Date
   property :reference,       String, :length => 100, :nullable => false, :index => true
   property :name,            String, :length => 100, :nullable => false, :index => true
   property :date_of_birth,   Date,   :index => true, :lazy => true
