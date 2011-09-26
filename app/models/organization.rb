@@ -11,7 +11,7 @@ class Organization
   
   def self.get_organization(date)
     accounting_period = AccountingPeriod.get_accounting_period(date)
-    org = accounting_period ? accounting_period.organization : Organization.first #Default it to the first organization 
+    org = accounting_period ? (accounting_period.organization || Organization.first) : Organization.first #Default it to the first organization 
     org
   end
 end
