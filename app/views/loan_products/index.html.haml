@@ -52,13 +52,7 @@
           %td
             = link_to loan_product.name, url(:loan_product, loan_product) 
           %td
-<<<<<<< HEAD
-            = loan_product.repayment_style.name
-||||||| merged common ancestors
-            = loan_product.loan_type_string
-=======
             = loan_product.repayment_style.name if loan_product.repayment_style
->>>>>>> takeover
           %td
             = loan_product.min_amount!=loan_product.max_amount ? "#{loan_product.min_amount} - #{loan_product.max_amount}" : loan_product.min_amount
           %td
@@ -77,13 +71,7 @@
           %td
             = link_to loan_product.name, url(:loan_product, loan_product) 
           %td
-<<<<<<< HEAD
-            = loan_product.repayment_style.name
-||||||| merged common ancestors
-            - loan_product.loan_type_string
-=======
             = loan_product.repayment_style.name if loan_product.repayment_style
->>>>>>> takeover
           %td
             = loan_product.min_amount!=loan_product.max_amount ? "#{loan_product.min_amount} - #{loan_product.max_amount}" : loan_product.min_amount
           %td
