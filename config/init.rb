@@ -92,7 +92,7 @@ Merb::BootLoader.before_app_loads do
       :host   => 'smtp.gmail.com',
       :port   => '587',
       :user   => 'production@mostfit.org',
-      :pass   => 'm0stf1t97',
+      :pass   => 'm0stf1t123',
       :auth   => :plain,
       :tls    => true
     },
