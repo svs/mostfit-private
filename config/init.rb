@@ -96,7 +96,7 @@ Merb::BootLoader.before_app_loads do
       :auth   => :plain,
       :tls    => true
     },
-    :mailer_delivery_method => :sendmail
+    :mailer_delivery_method => :net_smtp
   }
 
 end
