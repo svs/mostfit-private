@@ -22,7 +22,7 @@
       %th
         Loan Product
       %td
-        = select :loan_product_id, :collection => LoanProduct.valid, :value_method => :id, :text_method => :name
+        = select :loan_product_id, :collection => LoanProduct.all.map{|lp| [lp.id.to_s, lp.name]}, :selected => @loan.loan_product_id.to_s
 
   - if not take_over_loan
     %tr
