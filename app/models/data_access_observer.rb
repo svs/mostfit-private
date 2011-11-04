@@ -47,6 +47,7 @@ class DataAccessObserver
   end
 
   def self.check_session(obj)
+    return true # disabling check session for now. causing too many problems and we are probably not going to offer the shell anytime soon....
     return true if Merb.environment == "test"
     return true if File.writable?("config.ru") and not @_user
     @_user = User.authenticate(ENV['MOSTFIT_USER'], ENV['MOSTFIT_PASSWORD'])    unless @_user
