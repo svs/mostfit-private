@@ -1,5 +1,5 @@
 # Go to http://wiki.merbivore.com/pages/init-rb
-require 'lib/irb.rb'
+# require 'lib/irb.rb'
 require 'yaml'
 require 'config/dependencies.rb'
 
@@ -47,9 +47,9 @@ Merb::BootLoader.before_app_loads do
   require 'lib/functions.rb'
   require 'lib/core_ext.rb'
   require 'lib/fees_container.rb'
+  require 'lib/datevector.rb'
   require 'gettext'
   require 'haml_gettext'
-
 
   #initialize i18n
   require 'i18n'
@@ -85,7 +85,7 @@ Merb::BootLoader.before_app_loads do
 
   Merb::Plugins.config[:exceptions] = {
     :email_addresses => ['svs@intellecap.net', 'janmejay.rai@intellecap.net','krishnan.mani@intellecap.net'],
-    :app_name        => "SAHAYOG",
+    :app_name        => "SAHAYOG STAGING",
     :environments    => ['production'],
     :email_from      => "production@mostfit.org",
     :mailer_config => {
@@ -104,6 +104,10 @@ end
 Merb::BootLoader.after_app_loads do
   # This will get executed after your app's classes have been loaded.
  
+<<<<<<< HEAD
+=======
+
+>>>>>>> takeover
   loan_types = Loan.descendants
 
   begin; $holidays = Holiday.all.map{|h| [h.date, h]}.to_hash; rescue; end

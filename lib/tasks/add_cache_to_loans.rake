@@ -27,7 +27,7 @@ namespace :mostfit do
           SET c_branch_id = 
              (SELECT b.id from centers cn, clients cs, branches b
              WHERE loans.client_id = cs.id AND cs.center_id = cn.id AND cn.branch_id = b.id)})
-      puts "marking actual_first_payment_date"
+      puts "marking client groups..."
       repository.adapter.execute(%Q{
          UPDATE loans SET c_actual_first_payment_date = 
          (SELECT fp_date FROM 
@@ -59,6 +59,10 @@ namespace :mostfit do
       puts "updating maturiy date"
       repository.adapter.execute(%Q{
          update loans l set c_maturity_date = (select min(date) from loan_history lh where loan_id = l.id and status > 6)})
+          UPDATE loans 
+          SET c_client_group_id =
+          (SELECT c.client_group_id from clients c 
+             WHERE loans.client_id = c.id)})
     end
   end
 end

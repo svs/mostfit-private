@@ -30,6 +30,7 @@ class Branch
   property   :parent_domain_guid, String, :nullable => true
 
   validates_is_unique   :code
+  validates_is_unique   :name
   validates_length      :code, :min => 1, :max => 10
 
   validates_length      :name, :min => 3
@@ -38,7 +39,7 @@ class Branch
 
   def self.from_csv(row, headers)
     obj = new(:code => row[headers[:code]], :name => row[headers[:name]], :address => row[headers[:address]], 
-              :manager => StaffMember.first(:name => row[headers[:manager]]))
+              :manager => StaffMember.first(:name => row[headers[:manager]]), :upload_id => row[headers[:upload_id]])
     [obj.save, obj]
   end
 
@@ -102,6 +103,14 @@ class Branch
     Branch.all(:id => branches)
   end
   
+  def holidays
+    # go up the chain and find the first calendar that applies.
+    hc = HolidayCalendar.all(:branch_id => id)
+    hc = HolidayCalendar.all(:area_id => area_id) if hc.blank?
+    hc = HolidayCalendar.all(:region_id => area.region_id) if (hc.blank? and area)
+    hc.holidays_fors.holidays
+  end
+
   private
   def manager_is_an_active_staff_member?
     return true if manager and manager.active
@@ -116,6 +125,7 @@ class Branch
     }
   end
   
+
   def <=> (other)
     @name <=> other.name
   end

@@ -8,6 +8,8 @@
           = link_to_with_rights 'Profile and system-wide policies', url(:controller => "admin", :action => "edit"), :class => 'admin icon'
         %li
           = link_to_with_rights 'Holidays', url(:controller => 'holidays', :action => "index"), :class => 'icon holiday'
+        %li
+          = link_to_with_rights 'Holiday Calendars', url(:controller => 'holiday_calendars', :action => "index"), :class => 'icon holiday'
     .admin-box
       %h2 Manage geographical locations
       %ul.icon_links
@@ -41,7 +43,8 @@
       %li
         = link_to_with_rights 'Insurance companies & products', url(:action => :insurance), :class => 'insurance icon'
       %li
-        = link_to_with_rights 'Book Keeping', resource(:accounts), :class => 'book icon'
+        = link_to_with_rights 'Perform Audits', resource(:audit_items), :class => 'icon audit'
+
   .admin-box
     %h2 Manage commonly-used lists (masters)
     %ul.icon_links
@@ -60,22 +63,21 @@
       %li
         = link_to_with_rights 'Asset Master', resource(:asset_registers), :class => 'report icon'
   .admin-box
-    %h2 Assign targets, perform audits
+    %h2 Data Administration
     %ul.icon_links
       %li
-        = link_to_with_rights 'Perform Audits', resource(:audit_items), :class => 'icon audit'
-      %li
         = link_to_with_rights 'History log', url(:controller => :audit_trails, :action => :show), :class => 'icon zoom'
+      %li 
+        = link_to_with_rights 'Caches', resource(:cachers), :class => 'icon zoom'
+      %li
+        = link_to_with_rights 'Loan update queue', url(:controller => 'admin', :action => "dirty_loans"), :class => 'edit'
   .admin-box
     %h2 Data
     %ul.icon_links
       %li
-        = link_to_with_rights 'Upload data', url(:controller => 'admin', :action => "upload"), :class => 'upload icon'
+        = link_to_with_rights 'Upload data', url(:controller => 'uploads', :action => "new"), :class => 'upload icon'
       %li
         = link_to_with_rights 'Download data', url(:controller => 'admin', :action => "download"), :class => 'download icon'
-      - if Mfi.first.dirty_queue_enabled
-        %li
-          = link_to_with_rights 'Loan update queue', url(:controller => 'admin', :action => "dirty_loans"), :class => 'edit'
   .admin-box
     %h2 API Use
     %ul

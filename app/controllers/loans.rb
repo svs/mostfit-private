@@ -397,10 +397,8 @@ class Loans < Application
   def repair(id)
     loan = Loan.get(id)
     raise NotFound unless loan
-    loan.update_history
-    loan.update_loan_cache
-    message = {:error => loan.errors.values.join("<br>")} unless loan.save
-    redirect url_for_loan(loan), :message => message
+    loan.update_history_bulk_insert
+    redirect url_for_loan(loan), :message => {:notice => "LoanHistory updated!"}
   end
 
 
@@ -444,7 +442,11 @@ class Loans < Application
     end
   end
     
-
+  def diagnose(id)
+    @loan = Loan.get(id)
+    raise NotFound unless @loan
+    display [@loan], :layout => false
+  end
 
   def repayment_sheet(id)
     @loan = Loan.get(id)

@@ -27,7 +27,7 @@ DEFAULT_TO_CREDIT_BALANCE = [LIABILITIES, INCOMES]
 INSTALLMENT_FREQUENCIES = [:daily, :weekly, :biweekly, :monthly, :quadweekly]
 WEEKDAYS = [:monday, :tuesday, :wednesday, :thursday, :friday, :saturday, :sunday]
 MONTHS = ["None", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-STATUSES = [:applied_in_future, :pending_approval, :rejected, :approved, :disbursed, :outstanding, :repaid, :written_off, :claim_settlement, :preclosed]
+STATUSES = [:applied_in_future, :applied, :rejected, :approved, :disbursed, :outstanding, :repaid, :written_off, :claim_settlement, :preclosed]
 EPSILON  = 0.01
 INACTIVE_REASONS = ['', 'no_further_loans', 'death_of_client', 'death_of_spouse']
 ModelsWithDocuments = ['Area', 'Region', 'Branch', 'Center', 'Client', 'Loan', 'ClientGroup', 'StaffMember', 'User', 'Mfi', 'Funder', 
@@ -91,9 +91,10 @@ REPORT_ACCESS_HASH = {
   "LoanSizePerManagerReport" => ["mis_manager", "admin", "read_only"], 
   "ClientOccupationReport" => ["mis_manager", "admin", "read_only"]
 }
+PAYMENT_TYPES = [:principal, :interest, :fees]
 NORMAL_REPAYMENT_STYLE = :normal
 PRORATA_REPAYMENT_STYLE = :prorata
-REPAYMENT_STYLES = [NORMAL_REPAYMENT_STYLE, PRORATA_REPAYMENT_STYLE]
+REPAYMENT_STYLES = [NORMAL_REPAYMENT_STYLE, PRORATA_REPAYMENT_STYLE, :sequential]
 API_SUPPORT_FORMAT = ["xml"]
 LOAN_AGEING_BUCKETS = [0, 30, 60, 90, 180, 365, :older]
 LOSS_PROVISION_PERCENTAGES_BY_BUCKET = [0, 10, 25, 50, 75, 90, 100]
@@ -115,3 +116,15 @@ FORMAT_REG_EXP = /[- . \/]/
 
 DATA_NOT_RECORDED = ''
 KYC_DOCUMENTS =[ :voter_id_card, :driving_licence, :ration_card, :electricity_bill, :telephone_bill, :cooking_gas_connection, :bank_passbook_with_photo]
+# Bookmark Constants
+Types   = [:custom_reports, :system]
+Methods = [:get, :post, :put, :delete]
+
+# Audit
+AUDITABLES = ["Branch","Center","Client","ClientGroup","Loan","Payment","StaffMember"]
+
+# Targets
+TargetOf    = [:center_creation, :group_creation, :client_registration, :loan_disbursement_by_amount, :loan_disbursements_by_number]
+TargetType  = [:relative, :absolute]
+
+

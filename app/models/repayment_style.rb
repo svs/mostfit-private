@@ -4,7 +4,7 @@ class RepaymentStyle
   before :save, :convert_blank_to_nil
 
   property :id,       Serial
-  property :name,     String
+  property :name,     String, :unique => true
   property :style,    String
   property :round_total_to, Integer
   property :round_interest_to, Integer
@@ -18,6 +18,11 @@ class RepaymentStyle
     style
   end
 
+  def self.from_csv(row, headers)
+    obj = new([:name, :style, :round_total_to, :round_interest_to, :active, :rounding_style, :force_num_installments, :custom_principal_schedule, :custom_interest_schedule, :upload_id].map{|k| [k,row[headers[k]]] if headers[k]}.compact.to_hash)
+    [obj.save, obj]
+  end
+
   def convert_blank_to_nil
     self.attributes.each{|k, v|
       if v.is_a?(String) and v.empty? and (self.class.send(k).type == Integer or self.class.send(k).type == Float)
@@ -27,8 +32,7 @@ class RepaymentStyle
   end
 
   def return_schedule(type)
-    debugger
-    raise ArgumentError ("type must be :principal or :interest") unless [:principal, :interest].include? type
+    raise ArgumentError.new("type must be :principal or :interest") unless [:principal, :interest].include? type
     s = self.send("custom_#{type}_schedule")
     if s.index("?").nil? # only one amount
       rv = s.split(",").map{|a| a.to_f}

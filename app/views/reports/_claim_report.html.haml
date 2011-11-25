@@ -1,4 +1,4 @@
-=partial :form
+= partial :form
 - length = 9
 %table.report
   %tr.header
@@ -27,7 +27,7 @@
     %tr.branch#claim
       %td{:colspan => length+1}
         %b
-          =branch.name
+          = branch.name
     - branch_total = Array.new(4, 0) 
     - claims.each do |claim|      
       %tr.claim

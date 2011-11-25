@@ -10,6 +10,7 @@ mostfit_dir = File.expand_path(ARGV[0]) rescue Dir.pwd
 
 config  = YAML.load_file(File.join(mostfit_dir, 'config', 'database.yml'))
 db_name = config['production']['database']
+
 username = config['production']['username']
 password = config['production']['password']
 
