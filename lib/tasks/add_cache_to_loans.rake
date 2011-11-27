@@ -59,10 +59,12 @@ namespace :mostfit do
       puts "updating maturiy date"
       repository.adapter.execute(%Q{
          update loans l set c_maturity_date = (select min(date) from loan_history lh where loan_id = l.id and status > 6)})
+      puts "updating client_groups"
+      repository.adapter.execute(%Q{
           UPDATE loans 
           SET c_client_group_id =
           (SELECT c.client_group_id from clients c 
-             WHERE loans.client_id = c.id)})
+           WHERE loans.client_id = c.id)})
     end
   end
 end

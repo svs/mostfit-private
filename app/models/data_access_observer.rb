@@ -79,10 +79,6 @@ class DataAccessObserver
   end
   
   before :destroy! do
-<<<<<<< HEAD
-    raise NotPrivileged if self.model.properties.map{|r| r.name}.include?(:deleted_at)
-=======
->>>>>>> takeover
   end
 
 end

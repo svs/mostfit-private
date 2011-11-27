@@ -104,10 +104,6 @@ end
 Merb::BootLoader.after_app_loads do
   # This will get executed after your app's classes have been loaded.
  
-<<<<<<< HEAD
-=======
-
->>>>>>> takeover
   loan_types = Loan.descendants
 
   begin; $holidays = Holiday.all.map{|h| [h.date, h]}.to_hash; rescue; end
