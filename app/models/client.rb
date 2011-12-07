@@ -234,7 +234,7 @@ class Client
         center   = Center.get(center_attr)
       end
     end
-    return unless center
+    raise ArgumentError("No center with code/id #{center_attr}") unless center
     branch         = center.branch
     #creating group either on group ccode(if a group sheet is present groups should be already in place) or based on group name
     if headers[:group_code] and row[headers[:group_code]]
@@ -247,11 +247,15 @@ class Client
     end
     client_type     = ClientType.first||ClientType.create(:type => "Standard")
     grt_date        = row[headers[:grt_date]] ? Date.parse(row[headers[:grt_date]]) : nil
-    obj             = new(:reference => row[headers[:reference]], :name => row[headers[:name]], :spouse_name => row[headers[:spouse_name]],
-                          :date_of_birth => Date.parse(row[headers[:date_of_birth]]), :address => row[headers[:address]], 
-                          :date_joined => row[headers[:date_joined]], :center => center, :grt_pass_date => grt_date, :created_by => User.first,
-                          :created_by_staff_member_id => StaffMember.first(:name => row[headers[:created_by_staff]]).id,
-                          :client_group => client_group, :client_type => client_type, :upload_id => row[headers[:upload_id]])
+    keys = [:reference, :name, :spouse_name, :date_of_birth, :address, :date_joined, :center, :grt_date, :created_by_staff, :group]
+    missing_keys = keys - headers.keys
+    raise ArgumentError.new("missing keys #{missing_keys.join(',')}") unless missing_keys.blank?
+    hash = {:reference => row[headers[:reference]], :name => row[headers[:name]], :spouse_name => row[headers[:spouse_name]],
+      :date_of_birth => Date.parse(row[headers[:date_of_birth]]), :address => row[headers[:address]], 
+      :date_joined => row[headers[:date_joined]], :center => center, :grt_pass_date => grt_date, :created_by => User.first,
+      :created_by_staff_member_id => StaffMember.first(:name => row[headers[:created_by_staff]]).id,
+      :client_group => client_group, :client_type => client_type, :upload_id => row[headers[:upload_id]]}
+    obj             = new(hash)
     [obj.save!, obj]
   end
 
