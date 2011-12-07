@@ -5,9 +5,12 @@
 
 # dump path is on mostfit.in
 
+<<<<<<< HEAD
 pwd = `pwd`.split("/")[-1].chomp
 
 
+=======
+>>>>>>> takeover
 dump_path = ARGV[0]
 
 # db_name is on the local machine

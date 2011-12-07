@@ -17,9 +17,9 @@ namespace :mostfit do
     desc "convert intellecash db to takeover-intellecash"
     task :convert_sahayog do
       puts "upgrading"
+      repository.adapter.execute("truncate table loan_history")
       Rake::Task['db:autoupgrade'].invoke
       puts "done"
-      # add repayment styles to loan products
 
       # update the center_meeting_days for specified centers
       dcs = Center.all(:id => [1642,1675,1676,1120,1121,1122,2146,1809,1810])
