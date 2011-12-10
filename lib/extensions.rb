@@ -114,6 +114,8 @@ module Misfit
       def _can_access?(route, params = nil)       
         user_role = self.role
         return true  if user_role == :admin
+
+
         return false if route[:controller] == "journals" and route[:action] == "edit"
         return true  if route[:controller] == "users" and route[:action] == "change_password"
         return true  if route[:controller] == "users" and route[:action] == "show"
@@ -127,6 +129,13 @@ module Misfit
         @controller = (route[:namespace] ? route[:namespace] + "/" : "" ) + route[:controller]
         @model = route[:controller].singularize.to_sym
         @action = route[:action]
+
+        debugger
+        if user_role == :mis_manager
+          return true if [:region, :area, :branch, :center, :client_group, :client, :loan, :payment].include?(@model)
+          return true unless [:edit, :update, :delete, :destroy, :create].include?(@action.to_sym)
+          return false
+        end
 
         # reports access control rules
         if route[:controller] == "reports" and route[:action] == "show" and route[:report_type] and Mfi.first.report_access_rules.key?(route[:report_type])
