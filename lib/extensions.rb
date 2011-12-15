@@ -132,7 +132,7 @@ module Misfit
 
         debugger
         if user_role == :mis_manager
-          return true if [:region, :area, :branch, :center, :client_group, :client, :loan, :payment].include?(@model)
+          return true if [:region, :area, :branch, :center, :client_group, :client, :loan, :payment, :insurance_policy].include?(@model)
           return true unless [:edit, :update, :delete, :destroy, :create].include?(@action.to_sym)
           return false
         end
