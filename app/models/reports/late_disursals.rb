@@ -27,7 +27,7 @@ class LateDisbursalsReport < Report
       b.centers.each do |c|
         next if @center and not @center.find{|x| x.id==c.id}        
         r[b][c] =[]
-        loans.select{ |l| l.client.center == c}.each do |l|
+        loans.select{ |l| (l.client and l.client.center == c)}.each do |l|
           r[b][c] << l
         end
       end
