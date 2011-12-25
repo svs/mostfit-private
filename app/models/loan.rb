@@ -804,6 +804,29 @@ class Loan
     # commenting this code so that meeting dates not automatically set
     #ensure_meeting_day = [:weekly, :biweekly].include?(installment_frequency)
     ensure_meeting_day = true if self.loan_product.loan_validations and self.loan_product.loan_validations.include?(:scheduled_dates_must_be_center_meeting_days)
+
+    if self.loan_product.loan_validations.include?(:collect_stub_period_interest)
+      # find installment dates for this loan/center between the disbursal date and the scheduled first payment date
+      d1 = disbursal_date || scheduled_disbursal_date
+      debugger
+      extra_dates = self.client.center.get_meeting_dates(scheduled_first_payment_date - 1, d1 + 1) 
+      interest_so_far = 0
+      extra_dates.each do |d2|
+        debugger
+        interest = interest_calculation(balance, d1, d2)
+        @schedule[d2] = {
+          :principal                  => 0,
+          :interest                   => interest,
+          :fees                       => 0,
+          :total_principal            => 0,
+          :total_interest             => interest_so_far + interest,
+          :total                      => interest_so_far.round(2),
+          :balance                    => balance.round(2),
+        }
+        d1 = d2
+      end
+    end
+
     (1..actual_number_of_installments).each do |number|
       date      = installment_dates[number-1] #shift_date_by_installments(scheduled_first_payment_date, number - 1, ensure_meeting_day)
       principal = scheduled_principal_for_installment(number).round(2)
@@ -1159,7 +1182,7 @@ class Loan
     ap_fees = fee_schedule.map{|k,v| [k,v.values.sum]}.to_hash
     dates = (([applied_on, approved_on, scheduled_disbursal_date, disbursal_date, written_off_on, scheduled_first_payment_date]).map{|d|
                (self.holidays[d] ? self.holidays[d].new_date : d)
-             } +  installment_dates + payment_dates).compact.uniq.sort
+             } +  payment_schedule.keys + payment_dates).compact.uniq.sort
 
 
     # initialize
@@ -1180,6 +1203,7 @@ class Loan
       outstanding                            = [:disbursed, :outstanding].include?(st) # is the loan outstanding?
       # if it is not, was it outstanding in the last period? 
       outstanding_at_start                   = outstanding ? true : (last_row ? [:disbursed, :outstanding].include?(STATUSES[last_row[:status]-1]) : true)
+      
       # so, was it closed in this period?
       # this is important because a lot of stuff is calculated differently in the last period
 
@@ -1189,7 +1213,7 @@ class Loan
       total_interest_paid                   += int
 
       scheduled_principal_due                = outstanding_at_start ? (i_num > 0 ? scheduled[:principal] : 0) : 0
-      scheduled_interest_due                 = outstanding_at_start ? (i_num > 0 ? scheduled[:interest] : 0) : 0
+      scheduled_interest_due                 = outstanding_at_start ? scheduled[:interest] : 0
       total_principal_due                   += outstanding_at_start ? scheduled[:principal].round(2) : 0
       total_interest_due                    += outstanding_at_start ? scheduled[:interest].round(2) : 0
       principal_due                          = outstanding_at_start ? [total_principal_due - act_total_principal_paid,0].max : 0
@@ -1365,11 +1389,15 @@ class Loan
     self.repayment_style = self.loan_product.repayment_style unless self.repayment_style
   end
 
-  def interest_calculation(balance)
+  def interest_calculation(balance, d1 = nil, d2 = nil)
     # need to have this is one place because a lot of functions need to know how interest is calculated given a balance
     # this is bound to become more complex as we add all kinds of dates 
     rs = self.repayment_style || self.loan_product.repayment_style
-    ((balance * interest_rate) / get_divider).round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
+    if d1 and d2
+      ((balance * interest_rate) / (365/(d2-d1))).round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
+    else
+      ((balance * interest_rate) / get_divider).round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
+    end
   end
 
 

@@ -186,5 +186,11 @@ module Misfit
       return true
     end
 
+    def collect_stub_period_interest
+      # check this if you want to collect interest on installment dates between the disbursal date and the scheduled first payment date.
+      return true
+    end
+    
+
   end    #LoanValidators 
 end
