@@ -188,6 +188,14 @@ module Misfit
 
     def collect_stub_period_interest
       # check this if you want to collect interest on installment dates between the disbursal date and the scheduled first payment date.
+      # the (scheduled) disbursal date and the scheduled first payment date must be more than the installment frequency
+      dd = disbursal_date or scheduled_disbursal_date
+      max_disbural_date = case installment_frequency
+                          when :daily, :weekly, :biweekly then scheduled_first_payment_date - get_reciprocal
+                          when :monthly then scheduled_first_payment_date << 1
+                          end
+      properly_apart = dd <= max_disbursal_date
+      return [false, "The (scheduled) disbursal date and scheduled first payment date must be atleast one #{installment_frequency} apart"] unless properly_apart
       return true
     end
     
