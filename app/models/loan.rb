@@ -447,7 +447,7 @@ class Loan
   # TODO: decide if we should make sure returned date is a payment date.
   def shift_date_by_installments(date, number, ensure_meeting_day = true)
     return date if number == 0
-    case installment_frequency
+    case self.installment_frequency
     when :daily
       new_date =  date + number
     when :weekly
@@ -1389,7 +1389,7 @@ class Loan
       self.send("#{attr}=", self.loan_product.send("max_#{attr}")) if self.loan_product.send("max_#{attr}") == self.loan_product.send("min_#{attr}")
     end
     self.interest_rate = self.interest_rate / 100 #loan product stores it as 26, not 0.26
-    self.installment_frequency = self.loan_product.installment_frequency
+    self.installment_frequency = self.loan_product.installment_frequency unless self.loan_product.installment_frequency == :any
   end
 
   def interest_calculation(balance, d1 = nil, d2 = nil)
