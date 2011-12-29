@@ -83,11 +83,11 @@
                
     %div.tab
       %div#container_centers_list
-        =partial "centers/list"
-    %div.tab
-      %input{:type => "hidden", :name => "_load_remote", :value => "/info/moreinfo/#{@branch.id}?for=branch"}
+        = partial "centers/list"
     -# %div.tab
-      -# %input{:type => "hidden", :name => "_load_remote", :value => "/info/exceptions/#{@branch.id}?for=branch"}
+    -#   %input{:type => "hidden", :name => "_load_remote", :value => "/info/moreinfo/#{@branch.id}?for=branch"}
+    %div.tab
+      %input{:type => "hidden", :name => "_load_remote", :value => "/info/exceptions/#{@branch.id}?for=branch"}
     %div.tab
       %input{:type => "hidden", :name => "_load_remote", :value => resource(:documents, :parent_id => @branch.id, :parent_model => Branch)}
     %div.tab
