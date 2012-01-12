@@ -8,7 +8,6 @@ class Cacher
   property :model_id,                        Integer, :nullable => false, :index => true, :unique => [:model_name, :date], :key => true
   property :branch_id,                       Integer, :index => true, :key => true
   property :center_id,                       Integer, :index => true, :key => true
-  property :funding_line_id,                 Integer, :index => true
   property :scheduled_outstanding_total,     Float, :nullable => false
   property :scheduled_outstanding_principal, Float, :nullable => false
   property :actual_outstanding_total,        Float, :nullable => false
@@ -16,8 +15,12 @@ class Cacher
   property :actual_outstanding_interest,     Float, :nullable => false
   property :scheduled_principal_due,         Float, :nullable => false
   property :scheduled_interest_due,          Float, :nullable => false
+
   property :principal_due,                   Float, :nullable => false
   property :interest_due,                    Float, :nullable => false
+  property :principal_due_today,             Float, :nullable => false # this is the principal and interest 
+  property :interest_due_today,              Float, :nullable => false  #that has become payable today
+
   property :principal_paid,                  Float, :nullable => false
   property :interest_paid,                   Float, :nullable => false
   property :total_principal_due,             Float, :nullable => false
@@ -65,9 +68,16 @@ class Cacher
           :advance_principal_adjusted, :advance_interest_adjusted, :advance_principal_outstanding, :advance_interest_outstanding, :total_advance_outstanding, :principal_at_risk, 
           :outstanding_count, :outstanding]
   FLOW_COLS = [:principal_due, :principal_paid, :interest_due, :interest_paid,
+<<<<<<< HEAD
              :scheduled_principal_due, :scheduled_interest_due, :advance_principal_adjusted, :advance_interest_adjusted,
              :advance_principal_paid, :advance_interest_paid, :advance_principal_paid_today, :advance_interest_paid_today, :fees_due_today, :fees_paid_today,
              :total_advance_paid_today, :advance_principal_adjusted_today, :advance_interest_adjusted_today, :total_advance_adjusted_today] + STATUSES.map{|s| [s, "#{s}_count".to_sym] unless s == :outstanding}.compact.flatten
+=======
+               :scheduled_principal_due, :scheduled_interest_due, :advance_principal_adjusted, :advance_interest_adjusted,
+               :advance_principal_paid, :advance_interest_paid, :advance_principal_paid_today, :advance_interest_paid_today, :fees_due_today, :fees_paid_today,
+               :principal_due_today, :interest_due_today, :total_advance_paid_today, :advance_principal_adjusted_today, :advance_interest_adjusted_today, 
+               :total_advance_adjusted_today] + STATUSES.map{|s| [s, "#{s}_count".to_sym] unless s == :outstanding}.compact.flatten
+>>>>>>> takeover
   CALCULATED_COLS = [:principal_defaulted_today, :interest_defaulted_today, :total_defaulted_today]
   
 
@@ -164,12 +174,15 @@ class Cacher
 
     me = self.attributes; other = other.attributes;
 
+<<<<<<< HEAD
     # of course, simply doing the attributes means we have left out the "calculated" fields
     # calc_flow_fields = FLOW_COLS - attrs.keys
     #calc_flow_fields.each{|cff| attrs[cff] = self.send(cff) + other.send(cff)}
     #calc_col_fields = COLS - attrs.keys
     #calc_col_fields.each{|c| attrs[c] = later_cacher.send(c)}
     debugger
+=======
+>>>>>>> takeover
     attrs[:stale] = me[:stale] || other[:stale]
     Cacher.new(my_attrs)
   end
@@ -183,6 +196,7 @@ class Cacher
     date = (self.date > other.date ? self.date : other.date)
     me = self.attributes; other = other.attributes;
     attrs = me + other; attrs[:date] = date; attrs[:model_name] = "Sum";
+<<<<<<< HEAD
 
     # add the calculated fields
     #calc_flow_fields = FLOW_COLS - attrs.keys
@@ -191,6 +205,8 @@ class Cacher
     #calc_col_fields.each{|c| attrs[c] = self.send(c) + other.send(c)}
 
     
+=======
+>>>>>>> takeover
     attrs[:model_id] = nil; attrs[:branch_id] = nil; attrs[:center_id] = nil;
     Cacher.new(attrs)
   end
@@ -216,13 +232,16 @@ class BranchCache < Cacher
       debugger
       t0 = Time.now; t = Time.now;
       branch_ids = Branch.all.aggregate(:id) unless branch_ids
-      branch_centers = Branch.all(:id => branch_ids).centers.aggregate(:id)
-
+      #branch_centers = Branch.all(:id => branch_ids).centers.aggregate(:id)
+      branch_centers = q("SELECT id FROM centers WHERE #{get_where_from_hash(:branch_id => branch_ids)}")
       # unless we are forcing an update, only work with the missing and stale centers
       unless force
-        ccs = CenterCache.all(:model_name => "Center", :branch_id => branch_ids, :date => date, :center_id.gt => 0)
-        cached_centers = ccs.aggregate(:center_id)
-        stale_centers = ccs.stale.aggregate(:center_id)
+        hash = {:model_name => "Center", :branch_id => branch_ids, :date => date}
+        #ccs = CenterCache.all(hash)
+        # nothing like some raw SQL to speed up queries.....dammmitt!
+        cached_centers = repository.adapter.query("SELECT center_id FROM cachers WHERE type = 'CenterCache' AND center_id > 0 AND #{get_where_from_hash(hash)}").map(&:to_i) #ccs.aggregate(:center_id)
+        stale_centers = repository.adapter.query("SELECT center_id FROM cachers WHERE type = 'CenterCache' AND center_id > 0 AND stale = 1 AND #{get_where_from_hash(hash)}").map(&:to_i) #ccs.aggregate(:center_id)
+        #stale_centers = ccs.stale.aggregate(:center_id)
         cids = (branch_centers - cached_centers) + stale_centers
         puts "#{cached_centers.count} cached centers; #{branch_centers.count} total centers; #{stale_centers.count} stale; #{cids.count} to update"
       else
@@ -235,28 +254,36 @@ class BranchCache < Cacher
       chunks = cids.count/3000
       begin
         _t = Time.now
-        cids.chunk(3000).each_with_index do |_cids,i|
+        cids.chunk(2500).each_with_index do |_cids,i|
           (CenterCache.update(:center_id => _cids, :date => date))
           puts "UPDATED #{i}/#{chunks} CACHES in #{(Time.now - _t).round} secs"
         end
       rescue Exception => e
+<<<<<<< HEAD
         debugger
+=======
+>>>>>>> takeover
         return false
       end
       puts "UPDATED CENTER CACHES in #{(Time.now - t).round} secs"
       t = Time.now
       # then add up all the cached centers by branch
       relevant_branch_ids = Center.all(:id => cids).aggregate(:branch_id)
-      branch_data_hash = CenterCache.all(:model_name => "Center", :branch_id => relevant_branch_ids, :date => date).group_by{|x| x.branch_id}.to_hash
+      # branch_data_hash = CenterCache.all(:model_name => "Center", :branch_id => relevant_branch_ids, :date => date).group_by{|x| x.branch_id}.to_hash
+      h = {:model_name => "Center", :branch_id => relevant_branch_ids, :date => date, :type => 'CenterCache'}
+      branch_data_hash = q(%Q{
+                           SELECT * 
+                           FROM cachers 
+                           WHERE #{get_where_from_hash(h)}}).group_by{|x| x.branch_id}.to_hash
       puts "READ CENTER CACHES in #{(Time.now - t).round} secs"
       t = Time.now
 
       # we now have {:branch => [{...center data...}, {...center data...}]}, ...
       # we have to convert this to {:branch => { sum of centers data }, ...}
-
+      numeric_attributes = branch_data_hash.first[1][0].attributes.select{|k,v| k if v.is_a? Numeric}.to_hash.keys
       branch_data = branch_data_hash.map do |bid,ccs|
         sum_centers = ccs.map do |c|
-          center_sum_attrs = c.attributes.select{|k,v| v.is_a? Numeric}.to_hash
+          center_sum_attrs = c.attributes.only(numeric_attributes)
         end
         [bid, sum_centers.reduce({}){|s,h| s+h}]
       end.to_hash
@@ -305,18 +332,35 @@ class CenterCache < Cacher
 
   # these have to be hooks, for obvious reasons, but for now we make do with some hardcoded magic!
 
-  EXTRA_FIELDS = [:delayed_disbursals]
+s  EXTRA_FIELDS = [:delayed_disbursals]
   def self.update(hash = {})
     # creates a cache per center for branches and centers per the hash passed as argument
     date = hash.delete(:date) || Date.today
     hash = hash.select{|k,v| [:branch_id, :center_id].include?(k)}.to_hash
+    
+    # we can make an optimisation here which will kick in when we are updating days caches sequentially
+    # for a given center which does not have a row in the loan history table, we can pick the preceding days caches 
+    # if it is not stale
+    centers_without_loan_history_row = hash[:center_id] - LoanHistory.all(hash.merge(:date => date)).aggregate(:center_id)
+    h = {:type => "CenterCache", :center_id => centers_without_loan_history_row, :date => (date - 1), :stale => false}
+    centers_data_wo = q(%Q{SELECT *
+                           FROM cachers
+                           WHERE #{get_where_from_hash(h)}}).map{|c| [c.center_id, c.attributes.except(:end_date)]}.to_hash
+    # drop the stale ones from the list
+    centers_to_not_update = centers_data_wo.keys
+    puts "FOUND #{centers_to_not_update.count} centers without loan history row for #{date}"
+    
+    # now carry on without the unnecessary centers
+    hash[:center_id] = hash[:center_id] - centers_to_not_update
+    return true if hash[:center_id].blank?
     centers_data = CenterCache.create(hash.merge(:date => date, :group_by => [:branch_id,:center_id])).deepen.values.sum
+    centers_data += centers_data_wo
     return false if centers_data == nil
     now = DateTime.now
     centers_data.delete(:no_group)
     return true if centers_data.empty?
     cs = centers_data.keys.flatten.map do |center_id|
-      centers_data[center_id].merge({:type => "CenterCache",:model_name => "Center", :model_id => center_id, :date => date, :updated_at => now})
+      centers_data[center_id].merge({:type => "CenterCache",:model_name => "Center", :model_id => center_id, :date => date, :updated_at => now, :created_at => now, :stale => false})
     end
     if cs.nil?
       return false 
@@ -337,7 +381,8 @@ class CenterCache < Cacher
     cols = hash.delete(:cols) || COLS
     flow_cols = FLOW_COLS
     balances = LoanHistory.latest_sum(hash,date, group_by, cols)
-    pmts = LoanHistory.composite_key_sum(LoanHistory.all(hash.merge(:date => date)).aggregate(:composite_key), group_by, flow_cols)
+    # pmts = LoanHistory.composite_key_sum(LoanHistory.all(hash.merge(:date => date)).aggregate(:composite_key), group_by, flow_cols)
+    pmts = LoanHistory.composite_key_sum(LoanHistory.get_composite_keys(hash.merge(:date => date)), group_by, flow_cols)
     # if there are no loan history rows that match today, then pmts is just a single hash, else it is a hash of hashes
     ng_pmts = flow_cols.map{|c| [c,0]}.to_hash # ng = no good. we return this if we get dodgy data
     ng_bals = cols.map{|c| [c,0]}.to_hash # ng = no good. we return this if we get dodgy data
@@ -376,7 +421,6 @@ class CenterCache < Cacher
 
   # finds the missing caches given some caches 
   def self.missing(selection)
-    debugger
     bs = self.all(selection).aggregate(:date, :center_id).group_by{|x| x[0]}.to_hash.map{|k,v| [k, v.map{|x| x[1]}]}.to_hash
     # bs is a hash of {:date => [:center_id,...]}
     # date = selection.delete(:date)

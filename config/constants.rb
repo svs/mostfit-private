@@ -117,8 +117,8 @@ FORMAT_REG_EXP = /[- . \/]/
 DATA_NOT_RECORDED = ''
 KYC_DOCUMENTS =[ :voter_id_card, :driving_licence, :ration_card, :electricity_bill, :telephone_bill, :cooking_gas_connection, :bank_passbook_with_photo]
 # Bookmark Constants
-Types   = [:custom_reports, :system]
-Methods = [:get, :post, :put, :delete]
+BookmarkTypes   = [:custom_reports, :system]
+MethodNames = [:get, :post, :put, :delete]
 
 # Audit
 AUDITABLES = ["Branch","Center","Client","ClientGroup","Loan","Payment","StaffMember"]
