@@ -230,7 +230,7 @@
           Written Off:
         %td
           on&nbsp;&nbsp;
-          = date_select_for @loan, :written_off_on
+          = date_select_for @loan, :written_off_on, {:nullable => true}
           &nbsp;&nbsp;by&nbsp;&nbsp;
           = select_staff_member_for @loan, :written_off_by, :id => "written_off_by"
       %tr
@@ -238,7 +238,7 @@
           Suggested Written Off:
         %td
           on&nbsp;&nbsp;
-          = date_select_for @loan, :suggested_written_off_on
+          = date_select_for @loan, :suggested_written_off_on, {:nullable => true}
           &nbsp;&nbsp;by&nbsp;&nbsp;
           = select_staff_member_for @loan, :suggested_written_off_by, :id => "suggested_written_off_by"
       %tr
@@ -246,7 +246,7 @@
           Write Off Rejected:
         %td
           on&nbsp;&nbsp;
-          = date_select_for @loan, :write_off_rejected_on
+          = date_select_for @loan, :write_off_rejected_on, {:nullable => true}
           &nbsp;&nbsp;by&nbsp;&nbsp;
           = select_staff_member_for @loan, :write_off_rejected_by, :id => "write_off_rejected_by"
   %tr

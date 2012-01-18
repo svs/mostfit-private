@@ -85,43 +85,6 @@ class Cacher
     principal_due + interest_due + fees_due_today
   end
 
-<<<<<<< HEAD
-  # def total_advance_paid_today
-  #   advance_principal_paid_today + advance_interest_paid_today
-  # end
-
-  # def total_advance_paid
-  #   advance_principal_paid + advance_interest_paid
-  # end
-
-  # def total_advance_os
-  #   advance_principal_outstanding + advance_interest_outstanding
-  # end
-
-
-  # def total_advance_adjusted
-  #   advance_principal_adjusted + advance_interest_adjusted
-  # end
-
-  # def total_default
-  #   (principal_in_default + interest_in_default).abs
-  # end
-
-  # def principal_defaulted_today
-  #   [scheduled_principal_due - principal_paid,0].max
-  # end
-
-  # def interest_defaulted_today
-  #   [scheduled_interest_due - interest_paid,0].max
-  # end
-  
-  # def total_defaulted_today
-  #   principal_defaulted_today + interest_defaulted_today
-  # end
-
-
-=======
->>>>>>> takeover
   def icash_interest_in_default
     [0,interest_in_default + total_advance_outstanding].min
   end
@@ -321,10 +284,7 @@ s  EXTRA_FIELDS = [:delayed_disbursals]
 
     centers_without_loan_history_row = hash[:center_id] - q("SELECT center_id FROM loan_history WHERE #{get_where_from_hash(hash.merge(:date => date))}")
     h = {:type => "CenterCache", :center_id => centers_without_loan_history_row, :date => (date - 1), :stale => false}
-<<<<<<< HEAD
-=======
     ng_pmts = FLOW_COLS.map{|c| [c,0]}.to_hash #because the flows are all 0 for this date
->>>>>>> takeover
     centers_data_wo = centers_without_loan_history_row.blank? ? {} : q(%Q{SELECT *
                            FROM cachers
                            WHERE #{get_where_from_hash(h)}}).map{|c| [c.center_id, c.attributes.merge(ng_pmts)]}.to_hash
