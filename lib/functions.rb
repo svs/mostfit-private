@@ -391,12 +391,12 @@ def q(sql)
   repository.adapter.query(sql)
 end
 
-
 class BigDecimal
   def inspect
     self.to_f
   end
 
+  
   def round_to_nearest(i = nil, style = :round)
     return self if i.nil?
     return self unless self.respond_to?(style)
