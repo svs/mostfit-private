@@ -300,7 +300,6 @@ class Array
     end
     a
   end
-  
 end
 
 
@@ -390,6 +389,7 @@ end
 def q(sql)
   repository.adapter.query(sql)
 end
+
 
 class BigDecimal
   def inspect
