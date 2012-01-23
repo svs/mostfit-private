@@ -12,7 +12,10 @@
       %th
         Client
       %td
-        = select :client_id, :collection => @loan.client.center.clients, :value_method => :id, :text_method => :name
+        - if @loan.disbursal_date
+          = @loan.client.name
+        - else
+          = select :client_id, :collection => @loan.client.center.clients, :value_method => :id, :text_method => :name
     %tr
       %th
         Repayment Style
