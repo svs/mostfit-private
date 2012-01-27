@@ -572,7 +572,6 @@ class Loan
   def pay_prorata(total, received_on)
     # calculates total interest and principal payable in this amount and divides the amount proportionally
     int_to_pay = prin_to_pay = amt_to_pay = 0
-    $debug = true
     # load relevant loan_history rows
     loan_history.all( :order => [:date]).map do |lh|
       next if amt_to_pay >= total or ((lh.interest_due + lh.principal_due) == 0)
@@ -806,11 +805,9 @@ class Loan
     if self.loan_product.loan_validations.include?(:collect_stub_period_interest)
       # find installment dates for this loan/center between the disbursal date and the scheduled first payment date
       d1 = disbursal_date || scheduled_disbursal_date
-      debugger
       extra_dates = self.client.center.get_meeting_dates(scheduled_first_payment_date - 1, d1 + 1) 
       interest_so_far = 0
       extra_dates.each do |d2|
-        debugger
         interest = interest_calculation(balance, d1, d2)
         @schedule[d2] = {
           :principal                  => 0,
