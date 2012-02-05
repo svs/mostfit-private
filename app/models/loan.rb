@@ -18,6 +18,7 @@ class Loan
   before :valid?,    :set_loan_product_parameters
   before :save,      :set_bullet_installments
 
+  # This could really use a better name.
   def rs
     self.repayment_style or self.loan_product.repayment_style
   end
@@ -218,7 +219,7 @@ class Loan
     force = true if self.new?
     self.repayment_style = self.rs
     @orig_attrs = self.original_attributes
-    t = Time.now
+    t = Time.now # < Are we using this for anything?
     self.c_center_id = self.client.center.id if force
     self.c_branch_id = self.client.center.branch.id if force
     self.c_client_group_id = (self.client.client_group_id if force) or 0
@@ -434,7 +435,7 @@ class Loan
     format("%.2f", interest_rate * 100)
   end
   def interest_percentage= (percentage)
-    self.interest_rate = percentage.to_f/100
+    #self.interest_rate = percentage.to_f/100
   end
   # returns the name of the funder
   def deffunder_name
@@ -509,6 +510,9 @@ class Loan
 
   # LOAN MANIPULATION FUNCTIONS
 
+  # !!!! The comment below is no longer true. #repay no longer accepts an array of payments but rather a hash 
+  # of the format { :principal => 100.0, :interest => 20.0, :fees => 10.0 }
+
   # this is the method used for creating payments, not directly on the Payment class
   # for +input+ it allows either a "total" amount as Fixnum or an array with
   # principal[0] and interest[1].
@@ -519,6 +523,26 @@ class Loan
     make_payments(pmts, context, defer_update)
   end
 
+  # This method prepares (but does not save) new payments based on the input. The input format is either a hash
+  # or a fixnum or float. The hash lets you separate what types of payments to make, e.g.:
+  #
+  #   # this would create three separate payments, one for each amount
+  #   { :principal => 100.0, :interest => 20.0, :fees => 10.0 }
+  #
+  # If a fixnum/float is supplied instead separation of the payment types is handled by the style parameter. By
+  # default the style parameter is set to :normal, the alternative styles being :prorata, :sequential and reallocate_normal.
+  # This defers separation out to the pay_normal, pay_prorata, pay_sequential and pay_reallocate_normal methods
+  # respectively. Each of which will return a hash in the format described above.
+  #
+  # user          represents the user registering the payment in the system
+  # received_on   the date on which the payment was made
+  # received_by   the staff_member who took in the payment
+  #
+  # Some more documentation here would not go amiss, as far as I can tell context and defer_update are never used?
+  #
+  # Note that the #extend_loan method below does literally that, it extends the Loan model with the relevant
+  # RepaymentStyle module, determined by either the loan's own RepaymentStyle or the related LoanProduct's RepaymentStyle
+  #
   def get_payments(input, user, received_on, received_by, defer_update = false, style = NORMAL_REPAYMENT_STYLE, context = :default, desktop_id = nil, origin = nil) 
     # this is the way to repay loans, _not_ directly on the Payment model
     # this to allow validations on the Payment to be implemented in (subclasses of) the Loan
@@ -534,7 +558,6 @@ class Loan
     # else vals is like {:fees => 123, :interest => 456, :principal => 789}
     vals = input.is_a?(Hash) ? input : self.send("pay_#{style}",input, received_on) 
                               
-    
     payments = []
     [:fees, :interest, :principal].each do |type|
       if ((vals[type] || 0) > 0)
@@ -546,6 +569,20 @@ class Loan
     payments             
   end
 
+  # This method attempts to register the given payments. The input is assumed to be a collection of Payment objects.
+  #
+  # We return an array representing the status of the update, which contains the following elements:
+  #
+  # Boolean     true or false depending on whether the payments could be registered (saved)
+  # Payment     the payment with type :principal
+  # Payment     the payment with type :interest
+  # Array       the collection of payments with type :fees
+  #
+  # If any of the payments fails to register the entire transaction is rolled back
+  # 
+  # defer_update refers to history logging, set to true for batch updates so not every call updates
+  # the loan_history (persumably this is done manually after the batch update.)
+  #
   def make_payments(payments, context = :default, defer_update = false)
     return [false, nil, nil, nil] if payments.empty?
     Payment.transaction do |t|
@@ -560,9 +597,11 @@ class Loan
     unless defer_update #i.e. bulk updating loans
       self.history_disabled=false
       @already_updated=false
+      # We're mapping twice here? Can we just map{ |p| installment_dates.include?(p.received_on) } ?
       self.reload if payments.map{|p| p.received_on}.map{|d| installment_dates.include?(d)}.include?(false)
       update_history(true)  # update the history if we saved a payment
     end
+    # Perhaps it would be more efficient to check for zero length at the start?
     if payments.length > 0
       return [true, payments.find{|p| p.type==:principal}, payments.find{|p| p.type==:interest}, payments.find_all{|p| p.type==:fees}]
     else
@@ -614,7 +653,17 @@ class Loan
     {:interest => int_to_pay, :principal => prin_to_pay}
   end
 
-    
+  # This method separates a received payment into :interest en :pricipal portions.
+  # First the interest is taken out of the amount and any remaining amount is paid
+  # towards the principal.
+  #
+  # NOTE: We don't seem to check against negative values? If the "total" amount is
+  # lower than the outstanding interest, it seems we count the interest as paid and
+  # we make a negative payment to the principal.
+  # 
+  # After looking at #make_payments it seems that all payment parts are done as a single
+  # transaction in MySQL. If one part of the payment fails to validate (like on a
+  # negative amount) all the payment parts are rolled back. So there is a safeguard.
   def pay_normal(total, received_on)
     lh = info(received_on)
     {:interest => lh.interest_due, :principal => total - lh.interest_due}
@@ -1186,7 +1235,6 @@ class Loan
     # initialize
     total_principal_due = total_interest_due = total_principal_paid = total_interest_paid = advance_principal_paid = advance_interest_paid = 0
 
-
     # find the actual total principal and interest paid.
     # this is helpful for adjusting interest and principal due on a particular date while taking into account future payments
     last_payments_hash = payments_hash.sort.last; 
@@ -1301,8 +1349,8 @@ class Loan
         :fees_due_today                      => fees_due_today,
         :fees_paid_today                     => fees_paid_today,
         :composite_key                       => "#{id}.#{(i/10000.0).to_s.split('.')[1]}".to_f,
-        :branch_id                           => c_branch_id,
-        :center_id                           => c_center_id,
+        :branch_id                           => client.branch_for_date(date),
+        :center_id                           => client.center_for_date(date),
         :client_group_id                     => c_client_group_id || 0,
         :client_id                           => client_id,
         :created_at                          => now,
@@ -1391,8 +1439,8 @@ class Loan
     [:amount, :interest_rate, :number_of_installments].each do |attr|
       self.send("#{attr}=", self.loan_product.send("max_#{attr}")) if self.loan_product.send("max_#{attr}") == self.loan_product.send("min_#{attr}")
     end
-    self.interest_rate = self.interest_rate / 100 #loan product stores it as 26, not 0.26
-    self.installment_frequency = self.loan_product.installment_frequency unless self.loan_product.installment_frequency == :any
+    self.interest_rate = self.interest_rate / 100 if self.loan_product.max_interest_rate == self.loan_product.min_interest_rate #loan product stores it as 26, not 0.26 
+    self.installment_frequency = self.loan_product.installment_frequency
   end
 
   def interest_calculation(balance, d1 = nil, d2 = nil)

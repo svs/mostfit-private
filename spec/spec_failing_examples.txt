@@ -1,13 +1,15 @@
+Loan .last_loan_history_date should have some tests -- albeit more a view thing
+Loan .scheduled_repaid_on give the proper date
+Loan should have proper values for principal, interest and total to be received
 Loan .status should give status accoring to changing properties up to it written off
 Loan .status should give status accoring to changing properties up to it is repaid
+Loan .installment_dates should give a list with some dates
+Loan .payment_schedule should give correct results
 Loan .payments_hash should give correct results
 Loan history should be correct
 Loan should write the history correctly into the db
-Loan should not be deleteable if verified
 Loan .installment_dates should correctly deal with holidays
-Loan should have correct takeover schedule and balances
 Loan should change with center meeting date change
 Loan should change with center meeting date change
-Loan should not be valid if duplicated
 Loan should repay properly
 Loan should not disburse if loan fees are not paid
