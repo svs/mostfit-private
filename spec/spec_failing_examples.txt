@@ -1,1 +1,0 @@
-Center next and previous meeting dates should be correct

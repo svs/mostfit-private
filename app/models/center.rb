@@ -68,9 +68,20 @@ class Center
   end
 
 
-  # get a list of meeting dates between from and to if to is a Date. Else gets "to" meeting dates if to is an integer
+  # Public get a list of meeting dates between from and to if to is a Date. Else gets "to" meeting dates if to is an integer
+  #
+  # to -   optional. an Integer (number of meeting_dates) or a Date (meeting_dates before this date). Defaults to last loan_history date or SEP_DATE
+  # from - optional. a Date representing the start date for this list. Defaults to first loan_history date or center creation date
   # a center must take the responsibility that center_meeting_days never overlap.
-  # to can be a date or a number
+  #
+  # Examples 
+  #
+  # meeting_dates
+  # meeting_dates(10)
+  # meeting_dates(Date.new(2012,12,21)
+  # meeting_dates(Date.new(2012,12,21), Date.new(2012,01,01))
+  #
+  # Returns a list of center meeting dates 
   def meeting_dates(to = nil,from = nil)
     debugger
     # sometimes loans from another center might be moved to this center. they can be created before this centers creation date
@@ -88,15 +99,10 @@ class Center
       return ds
     end
 
-    # then check the date vectors
+    # then check the date vectors.
     select = to.class == Date ? {:valid_from.lte => to} : {}
-    dvs = center_meeting_days.all(select).map{|cmd| [cmd.valid_from, cmd.date_vector]}.to_hash
-
-    # if from is after the center creation but before the first additional center meeting date then deal with this
-    if dvs.blank? or (from < dvs.keys.min and meeting_day != :none)
-      dvs[from] =       DateVector.new(1, meeting_day, 1, :week, creation_date, dvs.keys.min || Date.new(2100,12,31))
-    end
-
+    dvs = center_meeting_days.all.select{|dv| dv.valid_from.nil? or dv.valid_from <= to}.map{|dv| [(dv.valid_from.nil? ? from : dv.valid_from), dv]}.to_hash
+    
     # then cycle through this hash and get the appropriate dates
     dates = []
     dvs.keys.sort.each_with_index{|date,i|
@@ -166,7 +172,6 @@ class Center
     r_date = (LoanHistory.first(:center_id => self.id, :date.gt => date, :order => [:date], :limit => 1) or Nothing).date
     return r_date if r_date
     #oops...no loans in this center. use center_meeting_dates
-    debugger
     self.meeting_dates(1, date)[0]
   end
   

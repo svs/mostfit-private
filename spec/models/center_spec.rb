@@ -70,6 +70,19 @@ describe Center do
       result << date if date <= SEP_DATE
     end
     @center.meeting_dates.should == result
+
+    # then check for meeting dates where to is an integer
+    r2 = @center.meeting_dates(10)
+    r2.should == result[0..9]
+
+    # then check for meeting dates where to is a date
+    r2 = @center.meeting_dates(Date.new(2010,12,31))
+    r2.should == result.select{|d| d <= Date.new(2010,12,31)}
+
+    # check with a from date
+    r2 = @center.meeting_dates(Date.new(2010,12,31), Date.new(2010,11,01))
+    r2.should == result.select{|d| d <= Date.new(2010,12,31) and d >= Date.new(2010,11,01)}
+    
   end
 
 
@@ -89,11 +102,6 @@ describe Center do
    center.next_meeting_date_from(Date.new(2010, 7, 3)).should    == Date.new(2010,  7, 7)
    center.next_meeting_date_from(Date.new(2010, 7, 5)).should    == Date.new(2010,  7, 7)
    center.next_meeting_date_from(Date.new(2010, 7, 6)).should    == Date.new(2010,  7, 7)
-
-   center.meeting_day_change_date = Date.new(2010, 7, 8)
-   center.meeting_day = :tuesday
-   center.save
-   center = Center.get(center.id)
 
    center.previous_meeting_date_from(Date.new(2010, 7, 7)).should == Date.new(2010, 6, 30)
    center.previous_meeting_date_from(Date.new(2010, 7, 12)).should == Date.new(2010, 7, 07)

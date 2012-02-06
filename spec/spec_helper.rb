@@ -12,15 +12,19 @@ require "spec" # Satisfies Autotest and anyone else not using the Rake tasks
 
 # this loads all plugins required in your init file so don't add them
 # here again, Merb will do it for you
+puts "LOADING ENVIRONMENT..."
 Merb.start_environment(:testing => true, :adapter => 'runner', :environment => ENV['MERB_ENV'] || 'test')
+puts "...DONE"
 Spec::Runner.configure do |config|
-#  config.include(Merb::Test::ViewHelper)
+  config.include(Merb::Test::ViewHelper)
   config.include(Merb::Test::RouteHelper)
   config.include(Merb::Test::ControllerHelper)
   config.include(Spec::Matchers)
- 
+  
+  @automigrate = false
   config.before(:all) do
-    if Merb.orm == :datamapper
+    if Merb.orm == :datamapper and @automigrate
+      puts "automigrating...."
       DataMapper.auto_migrate!
       (repository.adapter.query("show tables") - ["payments", "journals", "postings"]).each{|t| repository.adapter.execute("alter table #{t} ENGINE=MYISAM")}
     end
@@ -39,6 +43,7 @@ Spec::Runner.configure do |config|
   # The following is run before each individual spec (but not between tests within a spec)
   #
   config.before(:all) do
+    puts "cleaning tables...."
     [AccountType, Account, Currency, JournalType, CreditAccountRule, DebitAccountRule, RuleBook, StaffMember, User, Funder, FundingLine, Branch, Center, ClientType, Client, LoanProduct, LoanHistory, Region, Area, Portfolio].each do |model|
       model.all.destroy!
     end
