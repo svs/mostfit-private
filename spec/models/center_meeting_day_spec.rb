@@ -49,6 +49,17 @@ describe CenterMeetingDay do
     @cmd2.valid_from = nil
     @cmd2.valid_upto = Date.today
     @cmd2.should_not be_valid  # only the first CMD can have a nil valid_from
+    # actually this is something to be debated
+    # the way I see it, we can have the following situation
+    # first CMD     valid_from => nil, valid_upto => nil   # call this 'default' CMD
+    # after that    valid_from => nil, valid_upto => d1    # i.e. this is in vogue from start until d1 and after that 'default' CMD
+    # or            valid_upto => nil, valid_from => d2    # i.e. upto d2 default, then this one
+    # if both are specified then, given d1 > d2, we cannot calculate a schedule so we cannot allow this scheme
+    #                             given d2 > d1 we get d1, d2 and default is never used.....
+    # or is this too confusing?
+    # in the current scheme, as many CMDs can have nul valid_upto but only one CMD can have nil valid_from
+    # which makes everything much simpler in my opinion
+
   end
 
   it "should check that center meeting dates do not overlap" do
@@ -79,16 +90,44 @@ describe CenterMeetingDay do
   end
 
   it "should return correct centers meeting days in force on a given date" do
+    repository.adapter.execute("truncate table centers") # truncate resets the ids as well. this ensures that the catalog test passescata
+    repository.adapter.execute("truncate table center_meeting_days") # truncate resets the ids as well. this ensures that the catalog test passescata
+
     @branch_1 = Factory(:branch, :name => "Branch 1", :manager => @manager)
     @branch_2 = Factory(:branch, :name => "Branch 2", :manager => @manager)
     @b1c1 = Center.create(:name => "b1c1", :branch => @branch_1, :meeting_day => :monday, :manager => @manager, :code => "a")
     @b1c2 = Center.create(:name => "b1c2", :branch => @branch_1, :meeting_day => :tuesday, :manager => @manager, :code => "b")
-    @b2c1 = Center.create(:name => "b2c1", :branch => @branch_2, :meeting_day => :wednesday, :manager => @manager, :code => "c")
+    @b2c1 = Center.create(:name => "b2c1", :branch => @branch_2, :meeting_day => :tuesday, :manager => @manager, :code => "c")
     @b2c2 = Center.create(:name => "b2c2", :branch => @branch_2, :meeting_day => :thursday, :manager => @manager, :code => "d")
     
-    centers = [@b1c1, @b1c2, @b2c1, @b2c2]
+    centers = Center.all
 
-    CenterMeetingDay.in_force_on(Date.today, centers).should == CenterMeetingDay.all[-4..-1]
+    CenterMeetingDay.in_force_on(Date.today, centers).should == CenterMeetingDay.all
+    
+    @cmd = CenterMeetingDay.new(:center => @b1c1, :valid_from => Date.today, :meeting_day => :saturday)
+    @cmd.should be_valid
+    @cmd.save
+    
+    CenterMeetingDay.in_force_on(Date.today - 1, centers).should == CenterMeetingDay.all.to_a[0..-2]
+    CenterMeetingDay.in_force_on(Date.today, centers).map(&:id).sort.should == CenterMeetingDay.all(:order => [:id]).to_a[1..-1].map(&:id).sort
+
+    CenterMeetingDay.in_force_on(Date.today, centers, :tuesday).map(&:center_id).sort.should == [2,3]
+
+    # now check what happens if we ask for in_force_on for a date beyond the last valid_upto date.
+    # expected behaviour - if the center has CMD with valid_upto => nil, then that one will come back into effect after the validity date
+    @cmd.valid_upto = Date.today + 10
+    @cmd.should be_valid
+    @cmd.save
+    CenterMeetingDay.in_force_on(Date.today + 11, centers).map(&:id).sort.should == CenterMeetingDay.all(:order => [:id]).to_a[0..-2].map(&:id).sort
+
+    @ocmd = CenterMeetingDay.first
+    @ocmd.valid_upto = Date.today
+    @ocmd.should_not be_valid # overlap with @cmd
+
+    @ocmd.valid_upto = Date.today - 1
+    @ocmd.should be_valid
+    @ocmd.save
+    CenterMeetingDay.in_force_on(Date.today + 11, centers).map(&:id).sort.should == CenterMeetingDay.all(:order => [:id]).to_a[1..-2].map(&:id).sort
     
   end
 

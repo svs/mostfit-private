@@ -104,22 +104,33 @@ class CenterMeetingDay
   # Public: returns the center meeting days in force on a particular day for a particular list of centers
   #
   # date: the Date for which the list is required
-  # centers: a DataMapper::Collection of centers to filter for
+  # centers: a Hash specifiying the selection or a DataMapper::Collection of centers to filter for
+  # meeting_day: an optional Symbol for meeting_day for which to filter the list
   #
   # Examples
   # CenterMeetingDay.in_force_on(Date.today, Center.all(:id => 1))
-  def self.in_force_on(date, centers = Center.all)
-    center_ids = centers.aggregate(:id)
+  def self.in_force_on(date, centers = {}, meeting_day = nil)
+    center_ids = centers.is_a?(Hash) ? Center.all(centers).aggregate(:id) : centers.aggregate(:id)
+    raise ArgumentError.new("Strange weekday you got") if meeting_day and (not WEEKDAYS.include?(meeting_day))
+    meeting_day_selection = WEEKDAYS.include?(meeting_day) ? {:what => meeting_day} : {}
     # first get the CMDs with both valid_from and valid_upto
-    c1 = CenterMeetingDay.all(:valid_from.lte => date, :valid_upto.gte => date, :center => centers)
+    # there will only be one for each center because they cannot overlap
+    c1 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from.lte => date, :valid_upto.gte => date, :center_id => center_ids))
     center_ids = center_ids - c1.aggregate(:center_id)
     # then get the CMDs with valid_From = nil with proper valid_upto which are not in the above array
-    c2 = CenterMeetingDay.all(:valid_from => nil, :valid_upto.gte => date, :center_id => center_ids)
+    c2 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from => nil, :valid_upto.gte => date, :center_id => center_ids))
     center_ids = center_ids - c2.aggregate(:center_id)
+    # now the above can contain multiple lines per center, so deal with that
+    c2 = c2.group_by{|c| c.center_id}.map{|cid, c| c.sort_by{|_c| _c.valid_from}[-1]}
+    # then get the CMDs with valid_From  without proper valid_upto which are not in the above array
+    c3 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from.lte => date, :valid_upto => nil, :center_id => center_ids))
+    center_ids = center_ids - c3.aggregate(:center_id)
+    # now the above can contain multiple lines per center, so deal with that
+    c3 = c3.group_by{|c| c.center_id}.map{|cid, c| c.sort_by{|_c| _c.valid_from}[-1]}
     # then get the CMDs with no valid_upto either
-    c3 = CenterMeetingDay.all(:valid_from => nil, :valid_upto => nil, :center_id => center_ids)
+    c4 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from => nil, :valid_upto => nil, :center_id => center_ids))
     
-    c1 + c2 + c3
+    c1 + c2 + c3 + c4
     
   end
   
@@ -215,16 +226,16 @@ class CenterMeetingDay
       if cmd.id == id
         true
       else
-        if cmd.valid_upto and cmd.valid_upto != SEP_DATE               # an end date is specified for the other cmd 
-          if valid_upto  and valid_upto != SEP_DATE                    # and for ourselves
-            cmd.valid_from > valid_upto or cmd.valid_upto < valid_from # either we end before the other one starts or start after the other one ends
-          else                                                         # but not for ourselves
-            valid_from > cmd.valid_upto or valid_from < cmd.valid_from # either we start after the other one starts or we start after the other one ends
+        if cmd.valid_upto and cmd.valid_upto != SEP_DATE                                                             # an end date is specified for the other cmd 
+          if valid_upto  and valid_upto != SEP_DATE                                                                  # and for ourselves
+            valid_from ? (cmd.valid_from > valid_upto or  cmd.valid_upto < valid_from) : cmd.valid_from > valid_upto # either we end before the other one starts or start after the other one ends
+          else                                                                                                       # but not for ourselves
+            valid_from > cmd.valid_upto or valid_from < cmd.valid_from                                               # either we start after the other one starts or we start after the other one ends
           end
-        else                                                           # no end date specified for the other one
-          if valid_upto and  valid_upto != SEP_DATE                    # but we have one
-            cmd.valid_from ? (valid_from > cmd.valid_from or valid_upto < cmd.valid_from) : true # either we start after the other one starts or we end before the other one starts
-          else                                                         # neither one has an end date
+        else                                                                                                         # no end date specified for the other one
+          if valid_upto and  valid_upto != SEP_DATE                                                                  # but we have one
+            cmd.valid_from ? (valid_from > cmd.valid_from or valid_upto < cmd.valid_from) : true                     # either we start after the other one starts or we end before the other one starts
+          else                                                                                                       # neither one has an end date
             true
           end
         end

@@ -157,6 +157,19 @@ describe Center do
   end
 
   it "should show up properly in Branch#centers_With_paginate" do
+    repository.adapter.execute("truncate table branches") # truncate resets the ids as well. this ensures that the catalog test passescata
+    repository.adapter.execute("truncate table centers")
+    repository.adapter.execute("truncate table center_meeting_days")
+    
+    @branch_1 = Factory(:branch, :name => "Branch 1", :manager => @manager)
+    @branch_2 = Factory(:branch, :name => "Branch 2", :manager => @manager)
+    @b1c1 = Center.create(:name => "b1c1", :branch => @branch_1, :meeting_day => :monday, :manager => @manager, :code => "a")
+    @b1c2 = Center.create(:name => "b1c2", :branch => @branch_1, :meeting_day => :tuesday, :manager => @manager, :code => "b")
+    @b2c1 = Center.create(:name => "b2c1", :branch => @branch_2, :meeting_day => :tuesday, :manager => @manager, :code => "c")
+    @b2c2 = Center.create(:name => "b2c2", :branch => @branch_2, :meeting_day => :thursday, :manager => @manager, :code => "d")
+    
+    Branch.first.centers_with_paginate({:meeting_day => :tuesday}, Factory(:user)).aggregate(:id).should == [2]
+    
   end
 
   it "should not be valid with a name shorter than 3 characters" do

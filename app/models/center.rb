@@ -159,8 +159,7 @@ class Center
   #
   # Returns a CenterMeetingDay
   def meeting_day_for(date)
-    @meeting_days ||= (self.center_meeting_days(:order => [:valid_from]))
-    @meeting_days.select{|cmd| cmd.valid_from <= date}[-1]
+    CenterMeetingDay.in_force_on(date, :id => self.id)[0]
   end
   
   
