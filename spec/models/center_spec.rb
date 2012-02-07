@@ -15,7 +15,7 @@ describe Center do
   end
 
   before(:each) do
-    Center.all.destroy!
+    repository.adapter.execute("truncate table centers") # truncate resets the ids as well. this ensures that the catalog test passescata
     CenterMeetingDay.all.destroy!
     @center = Center.new(:name => "Munnar hill center")
     @center.manager = @manager
@@ -26,12 +26,12 @@ describe Center do
     @center.save
     @center.should be_valid
   end
- 
+  
   it "should not be valid without a manager" do
     @center.manager = nil
     @center.should_not be_valid
   end
- 
+  
   it "should not be valid without a name" do
     @center.name = nil
     @center.should_not be_valid
@@ -44,7 +44,7 @@ describe Center do
     @b1c2 = Factory(:center, :name => "b1c2", :branch => @branch_1)
     @b2c1 = Factory(:center, :name => "b2c1", :branch => @branch_2)
     @b2c2 = Factory(:center, :name => "b2c2", :branch => @branch_2)
-    Center.catalog.should == {"Hyderabad center 1"=>{3=>"Munnar hill center"}, "Branch 1"=>{5=>"b1c2", 4=>"b1c1"}, "Branch 2"=>{6=>"b2c1", 7=>"b2c2"}}
+    Center.catalog.should == {"Hyderabad center 1"=>{1=>"Munnar hill center"}, "Branch 1"=>{2=>"b1c1", 3=>"b1c2"}, "Branch 2"=>{5=>"b2c2", 4=>"b2c1"}}
   end
 
 
@@ -57,6 +57,7 @@ describe Center do
   it "should have meeting_days" do
     @center.center_meeting_days.length.should eql(1)
     @center.center_meeting_days.first.meeting_day.should == :monday
+    @center.center_meeting_days.first.what.should == :monday
   end
 
   it "should give correct meeting days in this instance" do
@@ -82,128 +83,103 @@ describe Center do
     # check with a from date
     r2 = @center.meeting_dates(Date.new(2010,12,31), Date.new(2010,11,01))
     r2.should == result.select{|d| d <= Date.new(2010,12,31) and d >= Date.new(2010,11,01)}
-    
+
+    # check corner cases
+    @center.meeting_dates(start_date, start_date).should == [start_date]
   end
 
 
- it "meeting date change should happen on the date specified" do
- end
+  it "next and previous meeting dates should be correct" do
+    center =  Center.create(:branch => @branch, :name => "center 75", :code => "c75", :creation_date => Date.new(2010, 03, 17),
+                            :meeting_day => :wednesday, :manager => @manager)
+    center.should be_valid
 
- it "meeting date change should happen on the date specified" do
- end
+    center.next_meeting_date_from(Date.new(2010, 6, 30)).should   == Date.new(2010, 7, 7)
+    center.next_meeting_date_from(Date.new(2010, 7, 1)).should    == Date.new(2010,  7, 7)
+    center.next_meeting_date_from(Date.new(2010, 7, 3)).should    == Date.new(2010,  7, 7)
+    center.next_meeting_date_from(Date.new(2010, 7, 5)).should    == Date.new(2010,  7, 7)
+    center.next_meeting_date_from(Date.new(2010, 7, 6)).should    == Date.new(2010,  7, 7)
 
- it "next and previous meeting dates should be correct" do
-   center =  Center.create(:branch => @branch, :name => "center 75", :code => "c75", :creation_date => Date.new(2010, 03, 17),
-                           :meeting_day => :wednesday, :manager => @manager)
-   center.should be_valid
+    center.previous_meeting_date_from(Date.new(2010, 7, 7)).should == Date.new(2010, 6, 30)
+    center.previous_meeting_date_from(Date.new(2010, 7, 12)).should == Date.new(2010, 7, 07)
+    center.previous_meeting_date_from(Date.new(2010, 7, 6)).should == Date.new(2010, 6, 30)
+    center.previous_meeting_date_from(Date.new(2010, 7, 1)).should == Date.new(2010, 6, 30)
 
-   center.next_meeting_date_from(Date.new(2010, 6, 30)).should   == Date.new(2010, 7, 7)
-   center.next_meeting_date_from(Date.new(2010, 7, 1)).should    == Date.new(2010,  7, 7)
-   center.next_meeting_date_from(Date.new(2010, 7, 3)).should    == Date.new(2010,  7, 7)
-   center.next_meeting_date_from(Date.new(2010, 7, 5)).should    == Date.new(2010,  7, 7)
-   center.next_meeting_date_from(Date.new(2010, 7, 6)).should    == Date.new(2010,  7, 7)
+    center.next_meeting_date_from(Date.new(2010, 7, 7)).should     == Date.new(2010, 7, 14)
+    center.next_meeting_date_from(Date.new(2010, 7, 10)).should    == Date.new(2010, 7, 14)
+    center.next_meeting_date_from(Date.new(2010, 7, 12)).should    == Date.new(2010, 7, 14)
 
-   center.previous_meeting_date_from(Date.new(2010, 7, 7)).should == Date.new(2010, 6, 30)
-   center.previous_meeting_date_from(Date.new(2010, 7, 12)).should == Date.new(2010, 7, 07)
-   center.previous_meeting_date_from(Date.new(2010, 7, 6)).should == Date.new(2010, 6, 30)
-   center.previous_meeting_date_from(Date.new(2010, 7, 1)).should == Date.new(2010, 6, 30)
+    center.next_meeting_date_from(Date.new(2010, 7, 10)).should    == Date.new(2010, 7, 14)
+    center.next_meeting_date_from(Date.new(2010, 7, 11)).should    == Date.new(2010, 7, 14)
+    center.next_meeting_date_from(Date.new(2010, 7, 12)).should    == Date.new(2010, 7, 14)
 
-   center.next_meeting_date_from(Date.new(2010, 7, 7)).should     == Date.new(2010, 7, 13)
-   center.next_meeting_date_from(Date.new(2010, 7, 10)).should    == Date.new(2010, 7, 13)
-   center.next_meeting_date_from(Date.new(2010, 7, 12)).should    == Date.new(2010, 7, 13)
+    center.next_meeting_date_from(Date.new(2010, 7, 13)).should    == Date.new(2010, 7, 14)
+    center.next_meeting_date_from(Date.new(2010, 7, 15)).should    == Date.new(2010, 7, 21)
+    center.next_meeting_date_from(Date.new(2010, 7, 19)).should    == Date.new(2010, 7, 21)
 
-   center.next_meeting_date_from(Date.new(2010, 7, 10)).should    == Date.new(2010, 7, 13)
-   center.next_meeting_date_from(Date.new(2010, 7, 11)).should    == Date.new(2010, 7, 13)
-   center.next_meeting_date_from(Date.new(2010, 7, 12)).should    == Date.new(2010, 7, 13)
+    center.previous_meeting_date_from(Date.new(2010, 7, 20)).should == Date.new(2010, 7, 14)
+    center.previous_meeting_date_from(Date.new(2010, 7, 19)).should == Date.new(2010, 7, 14)
+    center.previous_meeting_date_from(Date.new(2010, 7, 14)).should == Date.new(2010, 7, 7)
 
-   center.next_meeting_date_from(Date.new(2010, 7, 13)).should    == Date.new(2010, 7, 20)
-   center.next_meeting_date_from(Date.new(2010, 7, 15)).should    == Date.new(2010, 7, 20)
-   center.next_meeting_date_from(Date.new(2010, 7, 19)).should    == Date.new(2010, 7, 20)
+    center.previous_meeting_date_from(Date.new(2010, 7, 13)).should == Date.new(2010, 7, 7)
+    center.previous_meeting_date_from(Date.new(2010, 7, 12)).should == Date.new(2010, 7, 7)
+    center.previous_meeting_date_from(Date.new(2010, 7, 8)).should == Date.new(2010, 7, 7)
+  end
 
-   center.previous_meeting_date_from(Date.new(2010, 7, 20)).should == Date.new(2010, 7, 13)
-   center.previous_meeting_date_from(Date.new(2010, 7, 19)).should == Date.new(2010, 7, 13)
-   center.previous_meeting_date_from(Date.new(2010, 7, 14)).should == Date.new(2010, 7, 13)
+  it "should accept date changes properly" do
+    @center.center_meeting_days << CenterMeetingDay.new(:meeting_day => :thursday, :valid_from => Date.new(2010,10,17))
+    @center.should be_valid
+    @center.save
+    # reload the center to see if it worked
+    @center = Center.get(@center.id)
+    @center.center_meeting_days.count.should == 2
+    @center.meeting_dates(Date.new(2010,10,31), Date.new(2010,10,1)).should == [4,11,21,28].map{|d| Date.new(2010,10,d)}
+  end
 
-   center.previous_meeting_date_from(Date.new(2010, 7, 13)).should == Date.new(2010, 7, 7)
-   center.previous_meeting_date_from(Date.new(2010, 7, 12)).should == Date.new(2010, 7, 7)
-   center.previous_meeting_date_from(Date.new(2010, 7, 8)).should == Date.new(2010, 7, 7)
-       
-   center.meeting_day_change_date = Date.new(2010, 10, 17)
-   center.meeting_day = :friday
-   center.save
-   
-   center = Center.get(center.id)
-   
-   center.next_meeting_date_from(Date.new(2010, 10, 12)).should == Date.new(2010, 10, 22)
-   center.next_meeting_date_from(Date.new(2010, 10, 13)).should == Date.new(2010, 10, 22)
-   center.next_meeting_date_from(Date.new(2010, 10, 15)).should == Date.new(2010, 10, 22)
-   center.next_meeting_date_from(Date.new(2010, 10, 17)).should == Date.new(2010, 10, 22)
-   center.next_meeting_date_from(Date.new(2010, 10, 20)).should == Date.new(2010, 10, 22)
-   center.next_meeting_date_from(Date.new(2010, 10, 21)).should == Date.new(2010, 10, 22)
+  it "should return correct meeting_day_for" do
+    @cmd = CenterMeetingDay.new(:meeting_day => :tuesday, :valid_from => Date.today, :center => @center)
+    @cmd.should be_valid
+    @cmd.save
+    @cmd2 = CenterMeetingDay.new(:meeting_day => :wednesday, :valid_from => Date.today + 10, :center => @center)
+    @cmd2.should be_valid
+    @cmd2.save
+    @center = Center.get(@center.id) # reload
+    @center.meeting_day_for(Date.today - 1).what.should == :monday
+    @center.meeting_day_for(Date.today).what.should == :tuesday
+    @center.meeting_day_for(Date.today + 10).what.should == :wednesday
+  end
 
-   center.previous_meeting_date_from(Date.new(2010, 10, 12)).should == Date.new(2010, 10, 5)
-   center.previous_meeting_date_from(Date.new(2010, 10, 22)).should == Date.new(2010, 10, 12)
-   center.next_meeting_date_from(Date.new(2010, 10, 22)).should == Date.new(2010, 10, 29)
-   
-   
-   center =  Center.create(:branch => @branch, :name => "center 77", :code => "c77", :creation_date => Date.new(2010, 03, 15),
-                           :meeting_day => :monday, :manager => @manager)
-   center.should be_valid
+  it "should return correct value for meeting_day?" do
+    start_date = Date.new(2010,1,4)
+    @center.meeting_day?(start_date).should == true
+    @center.meeting_day?(start_date + 1).should == false
+    @center.meeting_day?(start_date + 7).should == true
+  end
 
-   center.next_meeting_date_from(Date.new(2010, 3, 15)).should     == Date.new(2010,  3, 22)
-   center.next_meeting_date_from(Date.new(2010, 3, 22)).should     == Date.new(2010,  3, 29)
-   center.previous_meeting_date_from(Date.new(2010, 3, 29)).should == Date.new(2010,  3, 22)
-   center.previous_meeting_date_from(Date.new(2010, 3, 22)).should  == Date.new(2010, 3, 15)
-
-   center.meeting_day_change_date = Date.new(2010, 7, 14)
-   center.meeting_day = :friday
-   center.save
-   center = Center.get(center.id)
-   
-   center.next_meeting_date_from(Date.new(2010, 7, 12)).should == Date.new(2010, 7, 23)
-   center.next_meeting_date_from(Date.new(2010, 7, 15)).should == Date.new(2010, 7, 23)
-   center.next_meeting_date_from(Date.new(2010, 7, 5)).should  == Date.new(2010, 7, 12)
-
-   center.previous_meeting_date_from(Date.new(2010, 7, 23)).should == Date.new(2010, 7, 12)
-   center.previous_meeting_date_from(Date.new(2010, 7, 20)).should == Date.new(2010, 7, 12)
-   center.previous_meeting_date_from(Date.new(2010, 7, 13)).should == Date.new(2010, 7, 12)
-   center.previous_meeting_date_from(Date.new(2010, 7, 14)).should == Date.new(2010, 7, 12)
-
-   center.meeting_day_change_date = Date.new(2010, 8, 1)
-   center.meeting_day = :none
-   center.save
-
-   center = Center.get(center.id)
-   center.next_meeting_date_from(Date.new(2010, 7, 2)).should   == Date.new(2010,  7, 5)
-   center.next_meeting_date_from(Date.new(2010, 7, 1)).should   == Date.new(2010, 7, 5)
-   center.next_meeting_date_from(Date.new(2010, 7, 21)).should  == Date.new(2010, 7, 23)
-   center.next_meeting_date_from(Date.new(2010, 7, 31)).should  == Date.new(2010, 8, 1)
-   center.next_meeting_date_from(Date.new(2010, 8, 1)).should   == Date.new(2010, 8, 2)
-   center.previous_meeting_date_from(Date.new(2010, 8, 2)).should    == Date.new(2010, 8, 1)
-   center.previous_meeting_date_from(Date.new(2010, 8, 10)).should    == Date.new(2010, 8, 9)
- end
+  it "should show up properly in Branch#centers_With_paginate" do
+  end
 
   it "should not be valid with a name shorter than 3 characters" do
     @center.name = "ok"
     @center.should_not be_valid
   end
- 
+  
   it "should be able to 'have' clients" do
-
+    
     user = Factory(:user, :role => :mis_manager)
     user.should be_valid
-
+    
     client = Factory(:client, :center => @center, :created_by => user)
     client.errors.each {|e| p e}
     client.should be_valid
     
     @center.clients.count.should eql(1)
-
+    
     client2 = Factory(:client, :center => @center, :created_by => user)
     client2.errors.each {|e| p e}
     client2.should be_valid
-
+    
     @center.clients.count.should eql(2)
   end
-
+  
 end

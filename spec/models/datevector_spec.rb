@@ -23,7 +23,7 @@ describe DateVector do
 
     dv.get_dates(Date.new(2010,2,14)).should == all_fridays_of_2010.select{|d| d >= Date.new(2010,2,14)}
     dv.get_dates(Date.new(2010,2,14), Date.new(2010,6,24)).should == all_fridays_of_2010.select{|d| d >= Date.new(2010,2,14) and d <= Date.new(2010,6,24)}
-
+    dv.get_dates(jan_1_2010, jan_1_2010).should == [jan_1_2010]
 
     dv = DateVector.new(1, :thursday, 1, :week, Date.new(2010,1,1), Date.new(2010,12,31)) # every thursday
     jan_1_2010           =  Date.new(2010,1,1)
@@ -38,9 +38,6 @@ describe DateVector do
 
     dv.get_dates(Date.new(2010,2,14)).should == all_thursdays_of_2010.select{|d| d >= Date.new(2010,2,14)}
     dv.get_dates(Date.new(2010,2,14), Date.new(2010,6,24)).should == all_thursdays_of_2010.select{|d| d >= Date.new(2010,2,14) and d <= Date.new(2010,6,24)}
-
-    
-
   end
 
   it "should return correct dates for biweekly dates" do

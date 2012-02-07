@@ -1,0 +1,1 @@
+CenterMeetingDay should return correct centers meeting days in force on a given date

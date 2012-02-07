@@ -83,7 +83,6 @@ class Center
   #
   # Returns a list of center meeting dates 
   def meeting_dates(to = nil,from = nil)
-    debugger
     # sometimes loans from another center might be moved to this center. they can be created before this centers creation date
     # therefore, we refer to the loan history table first and if there are no rows there, we refer to the creation date for the 'from' date if none is specified
     min_max_dates = LoanHistory.all(:center_id => self.id).aggregate(:date.min, :date.max)
@@ -108,7 +107,7 @@ class Center
     dvs.keys.sort.each_with_index{|date,i|
       d1 = [date,from].max
       d1 -= 1 if [dvs[date].what].flatten.include?(d1.weekday)
-      d2 = dvs.keys.sort[i+1] || (to.class == Date ? to - 1: (to - dates.count - 1))
+      d2 = dvs.keys.sort[i+1] || (to.class == Date ? to : (to - dates.count - 1))
       _ds = dvs[date].get_dates(d1,d2)
       _ds = _ds[0..(to - dates.count - 1)] if to.class == Fixnum
       dates.concat(_ds)
@@ -116,7 +115,9 @@ class Center
     dates.sort
   end
 
-  # returns the date vector in use for a given date.
+  # Public: returns the date vector in use for a given date.
+  #
+  # DEPRECATED use meeting_day_for(date).date_vector
   def date_vector_for(date)
     first_cmd_date = center_meeting_days.aggregate(:valid_from.min) || Date.new(2100,12,31)
     if date < first_cmd_date
@@ -129,6 +130,8 @@ class Center
     
   # a simple catalog (Hash) of center names and ids grouped by branches
   # returns some like: {"One branch" => {1 => 'center1', 2 => 'center2'}, "b2" => {3 => 'c3', 4 => 'c4'}} 
+  #
+  # DEPRECATED this should probably move to center_helpers or something as it is only used on the view side
   def self.catalog(user=nil)
     result = {}
     branch_names = {}
@@ -150,42 +153,66 @@ class Center
     result
   end
 
-
-
-  # returns the meeting day for a given date
+  # Public: returns the meeting day for a given date
+  #
+  # date: the Date for which the meeting day is desired
+  #
+  # Returns a CenterMeetingDay
   def meeting_day_for(date)
-    @meeting_days ||= self.center_meeting_days(:order => [:valid_from])
-    if @meeting_days.length==0
-      meeting_day
-    elsif date_row = @meeting_days.find{|md| md.valid_from <= date and (md.valid_upto == nil or md.valid_upto >= date)} 
-      (date_row.meeting_wday)
-    elsif @meeting_days[0].valid_from > date
-      (@meeting_days[0].meeting_wday)
-    else
-      (@meeting_days[-1].meeting_wday)
-    end
+    @meeting_days ||= (self.center_meeting_days(:order => [:valid_from]))
+    @meeting_days.select{|cmd| cmd.valid_from <= date}[-1]
   end
   
+  
+  # Public: Get the next meeting date for a center given a date
+  #
+  # date : the Date after which to get the next meeting date
+  #
+  # Returns a Date
   def next_meeting_date_from(date)    
     # first refer to the LoanHistory. Sometimes, some funky loans might be in here and we don't want to depend on center meeting dates in
     # the first instance
     r_date = (LoanHistory.first(:center_id => self.id, :date.gt => date, :order => [:date], :limit => 1) or Nothing).date
     return r_date if r_date
     #oops...no loans in this center. use center_meeting_dates
-    self.meeting_dates(1, date)[0]
+    # get 2 meeting dates because if the date parameter is a meeting date, it gets included in the meeting_dates result.
+    self.meeting_dates(2, date).reject{|d| d == date}.sort[0] 
   end
   
+  # Public: Get the previous meeting date for a center given a date
+  #
+  # date : the Date for which to get the previous meeting date
+  #
+  # Returns a Date
   def previous_meeting_date_from(date)
     #likewise for this (see comment above)
     r_date = (LoanHistory.first(:center_id => self.id, :date.lte => date, :order => [:date.desc], :limit => 1) or Nothing).date
     return r_date if r_date
     #oops...no loans in this center. use center_meeting_dates
-    self.meeting_dates(date)[-1]
+    self.meeting_dates(date).reject{|d| d == date}.sort[-1]
   end
 
-
+  # Public: is this date a meeting date?
+  #
+  # date: the Date for which to check
+  #
+  # Returns a Boolean
   def meeting_day?(date)
-    Center.meeting_days.include?(date)
+    self.meeting_dates(date, date).include?(date)
+  end
+
+  # Public: returns a list of centers that meet on a particular weekday, filtered by a selection
+  #
+  # day: a Symbol representing a weekday
+  # selection: a Hash containing a selection query for DM
+  # as_of: a Date as of which to make the selection
+  # Examples
+  #
+  # Center.meeting_on(:wednesday)
+  # Center.meeting_on(:monday, :branch => Branch.first)
+  def self.meeting_on(day, selection = {}, as_of = Date.today)
+    raise ArgumentError.new("no such weekday: #{day}") unless WEEKDAYS.include(day)
+    Center.all(selection).center_meeting_days.all(:valid_from.lte => as_of, :valid_from.gte => as_of, :what => day).centers
   end
 
   def meeting_time

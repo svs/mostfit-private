@@ -124,4 +124,5 @@ TargetType  = [:relative, :absolute]
 CHUNK_SIZE = 2500 
 
 
-SEP_DATE = Date.new(2100,12,31) # SEP = Someone Else's Problem http://en.wikipedia.org/wiki/Somebody_Else's_Problem i.e. a date so far in the future as to represent infinity
+SEP_DATE       = Date.new(2100,12,31) # SEP = Someone Else's Problem http://en.wikipedia.org/wiki/Somebody_Else's_Problem i.e. a date so far in the future as to represent infinity
+INCEP_DATE     = Date.new(1970,01,01) # the first day of our universe
