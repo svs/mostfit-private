@@ -476,17 +476,21 @@ class Loan
     else
       raise ArgumentError.new("Strange period you got..")
     end
+
+    # the below code is commented out because with the introduction of the center meeting day schedule at the start of Loan#installment_dates
+    # there is no more the need to do this.
+    # if we find that there are no problems associated with installment dates in the coming few weeks from Feb 8 2012, remove this comment and the lines below
     
-    # take care of date changes in weekly schedules
-    if [:weekly, :biweekly, :quadweekly].include?(installment_frequency) and cl=self.client(:fields => [:id, :center_id]) and cen=cl.center and cen.meeting_day != :none and ensure_meeting_day
-      unless (new_date.weekday == cen.meeting_day_for(new_date) or (cen.meeting_day_for(new_date) == :none))
-        # got wrong val. recalculate
-        next_date = cen.next_meeting_date_from(new_date)
-        prev_date = cen.previous_meeting_date_from(new_date)
-        new_date  = (next_date.cweek == new_date.cweek ? next_date : prev_date)
-      end
-      #new_date - new_date.cwday + Center.meeting_days.index(client.center.meeting_day)
-    end
+    # # take care of date changes in weekly schedules
+    # if [:weekly, :biweekly, :quadweekly].include?(installment_frequency) and cl=self.client(:fields => [:id, :center_id]) and cen=cl.center and cen.meeting_day != :none and ensure_meeting_day
+    #   unless (new_date.weekday == cen.meeting_day_for(new_date) or (cen.meeting_day_for(new_date) == :none))
+    #     # got wrong val. recalculate
+    #     next_date = cen.next_meeting_date_from(new_date)
+    #     prev_date = cen.previous_meeting_date_from(new_date)
+    #     new_date  = (next_date.cweek == new_date.cweek ? next_date : prev_date)
+    #   end
+    #   #new_date - new_date.cwday + Center.meeting_days.index(client.center.meeting_day)
+    # end
     new_date
   end
 

@@ -13,7 +13,7 @@ class CacheObserver
     loan = obj.is_a?(Loan) ? obj : obj.loan
     info = loan.info(date)
     CenterCache.stalify(:center_id => obj.c_center_id, :date => date)  if date
-    FundingLineCache.stalify(:center_id => obj.c_center_id, :date => date, :model_id => info.funding_line_id)
+    # FundingLineCache.stalify(:center_id => obj.c_center_id, :date => date, :model_id => info.funding_line_id)
   end
 
   after :create do
