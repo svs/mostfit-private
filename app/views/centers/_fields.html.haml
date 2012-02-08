@@ -30,10 +30,14 @@
     %td
       %b Meeting Dates
     %td
-      %ul
-        - @center.center_meeting_days.each do |cmd|
-          %li
-            == from #{cmd.valid_from} to #{cmd.valid_upto} this center meets every <b>#{cmd.meeting_day_string}</b>
+      - unless @center.meeting_calendar.blank?
+        %b Meeting Calendar
+        = @center.meeting_calendar
+      - else
+        %ul
+          - @center.center_meeting_days.each do |cmd|
+            %li
+              == from #{cmd.valid_from} to #{cmd.valid_upto} this center meets every <b>#{cmd.meeting_day_string}</b>
       %br
       - unless @center.new?
         = link_to 'Manage meeting schedule', resource(:center_meeting_days, :center_id => @center.id)
