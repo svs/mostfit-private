@@ -40,11 +40,15 @@ class CenterMeetingDay
   validates_with_method :check_not_last, :if => Proc.new{|t| t.deleted_at}
 
   # REPRESENTATION
-  # Public: Returns a String representation of the center meeting date
+  # Public: Returns a short String representation of the center meeting date
   def to_s
-    "from #{valid_from} to #{valid_upto} : #{meeting_day_string}"
+    meeting_day_string
   end
 
+  # Public: returns a longer String representation of the center meeting date
+  def desc
+    "from #{valid_from} to #{valid_upto} : #{meeting_day_string}"
+  end
   
   # Public: Returns a String representation of the meeting day
   def meeting_day_string
@@ -117,20 +121,29 @@ class CenterMeetingDay
     # there will only be one for each center because they cannot overlap
     c1 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from.lte => date, :valid_upto.gte => date, :center_id => center_ids))
     center_ids = center_ids - c1.aggregate(:center_id)
+    rv = c1
     # then get the CMDs with valid_From = nil with proper valid_upto which are not in the above array
-    c2 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from => nil, :valid_upto.gte => date, :center_id => center_ids))
-    center_ids = center_ids - c2.aggregate(:center_id)
-    # now the above can contain multiple lines per center, so deal with that
-    c2 = c2.group_by{|c| c.center_id}.map{|cid, c| c.sort_by{|_c| _c.valid_from}[-1]}
-    # then get the CMDs with valid_From  without proper valid_upto which are not in the above array
-    c3 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from.lte => date, :valid_upto => nil, :center_id => center_ids))
-    center_ids = center_ids - c3.aggregate(:center_id)
-    # now the above can contain multiple lines per center, so deal with that
-    c3 = c3.group_by{|c| c.center_id}.map{|cid, c| c.sort_by{|_c| _c.valid_from}[-1]}
+    unless center_ids.blank?
+      c2 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from => nil, :valid_upto.gte => date, :center_id => center_ids)) 
+      center_ids = center_ids - c2.aggregate(:center_id)
+      # now the above can contain multiple lines per center, so deal with that
+      c2 = c2.group_by{|c| c.center_id}.map{|cid, c| c.sort_by{|_c| _c.valid_from}[-1]}
+      rv += c2
+    end
+    unless center_ids.blank?
+      # then get the CMDs with valid_From  without proper valid_upto which are not in the above array
+      c3 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from.lte => date, :valid_upto => nil, :center_id => center_ids)) unless center_ids.blank?
+      center_ids = center_ids - c3.aggregate(:center_id)
+      # now the above can contain multiple lines per center, so deal with that
+      c3 = c3.group_by{|c| c.center_id}.map{|cid, c| c.sort_by{|_c| _c.valid_from}[-1]}
+      rv += c3
+    end
     # then get the CMDs with no valid_upto either
-    c4 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from => nil, :valid_upto => nil, :center_id => center_ids))
-    
-    c1 + c2 + c3 + c4
+    unless center_ids.blank?
+      c4 = CenterMeetingDay.all(meeting_day_selection.merge(:valid_from => nil, :valid_upto => nil, :center_id => center_ids))
+      rv += c4
+    end
+    rv
     
   end
   
