@@ -58,7 +58,7 @@ class Branch
     branch_center_ids = self.centers.aggregate(:id)
     mday = (params[:meeting_day] or Nothing).to_sym || Date.today.weekday
     if Center::DAYS.include?(mday) # is a weekday
-      Center.all(:id => CenterMeetingDay.in_force_on(Date.today, {:branch_id => self.id}, mday).map(&:center_id))
+      cids = CenterMeetingDay.in_force_on(Date.today, {:branch_id => self.id}, mday).map(&:center_id)
     elsif mday == :monthly
       cids = self.centers.center_meeting_days(:period => :month).aggregate(:center_id)
     end
