@@ -109,24 +109,26 @@ module Misfit
     end
 
     def scheduled_dates_must_be_center_meeting_days #this function is only for repayment dates
-      return [false, "Not client defined"] unless client
-      center = client.center
-      failed = []
-      correct_weekday = nil 
-      ["scheduled_first_payment_date"].each do |d|
-        # if the loan disbursal date is set and it is not being set right now, no need to check as the loan has been already disbursed
-	# hence we need not check it again
-	if self.disbursal_date and not self.dirty_attributes.keys.find{|da| da.name == :disbursal_date} 
-	  return true
-	end
+      # DEPRECATED this validation is no longer required as loans with this validation get their installment dates directly from the center
+
+      # return [false, "Not client defined"] unless client
+      # center = client.center
+      # failed = []
+      # correct_weekday = nil 
+      # ["scheduled_first_payment_date"].each do |d|
+      #   # if the loan disbursal date is set and it is not being set right now, no need to check as the loan has been already disbursed
+      #   # hence we need not check it again
+      #   if self.disbursal_date and not self.dirty_attributes.keys.find{|da| da.name == :disbursal_date} 
+      #     return true
+      #   end
 	  
-	if date = instance_eval(d) and not date.weekday == center.meeting_day_for(date).to_sym
-          failed << d.humanize
-          correct_weekday = center.meeting_day_for(date)
-        end
-      end
+      #   if date = instance_eval(d) and not date.weekday == center.meeting_day_for(date).to_sym
+      #     failed << d.humanize
+      #     correct_weekday = center.meeting_day_for(date)
+      #   end
+      # end
       
-      return [false, "#{failed.join(",")} must be #{correct_weekday}"]      unless failed.blank?
+      # return [false, "#{failed.join(",")} must be #{correct_weekday}"]      unless failed.blank?
       return true
     end
 
