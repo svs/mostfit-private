@@ -76,11 +76,6 @@
       = text_field :meeting_time_minutes, :size => 2
       &nbsp;&nbsp;
       %span.greytext time is in a 24 hour format
-      %br
-        %div#hidden{:style => "display: none"}
-        - unless @center.new?
-          change effective from:  
-          = date_select_for @center, :meeting_day_change_date, :min_date => @center.creation_date||Date.min_date, :max_date => Date.max_date
   %tr
     %td
       %b Managed By
