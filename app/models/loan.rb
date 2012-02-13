@@ -789,6 +789,17 @@ class Loan
     actual_payment_schedule
   end
 
+  # Public returns the installment dates between the scheduled_first_payment_date and the disbursal_date
+  def extra_dates
+      # extra_dates = self.client.center.get_meeting_dates(scheduled_first_payment_date - 1, d1 + 1) 
+      eds = []; d = scheduled_first_payment_date
+      while d >= (disbursal_date || scheduled_disbursal_date)
+        d = shift_date_by_installments(d, -1, false)
+        eds << d if d >= (disbursal_date || scheduled_disbursal_date)
+      end
+    eds
+  end
+
   def actual_payment_schedule
     return @schedule if @schedule
     @schedule = {}
@@ -812,7 +823,6 @@ class Loan
     if self.loan_product.loan_validations.include?(:collect_stub_period_interest)
       # find installment dates for this loan/center between the disbursal date and the scheduled first payment date
       d1 = disbursal_date || scheduled_disbursal_date
-      extra_dates = self.client.center.get_meeting_dates(scheduled_first_payment_date - 1, d1 + 1) 
       interest_so_far = 0
       extra_dates.each do |d2|
         interest = interest_calculation(balance, d1, d2)
