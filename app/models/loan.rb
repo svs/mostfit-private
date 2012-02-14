@@ -1412,6 +1412,7 @@ class Loan
   def interest_calculation(balance, d1 = nil, d2 = nil)
     # need to have this is one place because a lot of functions need to know how interest is calculated given a balance
     # this is bound to become more complex as we add all kinds of dates 
+    return 0 if d2 and d1 and d2 == d1
     rs = self.repayment_style || self.loan_product.repayment_style
     if d1 and d2
       ((balance * interest_rate) / (365/(d2-d1))).round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
