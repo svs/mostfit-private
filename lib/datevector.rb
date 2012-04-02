@@ -58,11 +58,14 @@ class DateVector
     d = @from;    rv = [];     i = 0
     case @period
     when :week
+      # for the first date, we don't want to use @of_every
+      fwd = [@what].flatten.first # first weekday i.e. for [:tuesday, :thursday] is :tuesday and for :tuesday also is :tuesday
+      d = (d.weekday == fwd ? d : d.next_(fwd))
+      rv << d
       while (to.class == Date ? d  <= to : i <= to)
         [@what].flatten.map do |wday| # convert :tuesday into [:tuesday] so we can treat everything as an array
-          d = d.next_(wday)
+          d = d.next_(wday, @of_every)
           rv << d if ((to.class == Date ? d  <= to : i <= to) and d >= from)
-          d = d + ((@of_every - 1) * 7)
           i = rv.count - 1
         end
       end
@@ -82,7 +85,8 @@ class DateVector
         while (to.class == Date ? d <= to : i <= to)
           [@every].flatten.each do |e|
             [@what].flatten.each do |w|
-              d = d.first_day_of_month.next_(w,e.to_i)
+              fdom = d.first_day_of_month
+              d = (fdom.weekday == w ? fdom.next_(w,e.to_i - 1) : fdom.next_(w,e.to_i))
               rv << d if d >= from and (to.class == Date ? d  <= to : i <= to)
             end
           end
