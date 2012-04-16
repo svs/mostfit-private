@@ -60,3 +60,4 @@ bin/rmsgfmt
 bin/rmsgmerge
 bin/techbook
 docs/
+report/*
