@@ -167,12 +167,15 @@ class BranchCache < Cacher
     self.update(:date => date, :branch_ids => branch_ids, :force => true)
   end
 
-  def self.update(date = Date.today, branch_ids = nil, force = false)
+  # receives a hash with keys :date, :branch_ids and :force
+  def self.update(options = {})
+    date = options[:date] || Date.today
+    branch_ids = options[:branch_ids] || nil
+    force = options[:force] || false
     # cache updates must be pristine, so rollback on failure.
     BranchCache.transaction do |t|
       # updates the cache object for a branch
       # first create caches for the centers that do not have them
-      debugger
       t0 = Time.now; t = Time.now;
       branch_ids = Branch.all.aggregate(:id) unless branch_ids
       #branch_centers = Branch.all(:id => branch_ids).centers.aggregate(:id)

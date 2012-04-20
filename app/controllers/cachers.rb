@@ -126,14 +126,13 @@ class Cachers < Application
       else
         q[:center_id.not] = 0
       end
-    end
-    if true
+    else
       if params[:by]
         q[:model_name] = params[:by].camel_case
         q[:center_id] ||= 0 unless q[:center_id.not]
         q[:model_id] = params[:model_id] if params[:model_id]
       else
-        q[:model_name] = ["Branch","Center"] 
+        q[:model_name] = ["Branch"]# + ,"Center"] 
       end
     end
     q[:date] = @date if @date
