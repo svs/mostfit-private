@@ -12,7 +12,6 @@
     -# only fix payments that are mismatched with the schedule
     -# = check_box :name => :only_mismatches, :checked => :checked
   - total = {}
-  - debugger
   - selection = {:center_id => params[:center_id]}
   - selection.merge!("#{params[:by]}_id".to_sym => params[:model_id]) if params[:by]
   - histories = LoanHistory.latest(selection, @date)
