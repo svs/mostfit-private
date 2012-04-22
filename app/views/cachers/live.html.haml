@@ -28,15 +28,6 @@
       6: { sorter: 'mostfit_currency' },
       7: { sorter: 'mostfit_currency' }
       }} )});
-  - unless @stale_centers.empty? and @stale_branches.empty? and @missing_centers.values.flatten.empty?
-    .warn
-      = link_to "#{@stale_centers.count} stale centers", resource(:cachers, query_params.merge(:model_name => "Center", :stale => true, :date => @date))
-      and
-      = link_to "#{@stale_branches.count} stale branches", resource(:cachers, query_params.merge(:model_name => "Branch", :stale => true, :date => @date))
-      in current selection.
-      = "#{@missing_centers.values.flatten.count} missing centers"
-      in current selection.
-      = link_to "update", url({:controller => :cachers, :action => :generate}.merge(query_params)), :class => "green_button"
   .menu-strip{:style => "width:100%"}
     %tr
       %td
@@ -67,7 +58,7 @@
         = link_to 'report formats', url(:report_formats), :class => "report", :target => "_blank"
       %td
         = link_to 'printer friendly', url(:consolidate_cachers, query_params.merge(:layout => :printer)), :class => 'print', :target => "_blank"
-  = form(:method => :get, :action => url(:consolidate_cachers)) do
+  = form(:method => :get, :action => url(:live_cachers)) do
     = date_select('from_date', @from_date, {:id => 'from_date'})
     to
     = date_select('to_date', @to_date, {:id => 'to_date'})
@@ -77,26 +68,31 @@
     = select :name => 'center_id', :id => 'center_selector', :collection => Center.all(:branch_id => params[:branch_id]), :text_method => :name, :value_method => :id, :selected => params[:center_id].to_s, :prompt => 'Select a center', :class => 'chosen'
     showing columns
     = select :name => 'report_format', :collection => ReportFormat.all,:text_method => :name, :value_method => :id, :selected => (params[:report_format] || 1).to_s, :prompt => 'Select a report format', :class => 'chosen'
+    = hidden_field :name => "force", :id => "force"
     = submit 'apply filter'
+    %h2
+      retrieved report in
+      = Time.now - @t
+      report created at
+      = @cache[:created_at]
+      = submit 'recalc report', :onclick => "javascript:$('#force').val('true');"
 
-    
-  %b by
-  - root_url_hash = query_params.dup
-  - root_url_hash.delete(:by); root_url_hash.delete(:branch_id); root_url_hash.delete(:center_id); root_url_hash.delete(:model_id)
-  = link_to 'funding_line', url(:consolidate_cachers, root_url_hash.merge(:by => "funding_line"))
-  = link_to 'loan_product', url(:consolidate_cachers, root_url_hash.merge(:by => "loan_product"))
 
-  - if @cachers.count == 0
-    %h3 
-      No caches found. 
-      = link_to 'generate?', url({:controller => :cachers, :action => :generate}.merge(query_params)), :class => "green_button"
-- else
-  %h1
-    = (ReportFormat.get(params[:report_format].to_i) || ReportFormat.first).name
-    - if @from_date and @to_date
-      == from #{@from_date} to #{@to_date}
-    - elsif @date
-      == for #{@date}
 
-= partial @level
 
+%table.report.nojs
+  %thead
+    %tr
+      - ([@group_by] + @report_format.keys).each do |k|
+        %th
+          = k.to_s.gsub("_","<br>")
+  - @group_by_names.sort_by{|k,v| v}.each do |k,v|
+    %tr
+      %td
+        - if @group_object == :loans
+          = link_to v, "/loans/diagnose/#{v}"
+        - else
+          = link_to v, url(:live_cachers, request.send(:query_params).merge("#{@group_by}".to_sym => k))
+      - @report_format.keys.each do |a|
+        %td
+          = @cachers[k]["sum(`#{a}`)".to_sym].to_currency

@@ -24,7 +24,7 @@ namespace :mostfit do
       missing.sort.map do |date| 
         i += 1
         print "DOING #{date}  (#{i}/#{total})"
-        BranchCache.update(date) 
+        BranchCache.update(:date => date) 
       end
     end
   end

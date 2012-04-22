@@ -22,6 +22,12 @@ end
 Merb::BootLoader.before_app_loads do
   DataMapper.setup(:abstract, "abstract::")
   # This will get executed after dependencies have been loaded but before your app's classes have loaded.
+
+  # connect Sequel to DB
+  DB = Sequel.connect(YAML::load_file('config/database.yml')[Merb.env].except("repositories"))
+  
+  # set up memcached store
+  DC = Dalli::Client.new('localhost:11211')
   Extlib::Inflection.word('loan_history')  # i dont like a table named 'loan_histories'
   Extlib::Inflection.word('audit_trail')   # i dont like a table named 'audit_trails'
   Extlib::Inflection.word('attendancy')    # i dont like a table named 'attendancies'
@@ -38,7 +44,7 @@ Merb::BootLoader.before_app_loads do
   require 'lib/reporting'
   require 'uuid'
   require 'ftools'
-  require 'logger'
+  # require 'logger'
   require 'dm-pagination'
   require 'dm-pagination/paginatable'
   require 'dm-pagination/pagination_builder'

@@ -56,3 +56,6 @@ dependency "git", "1.2.5"
 dependency "do_sqlite3", do_gems_version
 dependency "tlsmail"
 # >>>>>>> master
+
+dependency "sequel"
+dependency "dalli"

@@ -1253,8 +1253,8 @@ class Loan
 
       advance_principal_adjusted             = outstanding_at_start ? advance_principal_paid - advance_principal_outstanding : 0
       advance_interest_adjusted              = advance_interest_paid  - advance_interest_outstanding
-      advance_principal_adjusted_today       = outstanding_at_start ? ([0, _apo - advance_principal_outstanding].max : 0) : 0
-      advance_interest_adjusted_today        = outstanding_at_start ? ([0, _api - advance_interest_outstanding].max  : 0) : 0
+      advance_principal_adjusted_today       = outstanding_at_start ? [0, _apo - advance_principal_outstanding].max : 0
+      advance_interest_adjusted_today        = outstanding_at_start ? [0, _api - advance_interest_outstanding].max : 0
       total_advance_adjusted_today           = advance_interest_adjusted_today + advance_principal_adjusted_today
 
       total_fees_due                         = ap_fees.select{|dt,af| dt <= date}.to_hash.values.sum || 0
