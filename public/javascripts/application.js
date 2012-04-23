@@ -12,7 +12,7 @@ function addFloater(link, form){
 	}else{
 	    var top = link.offset().top - form.height();
 	}
-	$(form).offset({top: top, left: left});
+	$(form).offset({top: 0, left: left});
     }
 
     if($(".floater").length>0){

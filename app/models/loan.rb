@@ -1102,7 +1102,8 @@ class Loan
   def installment_dates
     return @_installment_dates if @_installment_dates
     if self.loan_product.loan_validations and self.loan_product.loan_validations.include?(:scheduled_dates_must_be_center_meeting_days)
-      # DIRTY HACK! We cannot have two installment dates in the same week. So, we have to start counting with the first installment date and then go on to Sunday
+      # DIRTY HACK! We cannot have two installment dates in the same week. 
+      # So, we have to start counting with the first installment date and then go on to Sunday
       # so that the next date is gauranteed to be in the next week.
       if [:weekly, :biweekly].include?(installment_frequency)
         d = scheduled_first_payment_date
