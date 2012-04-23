@@ -16,7 +16,7 @@ password = config['production']['password']
 
 d = DateTime.now
 dump_name = "#{File.basename(mostfit_dir)}-backup-#{d.strftime('%F-%H:%M')}.sql"
-dump_path = File.join(mostfit_dir, dump_name)
+dump_path = File.join(mostfit_dir, "db","daily",dump_name)
 
 # dump, and compress
 fail "Failed to dump" unless system("mysqldump -p#{password} -u root #{db_name} > #{dump_path}")
