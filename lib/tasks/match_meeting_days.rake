@@ -38,7 +38,11 @@ namespace :mostfit do
               print "#{cid} ".green
               cmd = c.center_meeting_days.first
               if cmd.update(:valid_from => cmd.valid_from - 7)
-                puts "!".green
+                c.loans.each do |_l|
+                  _l.update_history
+                  print ".".green
+                end
+                print "!".green
               end
             end
           end
