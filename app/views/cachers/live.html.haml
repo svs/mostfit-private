@@ -80,6 +80,7 @@
 
 
 
+- @total_row = @report_format.keys.map{|k| [k,0]}.to_hash
 %table.report.nojs
   %thead
     %tr
@@ -96,3 +97,10 @@
       - @report_format.keys.each do |a|
         %td
           = @cachers[k]["sum(`#{a}`)".to_sym].to_currency
+          - (@total_row[a] += @cachers[k]["sum(`#{a}`)".to_sym].to_f rescue 0)
+  %tr.total
+    %td
+      &nbsp;
+    - @report_format.keys.each do |a|
+      %td
+        = @total_row[a].to_currency
