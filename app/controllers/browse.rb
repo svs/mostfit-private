@@ -31,7 +31,10 @@ class Browse < Application
   end
 
   def hq_tab
-    partial :totalinfo rescue partial :missing_caches
+    @date = Date.parse(params[:date]) || Date.today
+    @cache = Cacher.get(:from_date => @date, :to_date => @date)
+    @report = @cache[:report]
+    partial :totalinfo 
   end
 
   def centers_paying_today

@@ -24,9 +24,9 @@
       %li
         = link_to_with_rights('Staff members', resource(:staff_members))
       %li
-        = link_to_with_rights('Centers meeting today', url(:browse, :centers_paying_today))
+        = link_to_with_rights('Today', url(:browse, :centers_paying_today))
       %li
-        = link_to_with_rights('Browse Aggregate Data', url(:cachers, :date => Date.today.strftime('%Y-%m-%d')))
+        = link_to_with_rights('Reports', url(:cachers, :date => Date.today.strftime('%Y-%m-%d')))
       %li
         = link_to_with_rights 'Verify data', resource(:verifications)
 
@@ -37,5 +37,4 @@
   %br
 
 %div{:style => "float: left;width: 40%; margin: 10px 30px"}
-  %h1 Your MFI Today
   #infovis{:style => " height: 400px; margin: auto; "}

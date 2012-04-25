@@ -9,29 +9,25 @@ class GraphData < Application
 
   def tm_collections
     @date = begin; Date.parse(params[:date]); rescue; Date.today; end
-    if params[:branch_id]
-      @history_totals = Cacher.all(:model_name => "Center", :date => @date, :branch_id => params[:branch_id])
-    else
-      @history_totals = Cacher.all(:model_name => "Branch", :date => @date)
-    end
+    @history_totals = Cacher.get({:from_date => @date, :to_date => @date, :branch_id => params[:branch_id], :center_id => params[:center_id]})[:report]
     keys = [:advance_interest_paid, :advance_principal_paid, :principal_paid, :principal_due, :interest_paid, :interest_due, :fees_paid_today, :fees_due_today]
-    @history_sum = @history_totals.map{|ht| keys.map{|k| [k,ht.send(k)]}.to_hash}.reduce({}){|s,h| s + h}
+    # @history_sum = @history_totals.map{|ht| keys.map{|k| [k,ht.send(k)]}.to_hash}.reduce({}){|s,h| s + h}
     branch_names = Branch.all.aggregate(:id, :name).to_hash
     center_names = Center.all(:branch_id => params[:branch_id]).aggregate(:id, :name).to_hash if params[:branch_id]  
     center = params[:branch_id]
-    treemap = {:children => @history_totals.map { |v|
-        pd = v.principal_paid
-        due = v.principal_due
+    treemap = {:children => @history_totals.map { |k,v|
+        pd = v[:'sum(`principal_paid`)'].to_f || 0
+        due = v[:'sum(`principal_due`)'].to_f || 0
         tot = pd + due
         color = "#" + (prorata_color(0, tot, pd) || "000000")
-        id = center ? v.center_id : v.branch_id
+        id = k
         name = center ? center_names[id] : branch_names[id]
-        data = {"$area" => tot, :"$color" => color,"branch_id" => v.branch_id, "branch_name" => branch_names[v.branch_id], 
+        data = {"$area" => tot, :"$color" => color,"branch_id" => k, "branch_name" => branch_names[k], 
           "center_id" => (center ? id : 0), "center_name" => (center ? name : ""), "amounts" => v}
         {"id" => id, "name" => name, "data" => data}
       }, :name => "Branches"}
-    barchart = { 'label' => keys, 'values' => [{'label' => "", 'values' => keys.map{|k| (@history_sum[k] || 0).round(2)}}]}
-    {'treemap' => treemap, 'pmts_barchart' => barchart}.to_json
+    # barchart = { 'label' => keys, 'values' => [{'label' => "", 'values' => keys.map{|k| (@history_sum["sum(`#{k}`)".to_sym] || 0).round(2)}}]}
+    {'treemap' => treemap, 'pmts_barchart' => {}}.to_json
   end
 
   def loan(id)

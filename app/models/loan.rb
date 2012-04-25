@@ -1068,6 +1068,7 @@ class Loan
     return :written_off          if (written_off_on and written_off_on <= date)
     return :preclosed            if (preclosed_on and preclosed_on <= date)
     return :claim_settlement     if under_claim_settlement and under_claim_settlement.holiday_bump <= date
+    debugger if $debug
     total_received ||= total_received_up_to(date)
     principal_received ||= principal_received_up_to(date)
     return :disbursed            if (date == disbursal_date.holiday_bump) and total_received < total_to_be_received
@@ -1208,6 +1209,8 @@ class Loan
     act_total_principal_paid = last_payments_hash[1][:total_principal]; act_total_interest_paid = last_payments_hash[1][:total_interest]
     last_status = 1; last_row = nil;
     dates.each_with_index do |date,i|
+      $debug = true if date == Date.new(2012,2,17)
+      debugger if $debug
       i_num                                  = installment_for_date(date)
       scheduled                              = get_scheduled(:all, date)
       actual                                 = get_actual(:all, date)

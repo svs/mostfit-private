@@ -205,7 +205,9 @@
       %input{:type => "hidden", :name => "_load_remote", :value => resource(:documents, :parent_id => @client.id, :parent_model => Client)}
     %div.tab
       %h3 Insurance Policies
-      = link_to "Add an insurance policy", resource(@client, :insurance_policies, :new), :class => "add"
+      = link_to "Add an insurance policy", resource(@client, :insurance_policies, :new), :class => "add" 
+      %br
+      = link_to('Click here for claim processing', resource(@client, :claims))
       %table
         %tr
           %td
