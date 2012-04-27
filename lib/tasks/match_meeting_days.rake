@@ -37,13 +37,9 @@ namespace :mostfit do
             else
               print "#{cid} ".green
               cmd = c.center_meeting_days.first
-              if cmd.update(:valid_from => cmd.valid_from - 7)
-                c.loans.each do |_l|
-                  _l.update_history
-                  print ".".green
-                end
-                print "!".green
-              end
+              cmd.valid_from = cmd.valid_from - 7
+              cmd.save!
+              print "!".green
             end
           end
         rescue
@@ -63,15 +59,17 @@ namespace :mostfit do
           log.write("#{cid}: ok\n")
           print "#{cid} ".green
         elsif cmd.meeting_day == :none and cmd.period == :week # CMD has :none in meeting_day and a weekday in the :what field
+          cmd.every = [1]
           cmd.of_every = 2                                     # nothing much to do, just make the :of_every = 2
-          cmd.save
+          cmd.save!
           log.write "#{c.id}: was none. fixed!\n"
           print "#{cid} ".red
-        elsif cmd.meeting_day != :none and cmd.period == :week # CMD already has a weekly meeting day  
+        elsif cmd.meeting_day != :none                         # CMD already has a weekly meeting day  
+          cmd.every = [1]
           cmd.what = cmd.meeting_day                           # set the :what to this day
           cmd.of_every = 2                                     # set the frequency to 2
           cmd.meeting_day = :none                              # remove the weekly meeting day
-          cmd.save
+          cmd.save!
           log.write "#{c.id}: was #{cmd.what}. fixed!\n"
           print "#{cid} ".yellow
         end
@@ -99,7 +97,7 @@ namespace :mostfit do
           cmd.what = :day
           cmd.of_every = 1                                      
           cmd.period = :month
-          cmd.save
+          cmd.save!
           log.write "#{c.id}: was none. fixed!\n"
           print "#{cid} ".red
         elsif cmd.meeting_day != :none and cmd.period == :week # CMD already has a weekly meeting day  
@@ -110,7 +108,7 @@ namespace :mostfit do
           cmd.of_every = 1                                     
           cmd.meeting_day = :none                              
           cmd.period = :month
-          cmd.save
+          cmd.save!
           log.write "#{c.id}: was #{cmd.what}. fixed!\n"
           print "#{cid} ".yellow
         end

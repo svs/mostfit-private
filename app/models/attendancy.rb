@@ -19,6 +19,12 @@ class Attendance
     ATTENDANCY_STATES
   end
 
+  # Returns the attendance percentage for the given query
+  # query is a Hash with keys (:client_id => .., :center_id => ..)
+  def self.percentage(query)
+  end
+
+
   def not_in_future?
     return true if date and (date<=Date.today)
     [false, "Date should not be in future"]
