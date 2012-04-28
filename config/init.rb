@@ -97,8 +97,8 @@ Merb::BootLoader.before_app_loads do
     :mailer_config => {
       :host   => 'smtp.gmail.com',
       :port   => '587',
-      :user   => '',
-      :pass   => '',
+      :user   => 'notify@digidoc.co.in',
+      :pass   => 'n0t1fyb0t',
       :auth   => :plain,
       :tls    => true
     },
