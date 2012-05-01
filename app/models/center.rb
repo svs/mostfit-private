@@ -319,7 +319,7 @@ class Center
   def handle_meeting_days
     # this function creates the first center meeting day for the center when only a meeting day is specified.
     # we will soon deprecate the meeting_day field and work only with center_meeting_days
-    if center_meeting_days.blank? or center.meeting_days.first.valid_from > self.min_date
+    if center_meeting_days.blank? or (center_meeting_days.first.valid_from and center_meeting_days.first.valid_from > self.min_date)
       unless meeting_day == :none
         cmd = CenterMeetingDay.new(:valid_from => nil, :valid_upto => nil, :center_id => self.id, :meeting_day => (meeting_day || :none))
         self.center_meeting_days << cmd
