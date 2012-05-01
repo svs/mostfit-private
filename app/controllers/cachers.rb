@@ -39,7 +39,6 @@ class Cachers < Application
       end
     end
   end
-
   def update
     BranchCache.update(@date)
     redirect resource(:cachers, :date => @date)
@@ -148,7 +147,7 @@ class Cachers < Application
     end
     get_context
   end
-
+  
   def get_context
     @center = params[:center_id].blank? ? nil : Center.get(params[:center_id])
     @branch = params[:branch_id].blank? ? nil : Branch.get(params[:branch_id])
@@ -176,5 +175,5 @@ class Cachers < Application
       end
     end
   end
-
+  
 end

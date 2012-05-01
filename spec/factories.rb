@@ -84,7 +84,6 @@ FactoryGirl.define do
 
   factory :guarantor do
     name            { Factory.next(:name) }
-    gender          'male'
     father_name     { Factory.next(:name) }
     association     :client
   end
