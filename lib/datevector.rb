@@ -53,17 +53,20 @@ class DateVector
 
   def get_dates(from = @from, to = @to)
     # get the dates as specified by this vector from the from date uptil "to" if "to" is a Date, or else get "to" such dates if an integer
-    raise ArgumentError.new("from and must be a date") unless from.class == Date 
+    raise ArgumentError.new("from must be a date") unless from.class == Date 
     raise ArgumentError.new("to must be either a date or an Integer") unless (to.class == Date or to.class == Fixnum)
-    d = from;    rv = [];     i = 0
+    d = @from;    rv = [];     i = 0
     case @period
     when :week
+      # for the first date, we don't want to use @of_every
+      fwd = [@what].flatten.first # first weekday i.e. for [:tuesday, :thursday] is :tuesday and for :tuesday also is :tuesday
+      d = (d.weekday == fwd ? d : d.next_(fwd))
+      rv << d
       while (to.class == Date ? d  <= to : i <= to)
         [@what].flatten.map do |wday| # convert :tuesday into [:tuesday] so we can treat everything as an array
-          d = d.next_(wday)
-          rv << d if (to.class == Date ? d  <= to : i <= to)
-          d = d + ((@of_every - 1) * 7)
-          i += 1
+          d = d.next_(wday, @of_every)
+          rv << d if ((to.class == Date ? d  <= to : i <= to) and d >= from)
+          i = rv.count - 1
         end
       end
     when :month 
@@ -82,7 +85,8 @@ class DateVector
         while (to.class == Date ? d <= to : i <= to)
           [@every].flatten.each do |e|
             [@what].flatten.each do |w|
-              d = d.first_day_of_month.next_(w,e.to_i)
+              fdom = d.first_day_of_month
+              d = (fdom.weekday == w ? fdom.next_(w,e.to_i - 1) : fdom.next_(w,e.to_i))
               rv << d if d >= from and (to.class == Date ? d  <= to : i <= to)
             end
           end
