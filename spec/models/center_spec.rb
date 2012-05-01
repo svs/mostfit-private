@@ -183,14 +183,12 @@ describe Center do
     user.should be_valid
     
     client = Factory(:client, :center => @center, :created_by => user)
-    client.errors.each {|e| p e}
-    client.should be_valid
+    client.save!
     
     @center.clients.count.should eql(1)
     
     client2 = Factory(:client, :center => @center, :created_by => user)
-    client2.errors.each {|e| p e}
-    client2.should be_valid
+    client2.save!
     
     @center.clients.count.should eql(2)
   end
