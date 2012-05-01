@@ -88,12 +88,12 @@ Merb::BootLoader.before_app_loads do
   end
   # load the extensions
   require 'lib/extensions.rb'
-
+  Net::SMTP.enable_tls(OpenSSL::SSL::VERIFY_NONE)
   Merb::Plugins.config[:exceptions] = {
     :email_addresses => ['svs@svs.io'],
     :app_name        => "SAHAYOG",
     :environments    => ['production'],
-    :email_from      => "svs@svs.io",
+    :email_from      => "notify@digidoc.co.in",
     :mailer_config => {
       :host   => 'smtp.gmail.com',
       :port   => '587',
