@@ -1,0 +1,106 @@
+- query_params = request.send(:query_params)
+- # TODO refactor to find the level properly
+- unless params[:layout]
+  = js_include_tag 'jquery.tablesorter.min'
+  :javascript
+    $('.chosen').chosen();
+    $.tablesorter.addParser({ 
+    id: 'mostfit_currency', 
+    is: function(s) { 
+    return false; 
+    }, 
+    format: function(s) { 
+    return isNaN(parseFloat(s.replace(/ /g, ''))) ? 0 : parseFloat(s.replace(/ /g, ''));
+    }, 
+    type: 'numeric' 
+    }); 
+       
+    $(document).ready(function(){
+      $($('table')[0]).tablesorter({
+      //sortList: [[5,1],[6,1]],
+      headers: { 
+      0: { sorter: 'date' },
+      1: { sorter: 'string' },
+      2: { sorter: 'string' },
+      3: { sorter: 'mostfit_currency' },
+      4: { sorter: 'mostfit_currency' },
+      5: { sorter: 'mostfit_currency' },
+      6: { sorter: 'mostfit_currency' },
+      7: { sorter: 'mostfit_currency' }
+      }} )});
+  .menu-strip{:style => "width:100%"}
+    %tr
+      %td
+        [
+      &nbsp;
+      %td
+        = link_to 'previous day', url(:live_cachers, query_params.merge(:from_date => @from_date - 1, :to_date => @to_date - 1)), :class => "grey_button", :style => "margin: 0px; padding-right: 6px; padding-left: 6px;"
+      &nbsp;&nbsp;
+      %td
+        = link_to 'next day', url(:live_cachers, query_params.merge(:from_date => @from_date + 1, :to_date => @to_date + 1)), :class => "grey_button", :style => "margin: 0px; padding-right: 6px; padding-left: 6px;"
+      &nbsp;&nbsp;
+      %td
+        = link_to 'last week', url(:live_cachers, query_params.merge(:from_date => Date.today - Date.today.cwday - 7, :to_date => Date.today - Date.today.cwday)), :class => "grey_button", :style => "margin: 0px; padding-right: 6px; padding-left: 6px;"
+      &nbsp;&nbsp;
+      %td
+        = link_to 'week to date', url(:live_cachers, query_params.merge(:from_date => Date.today - Date.today.cwday, :to_date => Date.today)), :class => "grey_button", :style => "margin: 0px; padding-right: 6px; padding-left: 6px;"
+      &nbsp;&nbsp;
+      %td
+        = link_to 'last month', url(:live_cachers, query_params.merge(:from_date => (Date.today << 1) - Date.today.day + 1, :to_date => Date.today - Date.today.day)), :class => "grey_button", :style => "margin: 0px; padding-right: 6px; padding-left: 6px;"
+      &nbsp;&nbsp;
+      %td
+        = link_to 'month to date', url(:live_cachers, query_params.merge(:from_date => Date.today - Date.today.day + 1, :to_date => Date.today )), :class => "grey_button", :style => "margin: 0px; padding-right: 6px; padding-left: 6px;"
+      &nbsp;
+      %td
+        ]
+      %td
+        &nbsp;&nbsp;
+        = link_to 'report formats', url(:report_formats), :class => "report", :target => "_blank"
+      %td
+        = link_to 'printer friendly', url(:live_cachers, query_params.merge(:layout => :printer)), :class => 'print', :target => "_blank"
+  = form(:method => :get, :action => url(:live_cachers)) do
+    = date_select('from_date', @from_date, {:id => 'from_date'})
+    to
+    = date_select('to_date', @to_date, {:id => 'to_date'})
+    for branch
+    = select :name => 'branch_id', :id => "branch_selector", :collection => Branch.all, :text_method => :name, :value_method => :id, :selected => params[:branch_id].to_s, :prompt => 'Select a branch', :class => 'chosen'
+    and center
+    = select :name => 'center_id', :id => 'center_selector', :collection => Center.all(:branch_id => params[:branch_id]), :text_method => :name, :value_method => :id, :selected => params[:center_id].to_s, :prompt => 'Select a center', :class => 'chosen'
+    showing columns
+    = select :name => 'report_format', :collection => ReportFormat.all,:text_method => :name, :value_method => :id, :selected => (params[:report_format] || 1).to_s, :prompt => 'Select a report format', :class => 'chosen'
+    = hidden_field :name => "force", :id => "force"
+    = submit 'apply filter'
+    %h2
+      retrieved report in
+      = Time.now - @t
+      report created at
+      = @cache[:created_at]
+      = submit 'recalc report', :onclick => "javascript:$('#force').val('true');"
+
+
+
+
+- @total_row = @report_format.keys.map{|k| [k,0]}.to_hash
+%table.report.nojs
+  %thead
+    %tr
+      - ([@group_by] + @report_format.keys).each do |k|
+        %th
+          = k.to_s.gsub("_","<br>")
+  - @group_by_names.sort_by{|k,v| v}.each do |k,v|
+    %tr
+      %td
+        - if @group_object == :loans
+          = link_to v, "/loans/diagnose/#{v}"
+        - else
+          = link_to v, url(:live_cachers, request.send(:query_params).merge("#{@group_by}".to_sym => k))
+      - @report_format.keys.each do |a|
+        %td
+          = @cachers[k]["sum(`#{a}`)".to_sym].to_currency
+          - (@total_row[a] += @cachers[k]["sum(`#{a}`)".to_sym].to_f rescue 0)
+  %tr.total
+    %td
+      &nbsp;
+    - @report_format.keys.each do |a|
+      %td
+        = @total_row[a].to_currency
