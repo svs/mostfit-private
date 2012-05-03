@@ -2,7 +2,6 @@
 # require 'lib/irb.rb'
 require 'yaml'
 require 'config/dependencies.rb'
-require 'version.rb'
 
 use_orm :datamapper
 use_test :rspec
@@ -23,6 +22,10 @@ end
 Merb::BootLoader.before_app_loads do
   DataMapper.setup(:abstract, "abstract::")
   # This will get executed after dependencies have been loaded but before your app's classes have loaded.
+
+  DB = Sequel.connect(YAML::load_file('config/database.yml')[Merb.env].except("repositories"))  # connect Sequel to DB
+  DC = Dalli::Client.new('localhost:11211', :namespace => `pwd`)  # set up memcached store
+
   Extlib::Inflection.word('loan_history')  # i dont like a table named 'loan_histories'
   Extlib::Inflection.word('audit_trail')   # i dont like a table named 'audit_trails'
   Extlib::Inflection.word('attendancy')    # i dont like a table named 'attendancies'
@@ -39,7 +42,7 @@ Merb::BootLoader.before_app_loads do
   require 'lib/reporting'
   require 'uuid'
   require 'ftools'
-  require 'logger'
+  # require 'logger'
   require 'dm-pagination'
   require 'dm-pagination/paginatable'
   require 'dm-pagination/pagination_builder'
@@ -83,17 +86,17 @@ Merb::BootLoader.before_app_loads do
   end
   # load the extensions
   require 'lib/extensions.rb'
-
+  Net::SMTP.enable_tls(OpenSSL::SSL::VERIFY_NONE)
   Merb::Plugins.config[:exceptions] = {
-    :email_addresses => ['svs@intellecap.net', 'janmejay.rai@intellecap.net','krishnan.mani@intellecap.net'],
+    :email_addresses => ['svs@svs.io'],
     :app_name        => "SAHAYOG",
     :environments    => ['production'],
-    :email_from      => "production@mostfit.org",
+    :email_from      => "notify@digidoc.co.in",
     :mailer_config => {
       :host   => 'smtp.gmail.com',
       :port   => '587',
-      :user   => 'production@mostfit.org',
-      :pass   => 'm0stf1t123',
+      :user   => 'notify@digidoc.co.in',
+      :pass   => 'n0t1fyb0t',
       :auth   => :plain,
       :tls    => true
     },
@@ -105,8 +108,6 @@ end
 Merb::BootLoader.after_app_loads do
   # This will get executed after your app's classes have been loaded.
   # Activate SSL Support
-  Net::SMTP.enable_tls(OpenSSL::SSL::VERIFY_NONE)
-
   loan_types = Loan.descendants
 
   begin; $holidays = Holiday.all.map{|h| [h.date, h]}.to_hash; rescue; end
@@ -161,7 +162,7 @@ Merb::BootLoader.after_app_loads do
     Merb.logger.info("Couldn't create the 'admin' user, possibly unable to access the database.")
   end
 
-  begin
+  begin 
     if Currency.all.empty?
       curr = Currency.new(:name => 'INR')
       if curr.save
@@ -173,14 +174,14 @@ Merb::BootLoader.after_app_loads do
         end
       end
     end
-
+    
   rescue
     Merb.logger.info("Couldn't create the 'INR' currency, Possibly unable to access the database.")
   end
-
+  
   VOUCHERS = ['Payment', 'Receipt', 'Journal']
-
-  begin
+  
+  begin 
     if JournalType.all.empty?
       VOUCHERS.each do |x|
         j = JournalType.new(:name => x )
@@ -197,7 +198,7 @@ Merb::BootLoader.after_app_loads do
   rescue
     Merb.logger.info("Couldn't create the voucher, Possibly unable to access the database.")
   end
-
+    
   Mfi.activate
 
   if defined?(PhusionPassenger)
@@ -210,11 +211,11 @@ Merb::BootLoader.after_app_loads do
 
   # This is to save all the loan_products as we have changed loan_type ENUM to loan_type_string.
   begin
-    LoanProduct.all.each{ |l|
+    LoanProduct.all.each{ |l| 
       if l.loan_type.nil? or l.loan_type_string.nil?
         l.save
       end
-    }
+    } 
   rescue
   end
   $holidays_list = []

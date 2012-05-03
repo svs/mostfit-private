@@ -55,4 +55,6 @@ dependency "cronedit", "0.3.0"
 dependency "git", "1.2.5"
 dependency "do_sqlite3", do_gems_version
 dependency "tlsmail"
+dependency "sequel"
+dependency "dalli"
 # >>>>>>> master
