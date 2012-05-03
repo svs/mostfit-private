@@ -1,6 +1,6 @@
 class DataAccessObserver
   include DataMapper::Observer
-  observe *(DataMapper::Model.descendants.to_a - [AuditTrail, Cacher, BranchCache, CenterCache, FundingLineCache] + [Branch, Center, ClientGroup, Client, Loan, Payment, Fee]).uniq # strange bug where observer drops some of the descnedants.
+  observe *(DataMapper::Model.descendants.to_a - [AuditTrail] + [Branch, Center, ClientGroup, Client, Loan, Payment, Fee]).uniq # strange bug where observer drops some of the descnedants.
 
   
   def self.insert_session(id)
@@ -16,9 +16,6 @@ class DataAccessObserver
   end
   
   def self.log(obj)
-    Merb.logger.debug ">> Logging access of object: #{obj.inspect} by user #{@_user.inspect}"
-
-    # We seem to be opening a file here for no good reason, nothing ever gets written to it?
     f = File.open("log/#{obj.class}.log","a")
     begin
       if obj
@@ -40,11 +37,11 @@ class DataAccessObserver
         model = (/Loan$/.match(obj.class.to_s) ? "Loan" : obj.class.to_s)
         log = AuditTrail.new(:auditable_id => obj.id, :action => @action, :changes => diff.to_yaml, :type => :log,
                              :auditable_type => model, :user => @_user, :created_at => DateTime.now)
-        Merb.logger.debug ">> Logging to AuditTrail: #{log.inspect}: #{log.valid?} (#{log.errors.full_messages.join(', ')})"
         log.save
       end
     rescue Exception => e
-      Merb.logger.info("Error creating AuditTrail: #{e.to_s}, diff: #{diff.inspect}")
+      p diff if diff
+      Merb.logger.info(e.to_s)
       Merb.logger.info(e.backtrace.join("\n"))
     end
   end

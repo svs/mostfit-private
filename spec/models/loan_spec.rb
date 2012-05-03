@@ -752,7 +752,6 @@ describe Loan do
       it "should not disburse if loan fees are not paid" do
         #when fees are not paid
         ApplicableFee.all.destroy!
-        debugger
         @loan_product.loan_validation_methods = "check_payment_of_fees_before_disbursal"
         fee =  Fee.create(:amount => 100, :name => "processing fee", :payable_on => :loan_disbursal_date)
         @loan_product.fees << fee
