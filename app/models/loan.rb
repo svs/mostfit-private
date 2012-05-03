@@ -479,7 +479,6 @@ class Loan
     # this is the way to repay loans, _not_ directly on the Payment model
     # this to allow validations on the Payment to be implemented in (subclasses of) the Loan
     self.extend_loan
-    debugger
     # only possible if we get a hash or a single number.
     unless input.is_a? Fixnum or input.is_a? Float or input.is_a?(Hash)
       raise "the input argument of Loan#repay should be of class Fixnum or Hash"
@@ -1149,7 +1148,6 @@ class Loan
       total_principal_paid                  += prin
       total_interest_paid                   += int
 
-      debugger
       scheduled_principal_due                = outstanding_at_start ? (i_num > 0 ? scheduled[:principal] : 0) : 0
       scheduled_interest_due                 = outstanding_at_start ? scheduled[:interest] : 0
       total_principal_due                   += outstanding_at_start ? scheduled[:principal].round(2) : 0

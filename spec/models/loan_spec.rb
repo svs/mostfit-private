@@ -680,7 +680,7 @@ describe Loan do
       end
 
       it "should pay_fees properly" do
-        result = @loan3.pay_fees(100, @loan3.disbursal_date, nil, nil)
+        result = @loan3.pay_fees(100, @loan3.disbursal_date, @manager, User.first)
         result[0].should == true
         result[1][0].errors.should be_blank
       end
