@@ -228,7 +228,7 @@ FactoryGirl.define do
   #
   factory :loan do
     amount                        1000
-    interest_rate                 20
+    interest_rate                 0.2
     installment_frequency         :weekly
     number_of_installments        25
     applied_on                    { Date.new(2000,02,01) }
@@ -240,7 +240,7 @@ FactoryGirl.define do
     association                   :funding_line
     association                   :client
     association                   :loan_product
-    association                   :repayment_style
+    # association                   :repayment_style
 
     # These cached properties should probably be set automatically somewhere?
     c_center_id                   { self.client.center.id }

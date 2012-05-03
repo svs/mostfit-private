@@ -3,6 +3,11 @@ require File.join( File.dirname(__FILE__), '..', "spec_helper" )
 describe Center do
 
   before(:all) do
+    StaffMember.all.destroy!
+    User.all.destroy!
+    Branch.all.destroy!
+    Center.all.destroy!
+    Client.all.destroy!
     @manager = Factory(:staff_member)
     @manager.should be_valid
 
@@ -60,6 +65,41 @@ describe Center do
     @center.center_meeting_days.first.what.should == :monday
   end
 
+  describe "calendar" do
+    before :all do
+      @center = Factory.create(:center)
+      @calendar_input = Date.today..Date.today+10
+      @bad_input      = %w(abc def ghi)
+    end
+
+    describe "with valid inputs" do
+      before :all do
+        @center.meeting_calendar = @calendar_input
+      end
+
+      it "should accept a list of dates as a calendar" do
+        @center.calendar.should == nil
+      end
+
+    end
+      
+    describe "with invalid input" do
+      before :each do
+        @center.meeting_calendar = @bad_input
+      end
+      
+      it "should be nil" do
+        @center.calendar.should == nil
+      end
+
+      it "should invalidate the center" do
+        @center.should_not be_valid
+      end
+    end
+  end
+      
+      
+
   it "should give correct meeting days in this instance" do
     start_date = Date.new(2010,1,1)
     start_date = start_date - start_date.cwday + 8
@@ -93,7 +133,6 @@ describe Center do
     center =  Center.create(:branch => @branch, :name => "center 75", :code => "c75", :creation_date => Date.new(2010, 03, 17),
                             :meeting_day => :wednesday, :manager => @manager)
     center.should be_valid
-
     center.next_meeting_date_from(Date.new(2010, 6, 30)).should   == Date.new(2010, 7, 7)
     center.next_meeting_date_from(Date.new(2010, 7, 1)).should    == Date.new(2010,  7, 7)
     center.next_meeting_date_from(Date.new(2010, 7, 3)).should    == Date.new(2010,  7, 7)
@@ -144,9 +183,9 @@ describe Center do
     @cmd2.should be_valid
     @cmd2.save
     @center = Center.get(@center.id) # reload
-    @center.meeting_day_for(Date.today - 1).what.should == :monday
-    @center.meeting_day_for(Date.today).what.should == :tuesday
-    @center.meeting_day_for(Date.today + 10).what.should == :wednesday
+    @center.center_meeting_day_for(Date.today - 1).what.should == :monday
+    @center.center_meeting_day_for(Date.today).what.should == :tuesday
+    @center.center_meeting_day_for(Date.today + 10).what.should == :wednesday
   end
 
   it "should return correct value for meeting_day?" do
