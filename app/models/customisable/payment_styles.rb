@@ -4,30 +4,9 @@ module Mostfit
 
     module Flat
 
-      def _pay_prorata(total, received_on, curr_bal = nil)
-        #adds up the principal and interest amounts that can be paid with this amount and prorates the amount
-        i = used = prin = int = 0.0
-        d = received_on
-        total = total.to_f
-        while used < total
-          prin += scheduled_principal_for_installment(installment_for_date(d)).round(2)
-          int  += scheduled_interest_for_installment(installment_for_date(d)).round(2)
-          used  = (prin + int)
-          d = shift_date_by_installments(d, 1)
-        end
-        interest  = total * int/(prin + int)
-        principal = total * prin/(prin + int)
-        [interest, principal]
-      end
-
-      def pay_normal
-        
-      end
-
       def actual_number_of_installments
         reducing_schedule.count
       end
-
 
       def reducing_schedule
         return @_reducing_schedule if @_reducing_schedule

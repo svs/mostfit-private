@@ -37,18 +37,7 @@ class Center
   validates_present     :branch
   validates_with_method :meeting_time_hours,   :method => :hours_valid?
   validates_with_method :meeting_time_minutes, :method => :minutes_valid?
-
-  def self.from_csv(row, headers)
-    hour, minute = row[headers[:center_meeting_time_in_24h_format]].split(":")
-    branch       = Branch.first(:name => row[headers[:branch]].strip)
-    staff_member = StaffMember.first(:name => row[headers[:manager]])
-
-    creation_date = ((headers[:creation_date] and row[headers[:creation_date]]) ? row[headers[:creation_date]] : Date.today)
-    obj = new(:name => row[headers[:center_name]], :meeting_day => row[headers[:meeting_day]].downcase.to_s.to_sym, :code => row[headers[:code]],
-              :meeting_time_hours => hour, :meeting_time_minutes => minute, :branch_id => branch.id, :manager_staff_id => staff_member.id,
-              :creation_date => creation_date, :upload_id => row[headers[:upload_id]])
-    [obj.save, obj]
-  end
+  validates_with_method :calendar_must_have_only_dates
 
   def self.search(q, per_page=10)
     if /^\d+$/.match(q)
@@ -58,8 +47,19 @@ class Center
     end
   end
 
+  def clear_cache
+    @meeting_dates_array = nil
+  end
+
   def self.meeting_days
     DAYS
+  end
+
+  # Public: Returns the meeting calendar as an array of dates
+  # Returns nil if no calendar
+  def calendar
+    return nil if meeting_calendar.blank? or !calendar_must_have_only_dates
+    c = self.meeting_calendar.split(/[\s,]/).reject(&:blank?).map{|d| Date.parse(d) rescue nil}.compact.select{|d| d >= from}.sort
   end
 
   def get_meeting_dates(to = SEP_DATE,from = creation_date)
@@ -83,38 +83,58 @@ class Center
   #
   # Returns a list of center meeting dates 
   def meeting_dates(to = nil,from = nil)
-    # sometimes loans from another center might be moved to this center. they can be created before this centers creation date
-    # therefore, we refer to the loan history table first and if there are no rows there, we refer to the creation date for the 'from' date if none is specified
-    min_max_dates = LoanHistory.all(:center_id => self.id).aggregate(:date.min, :date.max)
-    from ||= (min_max_dates[0] || self.creation_date)
-    to   ||= (min_max_dates[1] || SEP_DATE)
-    # first refer to the meeting_calendar
-    unless self.meeting_calendar.blank?
-      ds = self.meeting_calendar.split(/[\s,]/).reject(&:blank?).map{|d| Date.parse(d) rescue nil}.compact.select{|d| d >= from}.sort
-      if to
-        ds = ds.select{|d| d <= to} if to.is_a? Date
-        ds = ds[0..to - 1] if to.is_a? Numeric
+    unless @meeting_dates_array
+      # sigh - first time? ok, we'll build the array of meeting dates
+      @meeting_dates_array = []
+      
+      # sometimes loans from another center might be moved to this center. they can be created before this centers creation date
+      # therefore, we refer to the loan history table first and if there are no rows there, we refer to the creation date for the 'from' date if none is specified
+      min_max_dates = LoanHistory.all(:center_id => self.id).aggregate(:date.min, :date.max)
+      f = (min_max_dates[0] || self.creation_date)
+      t = SEP_DATE
+      
+      # first check if we have an explicitly defined meeting calendar
+      if ds = calendar
+        ds = ds.select{|d| d <= t} if t.class == Date
+        ds = ds[0..t - 1] if t.class == Fixnum
+        @meeting_dates_array = ds
+      else
+        select = t.class == Date ? {:valid_from.lte => t} : {}
+        dvs = center_meeting_days.all.select{|dv| dv.valid_from.nil? or dv.valid_from <= t}.map{|dv| [(dv.valid_from.nil? ? f : dv.valid_from), dv]}.to_hash
+        # then cycle through this hash and get the appropriate dates
+        dates = []
+        dvs.keys.sort.each_with_index{|date,i|
+          d1 = [date,f].max
+          d1 -= 1 if [dvs[date].what].flatten.include?(d1.weekday)
+          d2 = dvs.keys.sort[i+1] || (t.class == Date ? t : (t - dates.count - 1))
+          _ds = dvs[date].get_dates(d1,d2)
+          _ds = _ds[0..(t - dates.count - 1)] if t.class == Fixnum
+          dates.concat(_ds)
+        }
+        @meeting_dates_array = dates.sort
       end
-      return ds
     end
-
-    # then check the date vectors.
-    select = to.class == Date ? {:valid_from.lte => to} : {}
-    dvs = center_meeting_days.all.select{|dv| dv.valid_from.nil? or dv.valid_from <= to}.map{|dv| [(dv.valid_from.nil? ? from : dv.valid_from), dv]}.to_hash
-    
-    # then cycle through this hash and get the appropriate dates
-    dates = []
-    dvs.keys.sort.each_with_index{|date,i|
-      d1 = [date,from].max
-      d1 -= 1 if [dvs[date].what].flatten.include?(d1.weekday)
-      d2 = dvs.keys.sort[i+1] || (to.class == Date ? to : (to - dates.count - 1))
-      _ds = dvs[date].get_dates(d1,d2)
-      _ds = _ds[0..(to - dates.count - 1)] if to.class == Fixnum
-      dates.concat(_ds)
-    }
-    dates.sort
+    if to.class == Date
+      if from
+        return @meeting_dates_array.select{|d| d >= from and d <= to}
+      else
+        return @meeting_dates_array.select{|d| d <= to}
+      end
+    elsif !to.nil?
+      if from
+        return @meeting_dates_array.select{|d| d >= from}[0..to-1]
+      else
+        return @meeting_dates_array[0..to-1]
+      end
+    else
+      if from 
+        return @meeting_dates_array.select{|d| d >= from}
+      else
+        return @meeting_dates_array
+      end
+    end
   end
-
+  
   # Public: returns the date vector in use for a given date.
   #
   # DEPRECATED use meeting_day_for(date).date_vector
@@ -122,7 +142,7 @@ class Center
     first_cmd_date = center_meeting_days.aggregate(:valid_from.min) || Date.new(2100,12,31)
     if date < first_cmd_date
       DateVector.new(1, meeting_day, 1, :week, creation_date, first_cmd_date)
-    else
+    eles
       (center_meeting_days.all(:order => [:valid_from]).select{|cmd| cmd.valid_from <= date and cmd.valid_upto >= date}[0]).date_vector
     end
   end
@@ -157,11 +177,21 @@ class Center
   #
   # date: the Date for which the meeting day is desired
   #
-  # Returns a CenterMeetingDay
+  # Returns an element of WEEKDAY
   def meeting_day_for(date)
-    CenterMeetingDay.in_force_on(date, :id => self.id)[0]
+    meeting_dates(date)[-1].weekday
   end
   
+  # Public: returns the CenterMeetingDay object for a given date
+  #
+  # date: the Date for which the meeting day is desired
+  #
+  # Returns a CenterMeetingDay
+  def center_meeting_day_for(date)
+    @cmd_hash ||= center_meeting_days.sort_by{|cmd| cmd.valid_from || Date.new(1900,1,1)}
+    @cmd_hash.select{|cmd| (cmd.valid_from || Date.new(1900,1,1)) <= date}[-1]
+  end
+
   
   # Public: Get the next meeting date for a center given a date
   #
@@ -171,11 +201,11 @@ class Center
   def next_meeting_date_from(date)    
     # first refer to the LoanHistory. Sometimes, some funky loans might be in here and we don't want to depend on center meeting dates in
     # the first instance
-    r_date = (LoanHistory.first(:center_id => self.id, :date.gt => date, :order => [:date], :limit => 1) or Nothing).date
-    return r_date if r_date
+    # r_date = (LoanHistory.first(:center_id => self.id, :date.gt => date, :order => [:date], :limit => 1) or Nothing).date
+    # return r_date if r_date
     #oops...no loans in this center. use center_meeting_dates
     # get 2 meeting dates because if the date parameter is a meeting date, it gets included in the meeting_dates result.
-    self.meeting_dates(2, date).reject{|d| d == date}.sort[0] 
+    self.meeting_dates(nil, date + 1)[0]
   end
   
   # Public: Get the previous meeting date for a center given a date
@@ -185,10 +215,10 @@ class Center
   # Returns a Date
   def previous_meeting_date_from(date)
     #likewise for this (see comment above)
-    r_date = (LoanHistory.first(:center_id => self.id, :date.lte => date, :order => [:date.desc], :limit => 1) or Nothing).date
-    return r_date if r_date
+    # r_date = (LoanHistory.first(:center_id => self.id, :date.lte => date, :order => [:date.desc], :limit => 1) or Nothing).date
+    # return r_date if r_date
     #oops...no loans in this center. use center_meeting_dates
-    self.meeting_dates(date).reject{|d| d == date}.sort[-1]
+    self.meeting_dates(date - 1,nil)[-1]
   end
 
   # Public: is this date a meeting date?
@@ -280,41 +310,42 @@ class Center
   end
   
 
-  def handle_meeting_date_change
-    # no need to do all this if meeting date was not changed
-    return true unless self.meeting_day_change_date
+  # def handle_meeting_date_change
+  #   # no need to do all this if meeting date was not changed
+  #   return true unless self.meeting_day_change_date
 
-    date = self.meeting_day_change_date
+  #   date = self.meeting_day_change_date
 
-    if not CenterMeetingDay.first(:center => self)
-      # FIXME: This line appears to be failing, because the period attribute is left blank and should be one of %w[week month] probably true in the "elsif" below as well. This means new centers never get a meeting day.
-      CenterMeetingDay.create(:center_id => self.id, :valid_from => creation_date||date, :meeting_day => self.meeting_day)
-    elsif self.meeting_day != self.meeting_day_for(date)
-      if prev_cm = CenterMeetingDay.first(:center_id => self.id, :valid_from.lte => date, :order => [:valid_from.desc])
-        # previous CMD should be valid upto date - 1
-        prev_cm
-        prev_cm.valid_upto = date - 1        
-        prev_cm
-        prev_cm.save!
-      end
+  #   if not CenterMeetingDay.first(:center => self)
+  #     # FIXME: This line appears to be failing, because the period attribute is left blank and should be one of %w[week month] probably true in the "elsif" below as well. This means new centers never get a meeting day.
+  #     CenterMeetingDay.create(:center_id => self.id, :valid_from => creation_date||date, :meeting_day => self.meeting_day)
+  #   elsif self.meeting_day != self.meeting_day_for(date)
+  #     if prev_cm = CenterMeetingDay.first(:center_id => self.id, :valid_from.lte => date, :order => [:valid_from.desc])
+  #       # previous CMD should be valid upto date - 1
+  #       prev_cm
+  #       prev_cm.valid_upto = date - 1        
+  #       prev_cm
+  #       prev_cm.save!
+  #     end
       
-      # next CMD's valid from date should be valid upto limit for this CMD
-      if next_cm = CenterMeetingDay.first(:center => self, :valid_from.gt => date, :order => [:valid_from])
-        valid_upto = next_cm.valid_from - 1
-      else
-        valid_upto = Date.new(2100, 12, 31)
-      end
-      CenterMeetingDay.create!(:center_id => self.id, :valid_from => date, :meeting_day => self.meeting_day, :valid_upto => valid_upto)
-    end
-    #clear cache
-    @meeting_days = nil 
-    Center.get(self.id).clients(:fields => [:id, :center_id]).loans.each{|l|
-      if [:outstanding, :disbursed].include?(l.status)
-        l.update_history
-      end
-    }
-    return true
-  end  
+  #     # next CMD's valid from date should be valid upto limit for this CMD
+  #     if next_cm = CenterMeetingDay.first(:center => self, :valid_from.gt => date, :order => [:valid_from])
+  #       valid_upto = next_cm.valid_from - 1
+  #     else
+  #       valid_upto = Date.new(2100, 12, 31)
+  #     end
+  #     CenterMeetingDay.create!(:center_id => self.id, :valid_from => date, :meeting_day => self.meeting_day, :valid_upto => valid_upto)
+  #   end
+  #   #clear cache
+  #   @meeting_days = nil 
+  #   Center.get(self.id).clients(:fields => [:id, :center_id]).loans.each{|l|
+  #     if [:outstanding, :disbursed].include?(l.status)
+  #       l.update_history
+  #     end
+  #   }
+  #   return true
+  # end  
+
 
   def handle_meeting_days
     # this function creates the first center meeting day for the center when only a meeting day is specified.
@@ -328,34 +359,17 @@ class Center
 
   end
 
-  # def get_meeting_date(date, direction)
-  # DEPRECATED. Commenting out right now so that we can restore it if it is being referenced from somewhere
-  # TODO remove this from the codebase if nothing borks by 2012-02-28
-  #   number = 1
-  #   if direction == :next
-  #     nwday = (date + number).wday
-  #     while (meet_day = Center.meeting_days.index(meeting_day_for(date + number)) and meet_day > 0 and nwday != meet_day)
-  #       number += 1
-  #       nwday = (date + number).wday
-  #       nwday = 7 if nwday == 0
-  #     end
-  #   else
-  #     nwday = (date - number).wday
-  #     while (meet_day = Center.meeting_days.index(meeting_day_for(date - number)) and meet_day > 0 and nwday != meet_day)
-  #       number += 1
-  #       nwday = (date - number).wday
-  #       nwday = 7 if nwday == 0
-  #     end
-  #   end
-  #   return number
-  # end
-
   def convert_blank_to_nil
     self.attributes.each{|k, v|
       if v.is_a?(String) and v.empty? and self.class.properties.find{|x| x.name == k}.type==Integer
         self.send("#{k}=", nil)
       end
     }
+  end
+
+  def calendar_must_have_only_dates
+    return true if meeting_calendar.nil?
+    (!(meeting_calendar.split(/[\s,]/).reject(&:blank?).map{|d| Date.parse(d) rescue nil}.include?(nil))) rescue false
   end
 
 end

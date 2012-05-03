@@ -88,12 +88,6 @@ module Misfit
 
   module LoanValidators
     def installments_are_integers?
-      return [false, "Number of installments not defined"] if number_of_installments.nil? or number_of_installments.blank?
-      return [false, "Amount not defined"] unless amount
-      return [false, "Interest rate not defined"] unless interest_rate
-      return [false, "Installment frequency is not defined"] unless installment_frequency
-      return [false, "Scheduled first payment date is not defined"] unless scheduled_first_payment_date
-
       self.payment_schedule.each do |date, val|
         pri = val[:principal]
         int = val[:interest]
@@ -109,7 +103,7 @@ module Misfit
     end
 
     def scheduled_dates_must_be_center_meeting_days #this function is only for repayment dates
-      return [false, "Not client defined"] unless client
+      return [false, "No client defined"] unless client
       center = client.center
       failed = []
       correct_weekday = nil 
