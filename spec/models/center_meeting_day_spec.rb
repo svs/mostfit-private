@@ -62,31 +62,45 @@ describe CenterMeetingDay do
 
   end
 
-  it "should check that center meeting dates do not overlap" do
-    # should not be valid wthout valid_from
-    @cmd2 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center)
-    @cmd2.should_not be_valid
-    # should be valid with a valid_From and without valid_upto
-    @cmd2 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center, :valid_from => Date.today)
-    @cmd2.should be_valid
-    @cmd2 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center, :valid_from => Date.today, :valid_upto => Date.today + 30)
-    @cmd2.should be_valid
-    @cmd2.save
-    # reload the center and try with an overlapping date
-    @center = Center.get(@center.id)
-    @cmd3 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center, :valid_from => Date.today + 15, :valid_upto => Date.today + 45)
-    @cmd3.should_not be_valid
-    # check the corner case
-    @cmd3.valid_from = Date.today + 30
-    @cmd3.should_not be_valid
-    # now check with valid interval
-    @cmd3.valid_from = Date.today + 31
-    @cmd3.should be_valid
-    @cmd3.save
-    # try deleting a center meeting day
-    @cmd3.destroy
-    @center = Center.get(@center.id)
-    @center.center_meeting_days.count.should == 2
+  describe "overlap" do
+    
+    it "should should not be valid wthout valid_from" do
+      @cmd2 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center)
+      @cmd2.should_not be_valid
+    end
+    it "should be valid with a valid_From and without valid_upto" do
+      @cmd2 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center, :valid_from => Date.today)
+      @cmd2.should be_valid
+      @cmd2 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center, :valid_from => Date.today, :valid_upto => Date.today + 30)
+      @cmd2.should be_valid
+      @cmd2.save
+    end
+    describe "overlapping dates" do
+      before :each do
+        @center = Center.get(@center.id)
+        @cmd2 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center, :valid_from => Date.today, :valid_upto => Date.today + 30)
+        @cmd2.should be_valid
+        @cmd2.save
+        @cmd3 = CenterMeetingDay.new(:meeting_day => :friday, :center => @center, :valid_from => Date.today + 15, :valid_upto => Date.today + 45)
+      end
+      it "should not be valid" do
+        @cmd3.should_not be_valid
+      end
+      it "should not be valid on the edge" do
+        @cmd3.valid_from = Date.today + 30
+        @cmd3.should_not be_valid
+      end
+      it "should be valid with a valid interval" do
+        @cmd3.valid_from = Date.today + 31
+        @cmd3.should be_valid
+      end
+      it "should delete properly" do
+        @cmd3.save
+        @cmd3.destroy
+        @center = Center.get(@center.id)
+        @center.center_meeting_days.count.should == 2
+      end
+    end
   end
 
   it "should return correct centers meeting days in force on a given date" do
