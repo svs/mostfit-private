@@ -1,8 +1,7 @@
 require File.join( File.dirname(__FILE__), '..', "spec_helper" )
 
 describe Loan do
-
-  before(:all) do
+  before :all do
     @user = Factory(:user)
     @user.should be_valid
 
@@ -29,365 +28,307 @@ describe Loan do
     @flat = RepaymentStyle.new(:style => "Flat")
     @flat.save
 
-    @loan_product = LoanProduct.new
-    @loan_product.name = "LP1"
-    @loan_product.max_amount = 10000
-    @loan_product.min_amount = 1000
-    @loan_product.max_interest_rate = 100
-    @loan_product.min_interest_rate = 0.1
-    @loan_product.installment_frequency = :weekly
-    @loan_product.max_number_of_installments = 25
-    @loan_product.min_number_of_installments = 12
-    @loan_product.repayment_style = @flat
-    @loan_product.valid_from = Date.parse('2000-01-01')
-    @loan_product.valid_upto = Date.parse('2012-01-01')
-    @loan_product.save
-    @loan_product.errors.each {|e| puts e}
+    @loan_product = Factory.create(:loan_product)
     @loan_product.should be_valid
+
+    @loan = Factory(:loan)
   end
 
-  before(:each) do
-    @loan_product.loan_validation_methods = nil
-    @loan_product.save
-
-    @loan = Factory(:loan, :applied_by => @manager, :funding_line => @funding_line, :client => @client, :loan_product => @loan_product)
-    @loan.should be_valid
-    @loan.approved_on = "2000-02-03"
-    @loan.approved_by = @manager
-    @loan.should be_valid
-  end
-  
-  it "should have a discrimintator" do
-    @loan.discriminator.should_not be_blank
-  end
-
-  it "should not be valid without belonging to a client" do
-    @loan.client = nil
-    @loan.should_not be_valid
-  end
-
-  it "should give error if amount is blank" do
-    @loan.amount = nil
-    @loan.should_not be_valid
-  end
-
-  describe "application" do
-    before :each do
-      @loan.applied_by = @loan.applied_on = nil
-    end
-
-    it "should have an `applied_on`" do
-      @loan.applied_by = @manager
-      @loan.should_not be_valid
-    end
-    
-    it "should have an 'applied_by'" do
-      @loan.applied_on = Date.today
-      @loan.should_not be_valid
-    end
-
-    it "should be valid with both present" do
-      @loan.applied_on = "2000-01-01"
-      @loan.applied_by = @manager
+  describe "common stuff" do
+    before(:all) do
+      @loan = Factory(:approved_loan)
       @loan.should be_valid
     end
-  end
 
-  it "should not be valid without being validated properly" do
-    @loan.disbursal_date = @loan.scheduled_disbursal_date
-    @loan.disbursed_by = @manager
-    @loan.should be_valid
-    @loan.validated_on = @loan.disbursal_date
-    @loan.validated_by = @manager
-    @loan.should be_valid
-    @loan.validated_on = nil
-    @loan.should_not be_valid
-    @loan.validated_on = @loan.disbursal_date
-    @loan.validated_by = nil
-    @loan.should_not be_valid
-  end
+    it "should have a discrimintator" do
+      @loan.discriminator.should_not be_blank
+    end
 
-  it "should not be valid without being rejected properly" do
-    date = @loan.approved_on
-    @loan.approved_by = nil
-    @loan.approved_on = nil
-    @loan.should be_valid
-    @loan.rejected_on = date
-    @loan.rejected_by = nil
-    @loan.should_not be_valid
-    @loan.rejected_by = @manager
-    @loan.rejected_on = nil
-    @loan.should_not be_valid
-  end
-  it "should not be valid without belonging to a client" do
-    @loan.client = nil
-    @loan.should_not be_valid
-  end
+    it "should not be valid without belonging to a client" do
+      @loan.client = nil
+      @loan.should_not be_valid
+    end
 
-  it "should not be valid without a proper amount" do
-    @loan.amount_applied_for = nil
-    @loan.amount = nil
-    @loan.should_not be_valid
-    @loan.amount = -1
-    @loan.should_not be_valid
-    @loan.amount = 0
-    @loan.should_not be_valid
-  end
-  
-  describe "loan product attributes" do
-    describe "if the loan product can give one" do
-      it "should take the amount from the loan product" do
-        @loan_product.max_amount = @loan_product.min_amount = 10000
-        @loan.amount = nil
-        @loan.should be_valid
-        @loan.amount.should == 10000
+    it "should give error if amount is blank" do
+      @loan.amount = nil
+      @loan.should_not be_valid
+    end
+
+    describe "application" do
+      before :each do
+        @loan.applied_by = @loan.applied_on = nil
       end
 
-      it "should take the interest rate" do
-        @loan_product.max_interest_rate = @loan_product.min_interest_rate = 20
-        @loan.interest_rate = nil
+      it "should have an `applied_on`" do
+        @loan.applied_by = @manager
+        @loan.should_not be_valid
+      end
+      
+      it "should have an 'applied_by'" do
+        @loan.applied_on = Date.today
+        @loan.should_not be_valid
+      end
+      
+      it "should be valid with both present" do
+        @loan.applied_on = "2000-01-01"
+        @loan.applied_by = @manager
         @loan.should be_valid
-        @loan.interest_rate.should == 0.2
+      end
+    end
+  end
+
+  describe "validations" do
+    describe "validated_on and _by" do
+      before :each do
+        @loan = Factory(:disbursed_loan)
+        @loan.should be_valid
+        @loan.validated_on = @loan.disbursal_date
+        @loan.validated_by = @manager
+      end
+      
+      it "should be valid when validate properly" do
+        @loan.should be_valid
+      end
+      it "should not be valid without validation date" do
+        @loan.validated_on = nil
+        @loan.should_not be_valid
+      end
+      it "should not be valid without validated_by" do
+        @loan.validated_by = nil
+        @loan.should_not be_valid
+      end
+    end
+
+    describe "rejection" do
+      before :each do
+        @loan = Factory(:rejected_loan)
+        @date = Date.new(2000,2,3)
+      end
+      it "should be valid when rejected properly" do
+        @loan.should be_valid
+      end
+      it "should not be valid without a rejecte_on date" do
+        @loan.rejected_on = nil
+        @loan.should_not be_valid
+      end
+      it "should not be valid without rejected_by" do
+        @loan.rejected_by = nil
+        @loan.should_not be_valid
+      end
+    end
+
+    describe "client" do
+      before :all do
+        @loan = Factory(:loan)
+      end
+      it "should not be valid without belonging to a client" do
+        @loan.client = nil
+        @loan.should_not be_valid
+      end
+    end
+
+    describe "amount" do
+      it "should not be valid with nil amount" do
+        @loan.amount_applied_for = nil
+        @loan.amount = nil
+        @loan.should_not be_valid
+      end
+      it "should not be valid with a negative amount" do
+        @loan.amount = -1
+        @loan.should_not be_valid
+      end
+      it "should not be valid with 0 amount" do
+        @loan.amount = 0
+        @loan.should_not be_valid
+      end
+    end
+  
+    describe "loan product attributes" do
+      describe "if the loan product can give one" do
+        it "should take the amount from the loan product" do
+          @loan_product.max_amount = @loan_product.min_amount = 10000
+          @loan.amount = nil
+          @loan.should be_valid
+          @loan.amount.should == 10000
+        end
+        
+        it "should take the interest rate" do
+          @loan_product.max_interest_rate = @loan_product.min_interest_rate = 20
+          @loan.interest_rate = nil
+          @loan.should be_valid
+          @loan.interest_rate.should == 0.2
+        end
+      end
+      
+      describe "if the loan product cannot give one" do
+        it "should not take the amount from the loan product" do
+          @loan_product.max_amount = 1000; @loan_product.min_amount = 100
+          @loan.amount = nil
+          @loan.should_not be_valid
+          @loan.amount.should == nil
+        end
+        
+        it "should not take the interest rate" do
+          @loan_product.max_interest_rate = 30; @loan_product.min_interest_rate = 20
+          @loan.interest_rate = nil
+          @loan.should_not be_valid
+          @loan.interest_rate.should == nil
+        end
       end
     end
     
-    describe "if the loan product cannot give one" do
-      it "should not take the amount from the loan product" do
-        @loan_product.max_amount = 1000; @loan_product.min_amount = 100
-        @loan.amount = nil
-        @loan.should_not be_valid
-        @loan.amount.should == nil
-      end
 
-      it "should not take the interest rate" do
-        @loan_product.max_interest_rate = 30; @loan_product.min_interest_rate = 20
+    describe "interest rate" do
+      it "should not be valid without a proper interest_rate" do
         @loan.interest_rate = nil
         @loan.should_not be_valid
-        @loan.interest_rate.should == nil
+      end
+      it "should not have a negative interest rate" do
+        @loan.interest_rate = -1
+        @loan.should_not be_valid
+      end
+    end
+    
+    describe "installment frequency" do
+      it "should be valid with a proper installment_frequency" do
+        [:daily, :weekly, :biweekly, :monthly].each do |fq|
+          @loan.installment_frequency = fq
+          @loan.should be_valid
+        end
+      end
+      
+      it "should not be valid without proper installment_frequency" do
+        [nil,'day',:month, :week, 'month',7,14,30].each do |fq|
+          @loan.installment_frequency = fq
+          @loan.should_not be_valid
+        end
+      end
+    end
+    describe "number of installments" do
+      it "should not be valid without a proper number_of_installments" do
+        @loan.number_of_installments = nil
+        @loan.should_not be_valid
+      end
+      it "should not have negatove number of installments" do
+        @loan.number_of_installments = -1
+        @loan.should_not be_valid
+      end
+      it "should not have zero installments" do
+        @loan.number_of_installments = -0
+        @loan.should_not be_valid
       end
     end
   end
 
+  describe "dates" do
+    it "should not be valid without a scheduled_first_payment_date" do
+      @loan.scheduled_first_payment_date = nil
+      @loan.should_not be_valid
+    end
 
-  it "should not be valid without a proper interest_rate" do
-    @loan.interest_rate = nil
-    @loan.should_not be_valid
-    @loan.interest_rate = -1
-    @loan.should_not be_valid
-    @loan.interest_rate = -0.2
-    @loan.should_not be_valid
-    @loan.interest_rate = 0.1
-    @loan.should be_valid
+    it "should not be valid without a scheduled_disbursal_date" do
+      @loan.scheduled_disbursal_date = nil
+      @loan.should_not be_valid
+    end
+
+    it "should not be valid with a disbursal date earlier than the loan is approved" do
+      @loan.disbursed_by = @manager
+      @loan.disbursal_date = @loan.approved_on - 10
+      @loan.should_not be_valid
+      @loan.disbursal_date = @loan.approved_on
+      @loan.should be_valid
+      @loan.disbursal_date = @loan.approved_on + 10
+      @loan.should be_valid
+    end
+
+    it "should not be valid when validated_on is earlier than the disbursal_date" do
+      @loan.disbursed_by   = @manager
+      @loan.disbursal_date = @loan.scheduled_disbursal_date
+      @loan.validated_on   = @loan.disbursal_date
+      @loan.validated_by   = @manager
+      @loan.should be_valid
+      @loan.validated_on   = @loan.disbursal_date + 1
+      @loan.should be_valid
+      @loan.validated_on   = @loan.disbursal_date - 1
+      @loan.should_not be_valid
+    end
+    
+    it "should not be valid when written_off_on is earlier than the disbursal_date" do
+      @loan.written_off_by = @manager
+      @loan.disbursed_by   = @manager
+      @loan.disbursal_date = @loan.scheduled_disbursal_date
+      @loan.written_off_on = @loan.disbursal_date
+      @loan.should be_valid
+      @loan.written_off_on = @loan.disbursal_date + 1
+      @loan.should be_valid
+      @loan.written_off_on = @loan.disbursal_date - 1
+      @loan.should_not be_valid
+    end
+    
+    it "should not be valid without approved_on earlier than scheduled_disbursal_date" do
+      @loan.scheduled_disbursal_date = @loan.approved_on - 10
+      @loan.should_not be_valid
+      @loan.scheduled_disbursal_date = @loan.approved_on
+      @loan.should be_valid
+      @loan.scheduled_disbursal_date = @loan.approved_on + 10
+      @loan.should be_valid
+    end
+    
+    it "should not be valid without being properly written off" do
+      @loan.disbursal_date = @loan.scheduled_disbursal_date
+      @loan.disbursed_by   = @manager
+      @loan.written_off_on = @loan.disbursal_date
+      @loan.written_off_by = @manager
+      @loan.should be_valid
+      @loan.written_off_on = @loan.disbursal_date
+      @loan.written_off_by = nil
+      @loan.should_not be_valid
+      @loan.written_off_on = nil
+      @loan.written_off_by = @manager
+      @loan.should_not be_valid
+    end
+    
+    it "should not be valid without being properly disbursed" do
+      @loan.disbursal_date = @loan.scheduled_disbursal_date
+      @loan.disbursed_by   = @manager
+      @loan.should be_valid
+      @loan.disbursal_date = nil
+      @loan.disbursed_by   = @manager
+      @loan.should_not be_valid
+      @loan.disbursal_date = @loan.scheduled_disbursal_date
+      @loan.disbursed_by   = nil
+      @loan.should_not be_valid
+    end
+    
+    it "should not be valid when scheduled_first_payment_date is before scheduled_disbursal_date" do
+      @loan.scheduled_first_payment_date = @loan.scheduled_disbursal_date + 1
+      @loan.should be_valid
+      @loan.scheduled_first_payment_date = @loan.scheduled_disbursal_date
+      @loan.should be_valid
+      @loan.scheduled_first_payment_date = @loan.scheduled_disbursal_date - 1  # before disbursed
+      @loan.should_not be_valid
+    end
   end
+  
+  describe "center" do
+    before :all do
+      @loan = Factory.create(:loan)
+    end
+    
+    it "should have a center" do
+      @loan.center_id = @center.id
+    end
 
-
-  it "should be valid with a proper installment_frequency" do
-    @loan.installment_frequency = :daily
-    @loan.should be_valid
-    @loan.installment_frequency = :weekly
-    @loan.should be_valid
-    @loan.installment_frequency = :monthly
-    @loan.should be_valid
-  end
-
-  it "should not be valid without proper installment_frequency" do
-    @loan_product.installment_frequency = nil
-    @loan.loan_product = @loan_product
-    @loan.installment_frequency = nil
-    @loan.should_not be_valid
-    @loan.installment_frequency = 'day'
-    @loan.should_not be_valid
-    @loan.installment_frequency = :month
-    @loan.should_not be_valid
-    @loan.installment_frequency = :week
-    @loan.should_not be_valid
-    @loan.installment_frequency = 'month'
-    @loan.should_not be_valid
-    @loan.installment_frequency = 7
-    @loan.should_not be_valid
-    @loan.installment_frequency = 14
-    @loan.should_not be_valid
-    @loan.installment_frequency = 30
-    @loan.should_not be_valid
-    @loan_product.installment_frequency = :weekly
-  end
-
-  it "should not be valid without a proper number_of_installments" do
-    @loan.number_of_installments = nil
-    @loan.should_not be_valid
-    @loan.number_of_installments = -1
-    @loan.should_not be_valid
-    @loan.number_of_installments = -0
-    @loan.should_not be_valid
-  end
-
-  it "should not be valid without a scheduled_first_payment_date" do
-    @loan.scheduled_first_payment_date = nil
-    @loan.should_not be_valid
-  end
-
-  it "should not be valid without a scheduled_disbursal_date" do
-    @loan.scheduled_disbursal_date = nil
-    @loan.should_not be_valid
-  end
-
-  it "should not be valid with a disbursal date earlier than the loan is approved" do
-    @loan.disbursed_by = @manager
-    @loan.disbursed_by = @manager
-    @loan.disbursal_date = @loan.approved_on - 10
-    @loan.should_not be_valid
-    @loan.disbursal_date = @loan.approved_on
-    @loan.should be_valid
-    @loan.disbursal_date = @loan.approved_on + 10
-    @loan.should be_valid
-  end
-
-  it "should not be valid when validated_on is earlier than the disbursal_date" do
-    @loan.disbursed_by   = @manager
-    @loan.disbursal_date = @loan.scheduled_disbursal_date
-    @loan.validated_on   = @loan.disbursal_date
-    @loan.validated_by   = @manager
-    @loan.should be_valid
-    @loan.validated_on   = @loan.disbursal_date + 1
-    @loan.should be_valid
-    @loan.validated_on   = @loan.disbursal_date - 1
-    @loan.should_not be_valid
-  end
-
-  it "should not be valid when written_off_on is earlier than the disbursal_date" do
-    @loan.written_off_by = @manager
-    @loan.disbursed_by   = @manager
-    @loan.disbursal_date = @loan.scheduled_disbursal_date
-    @loan.written_off_on = @loan.disbursal_date
-    @loan.should be_valid
-    @loan.written_off_on = @loan.disbursal_date + 1
-    @loan.should be_valid
-    @loan.written_off_on = @loan.disbursal_date - 1
-    @loan.should_not be_valid
-  end
-
-  it "should not be valid without approved_on earlier than scheduled_disbursal_date" do
-    @loan.scheduled_disbursal_date = @loan.approved_on - 10
-    @loan.should_not be_valid
-    @loan.scheduled_disbursal_date = @loan.approved_on
-    @loan.should be_valid
-    @loan.scheduled_disbursal_date = @loan.approved_on + 10
-    @loan.should be_valid
-  end
-
-  it "should not be valid without being properly written off" do
-    @loan.disbursal_date = @loan.scheduled_disbursal_date
-    @loan.disbursed_by   = @manager
-    @loan.written_off_on = @loan.disbursal_date
-    @loan.written_off_by = @manager
-    @loan.should be_valid
-    @loan.written_off_on = @loan.disbursal_date
-    @loan.written_off_by = nil
-    @loan.should_not be_valid
-    @loan.written_off_on = nil
-    @loan.written_off_by = @manager
-    @loan.should_not be_valid
-  end
-
-  it "should not be valid without being properly disbursed" do
-    @loan.disbursal_date = @loan.scheduled_disbursal_date
-    @loan.disbursed_by   = @manager
-    @loan.should be_valid
-    @loan.disbursal_date = nil
-    @loan.disbursed_by   = @manager
-    @loan.should_not be_valid
-    @loan.disbursal_date = @loan.scheduled_disbursal_date
-    @loan.disbursed_by   = nil
-    @loan.should_not be_valid
-  end
-
-  it "should not be valid when scheduled_first_payment_date is before scheduled_disbursal_date" do
-    @loan.scheduled_first_payment_date = @loan.scheduled_disbursal_date + 1
-    @loan.should be_valid
-    @loan.scheduled_first_payment_date = @loan.scheduled_disbursal_date
-    @loan.should be_valid
-    @loan.scheduled_first_payment_date = @loan.scheduled_disbursal_date - 1  # before disbursed
-    @loan.should_not be_valid
-  end
-
-
-  it ".shift_date_by_installments should shift dates properly, even odd ones.. and backwards." do
-    loan = Loan.new(:installment_frequency => :daily)
-    loan.shift_date_by_installments(Date.parse('2001-01-01'), 1).should == Date.parse('2001-01-02')
-    loan.shift_date_by_installments(Date.parse('2001-01-01'), -1).should == Date.parse('2000-12-31')
-    loan.shift_date_by_installments(Date.parse('2001-12-31'), 1).should == Date.parse('2002-01-01')
-    loan = Loan.new(:installment_frequency => :weekly)
-    loan.shift_date_by_installments(Date.parse('2001-01-01'), 1).should == Date.parse('2001-01-08')
-    loan.shift_date_by_installments(Date.parse('2001-01-01'), -1).should == Date.parse('2000-12-25')
-    loan.shift_date_by_installments(Date.parse('2012-12-21'), 4).should == Date.parse('2013-01-18')
-    loan.shift_date_by_installments(Date.parse('2001-01-01'),-52).should == Date.parse('2000-01-03')
-    loan = Loan.new(:installment_frequency => :biweekly)
-    loan.shift_date_by_installments(Date.parse('2001-01-01'), 1).should == Date.parse('2001-01-15')
-    loan.shift_date_by_installments(Date.parse('2001-01-01'), -1).should == Date.parse('2000-12-18')
-    loan = Loan.new(:installment_frequency => :monthly)
-    loan.shift_date_by_installments(Date.parse('2001-01-01'), 1).should == Date.parse('2001-02-01')
-    loan.shift_date_by_installments(Date.parse('2001-01-01'), -1).should == Date.parse('2000-12-01')
-    loan.shift_date_by_installments(Date.parse('2000-01-31'), 1).should == Date.parse('2000-02-29') # febs last days:
-    loan.shift_date_by_installments(Date.parse('2000-01-30'), 1).should == Date.parse('2000-02-29')
-    loan.shift_date_by_installments(Date.parse('2000-01-29'), 1).should == Date.parse('2000-02-29')
-    loan.shift_date_by_installments(Date.parse('2000-03-31'), -1).should == Date.parse('2000-02-29')
-    loan.shift_date_by_installments(Date.parse('2000-03-30'), -1).should == Date.parse('2000-02-29')
-    loan.shift_date_by_installments(Date.parse('2000-03-29'), -1).should == Date.parse('2000-02-29')
-    loan.shift_date_by_installments(Date.parse('2001-01-31'), 1).should == Date.parse('2001-02-28')
-    loan.shift_date_by_installments(Date.parse('2001-01-30'), 1).should == Date.parse('2001-02-28')
-    loan.shift_date_by_installments(Date.parse('2001-01-29'), 1).should == Date.parse('2001-02-28')
-    loan.shift_date_by_installments(Date.parse('2001-01-28'), 1).should == Date.parse('2001-02-28')
-    loan.shift_date_by_installments(Date.parse('2001-03-31'), -1).should == Date.parse('2001-02-28')
-    loan.shift_date_by_installments(Date.parse('2001-03-30'), -1).should == Date.parse('2001-02-28')
-    loan.shift_date_by_installments(Date.parse('2001-03-29'), -1).should == Date.parse('2001-02-28')
-    loan.shift_date_by_installments(Date.parse('2001-03-28'), -1).should == Date.parse('2001-02-28')
-  end
-
-
-  it ".number_of_installments_before should do what it promises" do
-    loan = Loan.new(:installment_frequency => :daily, :scheduled_first_payment_date => Date.parse('2001-01-01'), :number_of_installments => 10)
-    loan.number_of_installments_before(Date.parse('2001-01-01')).should == 1
-    loan.number_of_installments_before(Date.parse('2001-01-02')).should == 2
-    loan.number_of_installments_before(Date.parse('2001-01-03')).should == 3
-    loan.number_of_installments_before(Date.parse('2000-12-31')).should == 0
-    loan.number_of_installments_before(Date.parse('1999-01-01')).should == 0
-    loan.number_of_installments_before(Date.parse('2001-01-10')).should == 10
-    loan.number_of_installments_before(Date.parse('2001-01-11')).should == 10
-    loan.installment_frequency = :weekly
-    loan.number_of_installments_before(Date.parse('2001-01-01')).should == 1
-    loan.number_of_installments_before(Date.parse('2001-01-02')).should == 1
-    loan.number_of_installments_before(Date.parse('2001-01-08')).should == 2
-    loan.number_of_installments_before(Date.parse('2001-01-01')+(7*10)).should == 10
-    loan.number_of_installments_before(Date.parse('2001-01-01')+(7*10)+1).should == 10
-    loan.number_of_installments_before(Date.parse('2001-01-01')+(7*10)+100).should == 10
-    loan.number_of_installments_before(Date.parse('1999-01-01')).should == 0
-    loan.installment_frequency = :biweekly
-    loan.number_of_installments_before(Date.parse('2001-01-01')).should == 1
-    loan.number_of_installments_before(Date.parse('2001-01-14')).should == 1
-    loan.number_of_installments_before(Date.parse('2001-01-15')).should == 2
-    loan.number_of_installments_before(Date.parse('2001-01-01')+10*14).should == 10
-    loan.number_of_installments_before(Date.parse('2001-01-01')+100*14).should == 10
-    loan.number_of_installments_before(Date.parse('1999-01-01')).should == 0
-    loan.installment_frequency = :monthly
-    loan.number_of_installments_before(Date.parse('2001-01-01')).should == 1
-    loan.number_of_installments_before(Date.parse('2001-02-01')).should == 2
-    loan.number_of_installments_before(Date.parse('2001-03-01')).should == 3
-    loan.number_of_installments_before(Date.parse('2001-10-01')).should == 10
-    loan.number_of_installments_before(Date.parse('2001-11-01')).should == 10
-    loan.scheduled_first_payment_date = Date.parse('2000-01-30')  # febs last days
-    loan.number_of_installments_before(Date.parse('2000-02-01')).should == 1
-    loan.number_of_installments_before(Date.parse('2000-02-28')).should == 1
-    loan.number_of_installments_before(Date.parse('2000-02-29')).should == 1
-    loan.number_of_installments_before(Date.parse('2000-03-01')).should == 2
-    loan.number_of_installments_before(Date.parse('2000-03-30')).should == 3
-    loan.scheduled_first_payment_date = Date.parse('2001-01-30')  # febs last days (non leap year)
-    loan.number_of_installments_before(Date.parse('2001-02-28')).should == 1
-    loan.number_of_installments_before(Date.parse('2001-03-01')).should == 2
-    loan.number_of_installments_before(Date.parse('2001-03-30')).should == 3
+    it "should not change the center when the client center changes" do
+      @center2 = Factory(:center)
+      @client.center = @center2
+      @loan.valid?
+      @loan.center.id should == @center.id
+    end
   end
 
   it ".last_loan_history_date should have some tests -- albeit more a view thing" do
-    (@loan.scheduled_first_payment_date + (@loan.number_of_installments - 1) * @loan.installment_frequency_in_days).should == @loan.payment_schedule.keys.max
+    (@loan.scheduled_first_payment_date + (@loan.number_of_installments - 1) * 7).should == @loan.payment_schedule.keys.max
   end
 
   it ".scheduled_repaid_on give the proper date" do
@@ -452,12 +393,50 @@ describe Loan do
     lambda { @loan.repay(@loan.total_to_be_received, @user, Date.today, @manager) }.should raise_error
   end
 
-  it ".installment_dates should give a list with some dates" do
-    dates = @loan.installment_dates
-    dates.uniq.size.should eql(@loan.number_of_installments)
-    dates.sort[0].should eql(@loan.scheduled_first_payment_date)
-    dates.sort[-1].should eql(@loan.scheduled_repaid_on)
-    dates.sort[-2].should eql(@loan.shift_date_by_installments(@loan.scheduled_repaid_on, -1))
+  describe "installment_dates" do
+    before :each do
+      @dates = @loan.installment_dates
+    end
+
+    it "should give a list with correct dates" do
+      @dates.uniq.size.should eql(@loan.actual_number_of_installments)
+      @dates.sort[0].should eql(@loan.scheduled_first_payment_date)
+      @dates.sort[-1].should eql(@loan.scheduled_repaid_on)
+    end
+
+    it ".installment_dates should correctly deal with holidays" do
+      Holiday.all.destroy!; HolidayCalendar.all.destroy!
+      d1 = @loan.installment_dates[5]
+      @h = Holiday.new(:name => "test", :date => d1, :new_date => d1 + 2)
+      @h.save
+      @hc = HolidayCalendar.new(:branch_id => @branch.id)
+      @hc.add_holiday(@h)
+      @hc.save
+      @loan.update_history
+      @loan.clear_cache
+      @loan.installment_dates[5].should == (d1 + 2)
+    end
+    
+    describe "with validation scheduled_dates_must_be_center_meeting_days" do
+      before :each do
+        @loan_product.loan_validation_methods = "scheduled_dates_must_be_center_meeting_days"
+        @loan_product.save
+        @cmd = CenterMeetingDay.new(:meeting_day => :tuesday, :valid_from => @loan.scheduled_first_payment_date + 29, :center => @center)
+        @cmd.save
+        @center.reload
+        @loan.relaod
+        @loan.clear_cache
+
+      end
+      
+      it "should change with center meeting date change" do
+        @loan.installment_dates[5..-1].map(&:weekday).uniq.should == [:tuesday]
+      end
+    end
+    
+
+
+
   end
 
 
@@ -573,18 +552,6 @@ describe Loan do
     @loan.destroy.should be_true
   end
     
-  it ".installment_dates should correctly deal with holidays" do
-    Holiday.all.destroy!; HolidayCalendar.all.destroy!
-    d1 = @loan.installment_dates[5]
-    @h = Holiday.new(:name => "test", :date => d1, :new_date => d1 + 2)
-    @h.save
-    @hc = HolidayCalendar.new(:branch_id => @branch.id)
-    @hc.add_holiday(@h)
-    @hc.save
-    @loan.update_history
-    @loan.clear_cache
-    @loan.installment_dates[5].should == (d1 + 2)
-  end
 
   it "should give correct cashflow for irr" do
   end
@@ -613,16 +580,6 @@ describe Loan do
   end
 
   it "should do deletion of payment" do 
-  end
-
-  it "should change with center meeting date change" do
-    @loan_product.loan_validation_methods = "scheduled_dates_must_be_center_meeting_days"
-    @loan_product.save
-    @cmd = CenterMeetingDay.new(:meeting_day => :tuesday, :valid_from => @loan.scheduled_first_payment_date + 29, :center => @center)
-    @cmd.save
-    @center.reload
-    @loan.clear_cache
-    @loan.installment_dates[5..-1].map(&:weekday).uniq.should == [:tuesday]
   end
 
   

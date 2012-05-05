@@ -135,6 +135,11 @@ class Center
     end
   end
   
+  # we need a slice method to respond to Loan#installment_source
+  def slice(from, to)
+    meeting_dates(to, from)
+  end
+  
   # Public: returns the date vector in use for a given date.
   #
   # DEPRECATED use meeting_day_for(date).date_vector
@@ -148,31 +153,6 @@ class Center
   end
 
     
-  # a simple catalog (Hash) of center names and ids grouped by branches
-  # returns some like: {"One branch" => {1 => 'center1', 2 => 'center2'}, "b2" => {3 => 'c3', 4 => 'c4'}} 
-  #
-  # DEPRECATED this should probably move to center_helpers or something as it is only used on the view side
-  def self.catalog(user=nil)
-    result = {}
-    branch_names = {}
-
-    if (user or Nothing).staff_member
-      staff_member = user.staff_member
-      [staff_member.centers.branches, staff_member.branches].flatten.each{|b| branch_names[b.id] = b.name }
-      centers = [staff_member.centers, staff_member.branches.centers].flatten
-    else
-      Branch.all(:fields => [:id, :name]).each{|b| branch_names[b.id] = b.name}
-      centers = Center.all(:fields => [:id, :name, :branch_id])
-    end
-         
-    centers.each do |center|
-      branch = branch_names[center.branch_id]
-      result[branch] ||= {}
-      result[branch][center.id] = center.name
-    end
-    result
-  end
-
   # Public: returns the meeting day for a given date
   #
   # date: the Date for which the meeting day is desired
@@ -310,43 +290,7 @@ class Center
   end
   
 
-  # def handle_meeting_date_change
-  #   # no need to do all this if meeting date was not changed
-  #   return true unless self.meeting_day_change_date
-
-  #   date = self.meeting_day_change_date
-
-  #   if not CenterMeetingDay.first(:center => self)
-  #     # FIXME: This line appears to be failing, because the period attribute is left blank and should be one of %w[week month] probably true in the "elsif" below as well. This means new centers never get a meeting day.
-  #     CenterMeetingDay.create(:center_id => self.id, :valid_from => creation_date||date, :meeting_day => self.meeting_day)
-  #   elsif self.meeting_day != self.meeting_day_for(date)
-  #     if prev_cm = CenterMeetingDay.first(:center_id => self.id, :valid_from.lte => date, :order => [:valid_from.desc])
-  #       # previous CMD should be valid upto date - 1
-  #       prev_cm
-  #       prev_cm.valid_upto = date - 1        
-  #       prev_cm
-  #       prev_cm.save!
-  #     end
-      
-  #     # next CMD's valid from date should be valid upto limit for this CMD
-  #     if next_cm = CenterMeetingDay.first(:center => self, :valid_from.gt => date, :order => [:valid_from])
-  #       valid_upto = next_cm.valid_from - 1
-  #     else
-  #       valid_upto = Date.new(2100, 12, 31)
-  #     end
-  #     CenterMeetingDay.create!(:center_id => self.id, :valid_from => date, :meeting_day => self.meeting_day, :valid_upto => valid_upto)
-  #   end
-  #   #clear cache
-  #   @meeting_days = nil 
-  #   Center.get(self.id).clients(:fields => [:id, :center_id]).loans.each{|l|
-  #     if [:outstanding, :disbursed].include?(l.status)
-  #       l.update_history
-  #     end
-  #   }
-  #   return true
-  # end  
-
-
+ 
   def handle_meeting_days
     # this function creates the first center meeting day for the center when only a meeting day is specified.
     # we will soon deprecate the meeting_day field and work only with center_meeting_days

@@ -4,8 +4,7 @@ class CenterMeetingDay
   DAYS = [:none, :monday, :tuesday, :wednesday, :thursday, :friday, :saturday, :sunday]
 
   before :valid?, :convert_blank_to_nil
-  before :valid?, :set_date_vector_properties              # the meeting_day property is just for show. internally, we ensure that :what is always set
-# before :valid?, :substitute_nils_for_dates
+  before :valid?, :set_date_vector_properties
   after :destroy, :fix_dates
   after :save,    :add_loans_to_queue
 

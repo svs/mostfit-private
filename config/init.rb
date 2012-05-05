@@ -1,6 +1,7 @@
 # Go to http://wiki.merbivore.com/pages/init-rb
 # require 'lib/irb.rb'
 require 'yaml'
+
 require 'config/dependencies.rb'
 
 use_orm :datamapper
@@ -52,8 +53,12 @@ Merb::BootLoader.before_app_loads do
   require 'lib/core_ext.rb'
   require 'lib/fees_container.rb'
   require 'lib/datevector.rb'
+  require 'lib/loan_display.rb'
+  require 'lib/loan_fiddling.rb'
+  require 'lib/irblib.rb'
   require 'gettext'
   require 'haml_gettext'
+  require 'thermostat'
 
   #initialize i18n
   require 'i18n'
@@ -107,13 +112,7 @@ end
 
 Merb::BootLoader.after_app_loads do
   # This will get executed after your app's classes have been loaded.
- 
-  loan_types = Loan.descendants
 
-  begin; $holidays = Holiday.all.map{|h| [h.date, h]}.to_hash; rescue; end
-
-  # Starting the logger takes time, so turn it off during development
-#  Misfit::Logger.start(['Loans', 'Clients','Centers','Branches','Payments', 'DataEntry::Payments']) #unless Merb.environment == "development" or Merb.environment == "test"
   # Load the validation hooks
   # ruby is too beautiful. 3 lines of code and all payments can get their appropriate validations which are decided by the
   # loan product.
