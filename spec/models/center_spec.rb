@@ -100,32 +100,36 @@ describe Center do
       
       
 
-  it "should give correct meeting days in this instance" do
-    start_date = Date.new(2010,1,1)
-    start_date = start_date - start_date.cwday + 8
-    start_date.weekday.should == :monday
-    date = start_date
-    result = [date]
-    while date <= SEP_DATE
-      date += 7
-      result << date if date <= SEP_DATE
+  describe "meeting dates" do
+    before :all do
+      @start_date = Date.new(2010,1,1)
+      @start_date = @start_date - @start_date.cwday + 8
+      @start_date.weekday.should == :monday
+      date = @start_date
+      @result = [date]
+      while date <= SEP_DATE
+        date += 7
+        @result << date if date <= SEP_DATE
+      end
     end
-    @center.meeting_dates.should == result
-
-    # then check for meeting dates where to is an integer
-    r2 = @center.meeting_dates(10)
-    r2.should == result[0..9]
-
-    # then check for meeting dates where to is a date
-    r2 = @center.meeting_dates(Date.new(2010,12,31))
-    r2.should == result.select{|d| d <= Date.new(2010,12,31)}
-
-    # check with a from date
-    r2 = @center.meeting_dates(Date.new(2010,12,31), Date.new(2010,11,01))
-    r2.should == result.select{|d| d <= Date.new(2010,12,31) and d >= Date.new(2010,11,01)}
-
-    # check corner cases
-    @center.meeting_dates(start_date, start_date).should == [start_date]
+    it "should give correct meeting dates without any arguments" do
+      @center.meeting_dates.should == @result
+    end
+    it "should be correct when asking for an integer" do
+      r2 = @center.meeting_dates(10)
+      r2.should == @result[0..9]
+    end
+    it "should be correct when asked uptil a date" do
+      r2 = @center.meeting_dates(Date.new(2010,12,31))
+      r2.should == @result.select{|d| d <= Date.new(2010,12,31)}
+    end
+    it "should be correct with a from date as well" do
+      r2 = @center.meeting_dates(Date.new(2010,12,31), Date.new(2010,11,01))
+      r2.should == @result.select{|d| d <= Date.new(2010,12,31) and d >= Date.new(2010,11,01)}
+    end
+    it "should cover corner case" do
+      @center.meeting_dates(@start_date, @start_date).should == [@start_date]
+    end
   end
 
 
@@ -195,6 +199,7 @@ describe Center do
     @center.meeting_day?(start_date + 7).should == true
   end
 
+  # Not a unit test!!! 
   it "should show up properly in Branch#centers_With_paginate" do
     repository.adapter.execute("truncate table branches") # truncate resets the ids as well. this ensures that the catalog test passescata
     repository.adapter.execute("truncate table centers")

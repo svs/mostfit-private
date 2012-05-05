@@ -176,6 +176,7 @@ FactoryGirl.define do
     name            { Factory.next(:province) }
     code            { Factory.next(:center_code) }
     meeting_day     :wednesday
+    creation_date   Date.new(1999,12,31)
 
     association     :branch
     association     :manager, :factory => :staff_member
@@ -241,21 +242,27 @@ FactoryGirl.define do
     association                   :client
     association                   :loan_product
     # association                   :repayment_style
-
-    # These cached properties should probably be set automatically somewhere?
-    c_center_id                   { self.client.center.id }
-    c_branch_id                   { self.client.center.branch.id }
   end
 
   # This is a variation of the minimal :loan factory, representing a recently disbursed loan.
   # It includes disbursal dates and other attributes necessary to make
   # the loan work with the :payment factory and others.
-  factory :disbursed_loan, :parent => :loan do
+
+  factory :approved_loan, :parent => :loan do
     approved_by                   { self.applied_by }
-    approved_on                   { Date.today - 20 }
-    scheduled_disbursal_date      { Date.today - 10 }
-    disbursal_date                { Date.today - 10 }
-    scheduled_first_payment_date  { Date.today + 10 }
+    approved_on                   { Date.new(2000,2,3) }
+  end
+
+  factory :rejected_loan, :parent => :loan do
+    rejected_by                   { self.applied_by }
+    rejected_on                   { Date.new(2000,2,3) }
+  end
+
+
+  factory :disbursed_loan, :parent => :approved_loan do
+    scheduled_disbursal_date      { Date.new(2000,6,13) }
+    disbursal_date                { Date.new(2000,6,13) }
+    scheduled_first_payment_date  { Date.new(2000,12,6) }
     disbursed_by                  { self.applied_by }
   end
 
@@ -266,9 +273,8 @@ FactoryGirl.define do
     max_interest_rate           100
     min_interest_rate           0.1
     installment_frequency       :weekly
-    min_number_of_installments  1
-    max_number_of_installments  125
-    # loan_type                   "DefaultLoan" # <= property was commented out in the model but still used in the tests
+    min_number_of_installments  12
+    max_number_of_installments  25
     valid_from                  { Date.parse('2000-01-01') }
     valid_upto                  { Date.parse('2012-01-01') }
 

@@ -57,19 +57,6 @@ class LoanProduct
   # this is for reasons of sanity.
   # validates_present :reference, :if => Proc.new{|t| Mfi.first.state == :migration}
   
-  def self.from_csv(row, headers)
-    min_interest = row[headers[:min_interest_rate]].to_f < 1 ? row[headers[:min_interest_rate]].to_f*100 : row[headers[:min_interest_rate]]
-    max_interest = row[headers[:max_interest_rate]].to_f < 1 ? row[headers[:max_interest_rate]].to_f*100 : row[headers[:max_interest_rate]]
-    obj = new(:name => row[headers[:name]], :min_amount => row[headers[:min_amount]], :max_amount => row[headers[:max_amount]], 
-              :min_interest_rate => min_interest, :max_interest_rate => max_interest, 
-              :min_number_of_installments => row[headers[:min_number_of_installments]], 
-              :max_number_of_installments => row[headers[:max_number_of_installments]], 
-              :installment_frequency => row[headers[:installment_frequency]].downcase.to_sym,
-              :valid_from => Date.parse(row[headers[:valid_from]]), :valid_upto => Date.parse(row[headers[:valid_upto]]),
-              :loan_type_string => row[headers[:loan_type]],
-              :repayment_style => RepaymentStyle.first(:name => row[headers[:repayment_style]]), :upload_id => row[headers[:upload_id]])
-    [obj.save, obj]
-  end
 
   def payment_validations
     (payment_validation_methods or "").split(",").map{|m| m.to_sym}
@@ -77,6 +64,18 @@ class LoanProduct
 
   def loan_validations
     (loan_validation_methods or "").split(",").map{|m| m.to_sym}
+  end
+
+  def has_loan_validation?(method_name)
+    loan_validations.include?(method_name.to_sym)
+  end
+
+  def has_payment_validation?(method_name)
+    payment_validations.include?(method_name.to_sym)
+  end
+
+  def has_validation?(method_name)
+    (loan_validations + payment_validations).include?(method_name.to_sym)
   end
 
   def self.valid(date=Date.today)

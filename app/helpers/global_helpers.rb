@@ -49,6 +49,32 @@ module Merb
       base + "/loans/#{loan.id}/" + action.to_s + (opts.length>0 ? "?#{opts.inject([]){|s,x| s << "#{x[0]}=#{x[1]}"}.join("&")}" : '')
     end
 
+    # a simple catalog (Hash) of center names and ids grouped by branches
+    # returns some like: {"One branch" => {1 => 'center1', 2 => 'center2'}, "b2" => {3 => 'c3', 4 => 'c4'}} 
+    #
+    def center_catalog(user=nil)
+      result = {}
+      branch_names = {}
+      
+      if (user or Nothing).staff_member
+        staff_member = user.staff_member
+        [staff_member.centers.branches, staff_member.branches].flatten.each{|b| branch_names[b.id] = b.name }
+        centers = [staff_member.centers, staff_member.branches.centers].flatten
+      else
+        Branch.all(:fields => [:id, :name]).each{|b| branch_names[b.id] = b.name}
+        centers = Center.all(:fields => [:id, :name, :branch_id])
+      end
+      
+      centers.each do |center|
+        branch = branch_names[center.branch_id]
+        result[branch] ||= {}
+        result[branch][center.id] = center.name
+      end
+      result
+    end
+
+
+
     def select_staff_member_for(obj, col, attrs = {}, allow_unassigned=false)
       id_col = "#{col.to_s}_staff_id".to_sym
       selected = ((obj.send(id_col) and obj.send(id_col)!="") ? obj.send(id_col).to_s : attrs[:selected] || "0")
@@ -69,7 +95,7 @@ module Merb
     def select_center_for(obj, col, attrs = {})
       id_col = "#{col.to_s}_id".to_sym
       collection = []
-      catalog = Center.catalog(session.user)
+      catalog = center_catalog(session.user)
       catalog.keys.sort.each do |branch_name|
         collection << ['', branch_name]
         catalog[branch_name].sort_by{|x| x[1]}.each{ |k,v| collection << [k.to_s, "!!!!!!!!!#{v}"] }
