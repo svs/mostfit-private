@@ -116,6 +116,7 @@
       %li#payments Repayments
       %li#attendance Attendance
       %li#misc Miscellaneous
+      %li#claims Claims
     %div.tab
       %h2== Loans for client <i>#{@client.name}</i>
       
@@ -208,7 +209,7 @@
       %input{:type => "hidden", :name => "_load_remote", :value => resource(:documents, :parent_id => @client.id, :parent_model => Client)}
     %div.tab
       %h3 Insurance Policies
-      = link_to "Add an insurance policy", resource(@client, :insurance_policies, :new), :class => "add"
+      = link_to "Add an insurance policy", resource(@client, :insurance_policies, :new), :class => "add" 
       %table
         %tr
           %td
@@ -242,5 +243,6 @@
               = date_select "date", Date.today
               = submit 'move client', :class => 'greenButton'
 
-
-  
+    %div.tab
+      %h1
+        = link_to('Click here for claim processing', resource(@client, :claims), :class => "greenButton")
