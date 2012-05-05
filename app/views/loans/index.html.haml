@@ -113,6 +113,7 @@
       %li#payments Repayments
       %li#attendance Attendance
       %li#misc Miscellaneous
+      %li#claims Claims
     %div.tab
       %h2== Loans for client <i>#{@client.name}</i>
       
@@ -206,8 +207,6 @@
     %div.tab
       %h3 Insurance Policies
       = link_to "Add an insurance policy", resource(@client, :insurance_policies, :new), :class => "add" 
-      %br
-      = link_to('Click here for claim processing', resource(@client, :claims))
       %table
         %tr
           %td
@@ -235,5 +234,6 @@
           = partial "applicable_fees/form", :layout => false, :object => @client
 
 
-
-  
+    %div.tab
+      %h1
+        = link_to('Click here for claim processing', resource(@client, :claims), :class => "greenButton")
