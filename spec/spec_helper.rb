@@ -30,8 +30,9 @@ Spork.prefork do
     
     config.before(:all) do
       if Merb.orm == :datamapper
-        DataMapper.auto_migrate!
-        (repository.adapter.query("show tables") - ["payments", "journals", "postings"]).each{|t| repository.adapter.execute("alter table #{t} ENGINE=MYISAM")}
+        #puts "MIGRATING!"
+        #DataMapper.auto_migrate!
+        #(repository.adapter.query("show tables") - ["payments", "journals", "postings"]).each{|t| repository.adapter.execute("alter table #{t} ENGINE=MYISAM")}
       end
     end
     
@@ -39,6 +40,30 @@ Spork.prefork do
   
   # Don't include the factories until the environment has been loaded
   require 'spec/factories'
+
+  class LoanSpecHoover   
+    @@variables = false   
+    
+    def self.empty?   
+      !@@variables   
+    end   
+    
+    def self.save_instance_variables(object, &block)   
+      if @@variables   
+        @@variables.each do |var, val|   
+          object.instance_variable_set(var, val)   
+        end   
+      else   
+        yield   
+        @@variables = {}   
+        object.instance_variables.each do |var|   
+          @@variables[var] = object.instance_variable_get(var)
+        end   
+      end   
+    end   
+  end   
+  
+
   
 end
 

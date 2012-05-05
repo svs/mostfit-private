@@ -83,7 +83,8 @@ class Center
   #
   # Returns a list of center meeting dates 
   def meeting_dates(to = nil,from = nil)
-    unless @meeting_dates_array
+    handle_meeting_days
+    if @meeting_dates_array.blank?
       # sigh - first time? ok, we'll build the array of meeting dates
       @meeting_dates_array = []
       

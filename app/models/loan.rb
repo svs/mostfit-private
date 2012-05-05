@@ -11,13 +11,14 @@ class Loan
   before :valid?,    :parse_dates
   before :valid?,    :convert_blank_to_nil
   after  :save,      :update_history_caller  # also seems to do updates
-  before :save,      :update_loan_cache
   after  :create,    :levy_fees_new          # we need a separate one for create for a variety of reasons to  do with overwriting old fees
   before :save,      :levy_fees
   after  :create,    :update_cycle_number
   before :destroy,   :verified_cannot_be_deleted
   before :valid?,    :set_loan_product_parameters
   before :save,      :set_bullet_installments
+
+  before :valid?,    :set_center
 
   # This could really use a better name.
   def rs
@@ -45,7 +46,7 @@ class Loan
   property :id,                             Serial
   property :discriminator,                  Discriminator, :nullable => false, :index => true
 
-  property :amount,                         Float, :nullable => false, :index => true  # this is the disbursed amount
+  property :amount,                         Float, :nullable => false, :index => true, :min => 0.01  # this is the disbursed amount
   property :amount_applied_for,             Float, :index => true
   property :amount_sanctioned,              Float, :index => true
 
@@ -98,35 +99,11 @@ class Loan
   property :loan_utilization_id,                Integer, :lazy => true, :nullable => true
   property :under_claim_settlement,             Date, :nullable => true
   property :repayment_style_id,                 Integer, :nullable => true
-  # Caching baby!
-
-  # this caching is totally inappropriate now with the upgrade of the LoanHistory model.
-  # All values must come from LoanHistory model. These properties will be deprecated but before that
-  # * we need to change all the reporting to move away from the SQL statements
-  # * we need to replace c_branch_id and c_client_id with branch_id and client_id (this is currently causing problems in reporting)
-
-  property :staleness_frequency, Integer
-
-  property :c_client_group_id,                   Integer, :index => true
-  property :c_center_id,                         Integer, :index => true
-  property :c_branch_id,                         Integer, :index => true
-  property :c_scheduled_maturity_date,           Date
-  property :c_maturity_date,                     Date
-  property :c_actual_first_payment_date,         Date
-  property :c_last_status,                       Integer
-  property :c_principal_received,                Float
-  property :c_interest_received,                 Float
-  property :c_last_payment_received_on,          Date
-  property :c_last_payment_id,                   Integer
-  property :c_stale?,                            Boolean
-  
-  property :converted,                           Boolean
-
-  property :reference,                           String, :unique => true # to be used during migrations
   
 
   # associations
   belongs_to :client
+  belongs_to :center
   belongs_to :funding_line,              :nullable => true
   belongs_to :loan_product
   belongs_to :loan_purpose,              :nullable  => true
@@ -146,23 +123,15 @@ class Loan
   belongs_to :repayment_style
 
 
-  belongs_to :organization, :parent_key => [:org_guid], :child_key => [:parent_org_guid], :nullable => true  
-  property   :parent_org_guid, String, :nullable => true
-  
-  belongs_to :domain, :parent_key => [:domain_guid], :child_key => [:parent_domain_guid], :nullable => true
-  property   :parent_domain_guid, String, :nullable => true
-
   has n, :loan_history,                                                                       :model => 'LoanHistory'
   has n, :payments
   has n, :audit_trails,       :child_key => [:auditable_id], :auditable_type => "Loan"
   has n, :portfolio_loans
   has 1, :insurance_policy
   has n, :applicable_fees,    :child_key => [:applicable_id], :applicable_type => "Loan"
-  has n, :accruals
+
   #validations
-
   validates_present      :client, :scheduled_disbursal_date, :scheduled_first_payment_date, :applied_by, :applied_on
-
   validates_with_method  :amount,                       :method => :amount_greater_than_zero?
   validates_with_method  :interest_rate,                :method => :interest_rate_greater_than_or_equal_to_zero?
   validates_with_method  :number_of_installments,       :method => :number_of_installments_greater_than_zero?
@@ -223,37 +192,11 @@ class Loan
     amount_applied_for || amount
   end
 
-  def update_loan_cache(force = true)
-    update_non_history_attributes(true)
-  end
-  
-  def update_non_history_attributes(force)
-    force = true if self.new?
-    self.repayment_style = self.rs
-    @orig_attrs = self.original_attributes
-    t = Time.now # < Are we using this for anything?
-    self.c_center_id = self.client.center.id if force
-    self.c_branch_id = self.client.center.branch.id if force
-    self.c_client_group_id = (self.client.client_group_id if force) or 0
-    self.c_scheduled_maturity_date = scheduled_maturity_date
-    st = self.get_status
-    self.c_last_status = STATUSES.index(st) + 1
-  end
-
-  def effective_rate
-    self.interest_rate
-  end
-
   # returns the row from LoanHistory table pertaining to the date given
   def info(date = Date.today)
     LoanHistory.first(:loan_id => id, :date.lte => date, :order => [:date.desc], :limit => 1)
   end
 
-  def check_validity_of_cheque_number
-    return true if not self.cheque_number or (self.cheque_number and self.cheque_number.blank?)
-    return [false, "This cheque is already used"] if Loan.all(:cheque_number => self.cheque_number, :id.not => self.id).count>0
-    return true
-  end
 
   def is_valid_loan_product_amount; is_valid_loan_product(:amount); end
   def is_valid_loan_product_interest_rate; is_valid_loan_product(:interest_rate); end
@@ -838,7 +781,7 @@ class Loan
   # Public: returns the dates on which SCHEDULED installments fall due for this loan
   def installment_dates
     return @_installment_dates if @_installment_dates
-    @_installment_dates = self.send(:installment_source).send(:slice, scheduled_first_payment_date, actual_number_of_installments)
+    @_installment_dates = self.send(installment_source).send(:slice, scheduled_first_payment_date, actual_number_of_installments)
   end
 
 
@@ -871,14 +814,13 @@ class Loan
 
   def calculate_history
     return @history_array if @history_array
-    # Crazy heisenbug is fixed by prefetching payments hash
     t = Time.now; @history_array = []
     now = DateTime.now
+
+    # Crazy heisenbug is fixed by prefetching payments hash
     payments_hash
     
-    update_loan_cache unless c_branch_id and c_center_id
     # get fee payments. this is probably better of moved to functions in the fees_container
-
     fee_payments= Payment.all(:loan_id => id, :type => :fees).group_by{|p| p.received_on}.map do |k,v| 
       amt = v.is_a?(Array) ? (v.reduce(0){|s,h| s + h.amount} || 0) : v.amount
       [k,amt]
@@ -1007,7 +949,7 @@ class Loan
         :composite_key                       => "#{id}.#{(i/10000.0).to_s.split('.')[1]}".to_f,
         :branch_id                           => client.branch_for_date(date),
         :center_id                           => client.center_for_date(date),
-        :client_group_id                     => c_client_group_id || 0,
+        :client_group_id                     => 0,                                # not tracking as not relevant for reports....or is it?
         :client_id                           => client_id,
         :created_at                          => now,
         :funding_line_id                     => funding_line_id,
@@ -1090,18 +1032,22 @@ class Loan
     ((balance * interest_rate) / get_divider).round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
   end
 
-
-
-
-
   private
 
   include DateParser  # mixin for the hook "before :valid?, :parse_dates"
   include Misfit::LoanValidators
 
+  def set_center
+    return false unless self.client
+    self.center = self.client.center unless self.center
+  end
+
   def installment_source
-    return "center" if loan_product and loan_product.has_validation?("scheduled_dates_must_be_center_meeting_days")
-    return scheduler
+    if loan_product and loan_product.has_validation?("scheduled_dates_must_be_center_meeting_days")
+      set_center
+      return "center" 
+    end
+    return "scheduler"
   end
 
   def scheduler
@@ -1160,6 +1106,13 @@ class Loan
   end
 
   ## validations: read their method name and error to see what they do.
+  def check_validity_of_cheque_number
+    return true if not self.cheque_number or (self.cheque_number and self.cheque_number.blank?)
+    return [false, "This cheque is already used"] if Loan.all(:cheque_number => self.cheque_number, :id.not => self.id).count>0
+    return true
+  end
+
+
   def dates_are_not_holidays
     h = ["scheduled_disbursal_date", "scheduled_first_payment_date"].map{|d| [d,Misfit::Config.holidays.include?(self.send(d))]}.reject{|e| e[1] == false}
     return true if h.blank?
