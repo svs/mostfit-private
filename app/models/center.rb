@@ -22,11 +22,10 @@ class Center
   belongs_to :branch
   belongs_to :manager, :child_key => [:manager_staff_id], :model => 'StaffMember'
 
-  has n, :clients
+  has n, :client_center_memberships
   has n, :client_groups
   has n, :loan_history
   has n, :center_meeting_days
-  has n, :weeksheets
   
   validates_is_unique   :code, :scope => :branch_id
   validates_length      :code, :min => 1, :max => 12

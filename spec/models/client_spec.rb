@@ -3,6 +3,7 @@ require File.join( File.dirname(__FILE__), '..', "spec_helper" )
 describe Client do
 
   before(:all) do
+    [StaffMember, Branch, Center, User, LoanProduct, Loan, ClientCenterMembership].each{|x| x.all.destroy!}
     @manager = Factory(:staff_member)
     @manager.save
     
@@ -23,13 +24,59 @@ describe Client do
 
   before(:each) do
     Client.all.destroy!
-    @client = Factory(:client, :center => @center)
+    @client = Factory.build(:client, :center => @center)
     @client.should be_valid
+    @client.save
   end
 
+  describe "centers" do
+    it "should have a CenterMembership" do
+      @client.client_center_memberships.count.should == 1
+    end
+    it "'s initial center membership must start on the joining date and never end" do
+      @client.client_center_memberships.first.from.should == @client.date_joined
+    end
+
+    describe "adding another center" do
+      before :all do
+        @center2 = Factory(:center, :manager => @manager, :branch => @branch)
+      end
+      it "should not be duplicated" do
+        @client.center = [@center, @client.date_joined]
+        @client.client_center_memberships.count.should == 1
+      end
+      it "adds a center_membership when properly called" do
+        @client.center= [@center, (Date.today + 10)]
+        @client.client_center_memberships.length.should == 2
+      end
+      describe "listing memberships" do
+        before :all do
+          Client.all.destroy!
+          @client = Factory.build(:client, :center => @center)
+          @client.center= [@center2, (Date.today + 10)]
+          @client.save
+        end
+        
+        it "should give correct center_as_of" do
+          @client.center.should == @center
+          Set.new([@client.center(Date.today + 15)]).should == Set.new([@center,@center2])
+        end
+        it "should respect membership end dates" do
+          cm = @client.client_center_memberships.first
+          cm.upto = Date.today + 15
+          cm.save
+          @client.reload
+          @client.center.should == @center
+          @client.center(Date.today + 12).should == [@center, @center2]
+          @client.center(Date.today + 20).should == [@center2]
+        end
+      end
+    end
+  end
+  
+
   it "should not be valid without belonging to a center" do
-    @client.center = nil
-    @client.should_not be_valid
+    expect {@client.center = nil}.to raise_error
   end
 
   it "should not be valid without a name" do
@@ -53,7 +100,9 @@ describe Client do
   end
 
   it "should be able to 'have' loans" do
-    loan = Factory(:loan, :applied_by => @manager, :client => @client, :amount => 1000, :installment_frequency => :weekly)
+    @client.save
+    loan = Factory.build(:loan, :applied_by => @manager, :client => @client, :amount => 1000, :installment_frequency => :weekly)
+    loan.save
     loan.should be_valid
 
     @client.loans << loan
@@ -61,7 +110,8 @@ describe Client do
     @client.loans.first.amount.to_i.should eql(1000)
     @client.loans.first.installment_frequency.should eql(:weekly)
 
-    loan2 = Factory(:loan, :applied_by => @manager, :approved_by => @manager, :approved_on => Date.new(2010, 01, 01), :client => @client)
+    loan2 = Factory.build(:loan, :applied_by => @manager, :approved_by => @manager, :approved_on => Date.new(2010, 01, 01), :client => @client)
+    loan2.save
     loan2.should be_valid
 
     @client.loans << loan2
@@ -70,7 +120,7 @@ describe Client do
     # Make sure to use count and not size to check the actual database records, not just the in-memory object
     @client.loans.count.should eql(2)
   end
-
+ 
   it "should not be deleteable if verified" do
     @client.verified_by = @user
     @client.save
