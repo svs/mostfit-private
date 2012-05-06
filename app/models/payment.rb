@@ -32,12 +32,6 @@ class Payment
   property :desktop_id,          Integer
   property :origin,              String, :default => DEFAULT_ORIGIN
 
-  belongs_to :organization, :parent_key => [:org_guid], :child_key => [:parent_org_guid], :required => false
-  property   :parent_org_guid, String, :nullable => true
-  
-  belongs_to :domain, :parent_key => [:domain_guid], :child_key => [:parent_domain_guid], :required => false
-  property   :parent_domain_guid, String, :nullable => true
-
   belongs_to :loan, :nullable => true
   belongs_to :client
   belongs_to :fee

@@ -652,7 +652,6 @@ describe Loan do
       @loan_product.loan_validation_methods = "loans_must_not_be_duplicated"
       @loan_product.save
       @loan2 = Loan.new(@loan.attributes.except(:id).merge(:loan_product => @loan_product))
-      debugger
       @loan2.should_not be_valid
       client = Factory.build(:client, :center => @center, :date_joined => Date.parse('2006-01-01'))
       client.save!
