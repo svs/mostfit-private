@@ -241,6 +241,7 @@ FactoryGirl.define do
     association                   :funding_line
     association                   :client
     association                   :loan_product
+    association                   :center
     # association                   :repayment_style
   end
 

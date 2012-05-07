@@ -181,7 +181,7 @@ class Loan
 
   def holidays
     return @holidays if @holidays
-    @holidays = client.center.branch.holidays.map{|h| [h.date, h.new_date]}.to_hash
+    @holidays = center.branch.holidays.map{|h| [h.date, h.new_date]}.to_hash
   end
 
   def amt_sanctioned
@@ -947,8 +947,8 @@ class Loan
         :fees_due_today                      => fees_due_today,
         :fees_paid_today                     => fees_paid_today,
         :composite_key                       => "#{id}.#{(i/10000.0).to_s.split('.')[1]}".to_f,
-        :branch_id                           => client.branch_for_date(date),
-        :center_id                           => client.center_for_date(date),
+        :branch_id                           => center.branch.id,
+        :center_id                           => center.id,
         :client_group_id                     => 0,                                # not tracking as not relevant for reports....or is it?
         :client_id                           => client_id,
         :created_at                          => now,
@@ -1038,8 +1038,13 @@ class Loan
   include Misfit::LoanValidators
 
   def set_center
-    return false unless self.client
-    self.center = self.client.center unless self.center
+    return false if center
+    client_centers = self.client.center(applied_on)
+    if client_centers.count == 1
+      self.center = client_centers[0]
+    else
+      raise "Need to specify a center as the client is a member of #{client_centers.count} centers"
+    end
   end
 
   def installment_source

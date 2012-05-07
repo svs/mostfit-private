@@ -52,21 +52,25 @@ describe Client do
       describe "listing memberships" do
         before :all do
           Client.all.destroy!
+          ClientCenterMembership.all.destroy!
           @client = Factory.build(:client, :center => @center)
+        end
+        before :each do
           @client.center= [@center2, (Date.today + 10)]
           @client.save
         end
-        
         it "should give correct center_as_of" do
-          @client.center.should == @center
-          Set.new([@client.center(Date.today + 15)]).should == Set.new([@center,@center2])
+          @client.center.should == [@center]
+        end
+        it "should give correct center as_of in the future" do
+          Set.new(@client.center(Date.today + 15)).should == Set.new([@center2,@center])
         end
         it "should respect membership end dates" do
           cm = @client.client_center_memberships.first
           cm.upto = Date.today + 15
           cm.save
           @client.reload
-          @client.center.should == @center
+          @client.center.should == [@center]
           @client.center(Date.today + 12).should == [@center, @center2]
           @client.center(Date.today + 20).should == [@center2]
         end

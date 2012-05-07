@@ -152,11 +152,13 @@ class Client
     center, as_of = center.class == Array ? center : [center, self.date_joined]
     raise ArgumentError.new("expected a center") unless center.class == Center
     cm = ClientCenterMembership.new(:from => as_of, :center => center, :client => self)
+    @c = nil; @center_id = center.id
     (self.client_center_memberships << cm)
   end
   
   def center(as_of = Date.today)
-    @c ||= Center.get(client_center_memberships.as_of(as_of))
+    @c ||= {}
+    @c[as_of] ||= Center.all(:id => client_center_memberships.as_of(as_of))
   end
 
 
@@ -228,15 +230,15 @@ class Client
   end
 
   def add_created_by_staff_member
-    if self.center and self.new?
-      self.created_by_staff_member_id = self.center.manager_staff_id
+    if @center_id and self.new?
+      self.created_by_staff_member_id = Center.get(@center_id).manager_staff_id
     end
   end
 
   def dates_make_sense
     return true if not grt_pass_date or not date_joined 
     # return [false, "Client cannot join this center before the center was created"] if center and center.creation_date and center.creation_date > date_joined
-    # return [false, "GRT Pass Date cannot be before Date Joined"]  if grt_pass_date < date_joined
+    return [false, "GRT Pass Date cannot be before Date Joined"]  if grt_pass_date < date_joined
     return [false, "Client cannot die before he became a client"] if deceased_on and (deceased_on < date_joined or deceased_on < grt_pass_date)
     true
   end

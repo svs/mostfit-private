@@ -58,8 +58,8 @@ class Payment
   # validates_with_method :is_last_payment?, :if => Proc.new{|p| p.deleted_at == nil and p.deleted_by == nil}
   
   def add_center_and_branch
-    self.c_center_id = self.client.center.id
-    self.c_branch_id = self.client.center.branch.id
+    self.c_center_id = self.loan.center.id
+    self.c_branch_id = self.loan.center.branch.id
   end
 
   def self.from_csv(row, headers, loans)

@@ -20,10 +20,11 @@ class Membership
   def self.as_of(as_of)
     group_by = club_model
     if @@allow_multiple
-      self.all.group_by{|x| x.send(group_by)}.map do |group_by_id,grouped_memberships|
+      ans = self.all.group_by{|x| x.send(group_by)}.map do |group_by_id,grouped_memberships|
         _o = grouped_memberships.select{|x| x.from <= as_of and x.upto >= as_of}.sort_by{|x| x.from}
         _o[-1].send(group_by) rescue nil
-      end.flatten.compact
+      end
+      ans.flatten.compact
     end
   end
 

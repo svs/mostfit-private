@@ -126,7 +126,6 @@ module Misfit
 
     def disbursal_dates_must_be_center_meeting_days #this function is only for disbursal dates
       return [false, "Not client defined"] if not client
-      center = client.center
       failed = []
       correct_weekday = nil 
       ["scheduled_disbursal_date", "disbursal_date"].each do |d|
