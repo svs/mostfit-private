@@ -214,7 +214,7 @@
                 = a.to_s.camelcase(' ')
           %tr
             - KYC_DOCUMENTS.each do |a|
-              - shown = (@client.kyc_documents.include?(a)  ? "block" : "none")
+              - shown = (@client.kyc_documents.include?(a)  ? "block" : "none") rescue "none"
               %td
-                = text_field :name => "client[kyc_document_numbers][#{a}]", :value => @client.kyc_document_numbers[a.to_s] , :id => "#{a}_number", :style => "display:#{shown}"
+                = text_field :name => "client[kyc_document_numbers][#{a}]", :value => (@client.kyc_document_numbers[a.to_s] rescue nil), :id => "#{a}_number", :style => "display:#{shown}"
           
