@@ -177,6 +177,14 @@
       %td
         KYC Documents supplied:
       %td
-        - KYC_DOCUMENTS.each do |a|
-          = check_box :name => "client[kyc_documents][]", :value => a, :checked => @client.kyc_documents ? (@client.kyc_documents.include?(a) ? true : false) : false
-          = a.to_s.camelcase(' ')
+        %table
+          %tr
+            - KYC_DOCUMENTS.each do |a|
+              %td
+                = check_box :name => "client[kyc_documents][]", :value => a, :checked => @client.kyc_documents ? (@client.kyc_documents.include?(a) ? true : false) : false, :id => a.to_s.snake_case, :onclick => "javascript:$('##{a}_number').toggle()"
+                = a.to_s.camelcase(' ')
+          %tr
+            - KYC_DOCUMENTS.each do |a|
+              - shown = (@client.kyc_documents.include?(a)  ? "block" : "none") rescue "none"
+              %td
+                = text_field :name => "client[kyc_document_numbers][#{a}]", :value => (@client.kyc_document_numbers[a.to_s] rescue nil), :id => "#{a}_number", :style => "display:#{shown}"
