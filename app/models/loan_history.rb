@@ -142,6 +142,54 @@ class LoanHistory
                :total_advance_adjusted_today] + STATUSES.map{|s| [s, "#{s}_count".to_sym] unless s == :outstanding}.compact.flatten
 
 
+  ########### NICE NEW FUNCTIONS ###########################
+
+  def self.get_composite_keys(selection = {})
+    # this function is for speed.
+    # it should return the same result as LoanHistory.all(selection).aggregate(:composite_key)
+    q = "SELECT composite_key FROM loan_history WHERE " + get_where_from_hash(selection)
+    repository.adapter.query(q).map{|x| x.to_f.round(4)}
+  end
+
+  def self.latest_keys(hash = {}, date = Date.today)
+    # returns the composite key for the last row before date per loan from loan history and filters by hash
+    #LoanHistory.all(hash.merge(:date.lte => date)).aggregate(:loan_id,:composite_key.max).map{|x| x[1]}
+
+    # updated for speed
+    q(%Q{
+          SELECT loan_id, max(composite_key)
+          FROM   loan_history 
+          WHERE  #{(get_where_from_hash(hash) + " AND ") unless hash.blank?} 
+                 date <= '#{date.strftime('%Y-%m-%d')}'
+          GROUP BY loan_id
+        }).map{|x| x[1].round(4)} 
+  end
+
+  def self.latest(hash = {}, date = Date.today)
+    # returns the last LoanHistory per loan before date
+    LoanHistory.all(:composite_key => LoanHistory.latest_keys(hash, date))
+  end
+
+  def self.latest_by_status(options)
+    # to select, for example, only outstanding loans on a particular date,
+    # we cannot simply say LoanHistory.latest(:status => :outstanding, @date)
+    # because this will simply return the last row when the loan was outstanding even if the loan has been
+    # repaid before @date. Hence we need to take a circuituous route where we first select the latest row and then filter for outstanding loans
+    selection = options.except(:status)
+    date = options[:date] || Date.today
+    status = options[:status]
+    cks = LoanHistory.latest_keys(selection,date)
+    LoanHistory.all(:composite_key => cks, :status => status)
+  end
+    
+
+
+  def self.latest_sum(hash = {}, date = Date.today, group_by = [], cols = [])
+    # sums up the latest loan_history row per loan, even groups by any attribute
+    LoanHistory.composite_key_sum(LoanHistory.latest_keys(hash,date),group_by, cols)
+  end
+
+
   # Takes all the loan history rows per params and aggregates them.
   # params is a Hash of {:branch_id => , :center_id =>, :from_date, :to_date}
   # if params is empty, report is split up per branch. If a a branch is given, report is provided for the centers in that branch

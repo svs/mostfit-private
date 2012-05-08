@@ -22,11 +22,39 @@ class Center
   belongs_to :branch
   belongs_to :manager, :child_key => [:manager_staff_id], :model => 'StaffMember'
 
-  has n, :client_center_memberships
+  has n, :client_center_memberships, :child_key => [:club_id]
+  #has n, :clients, :through => :client_center_memberships
+  has n, :loan_center_memberships, :child_key => [:club_id]
+  # has n, :loans, :through => :loan_center_memberships, :child_key => [:member_id]
   has n, :client_groups
   has n, :loan_history
   has n, :center_meeting_days
   
+  def clients(as_of = Date.today)
+    if as_of.class == Date
+      Client.all(:id => client_center_memberships(:from.lte => as_of, :upto.gte => as_of, :club_id => self.id).aggregate(:member_id))
+    else
+      Client.all(:id => client_center_memberships(:club_id => self.id).aggregate(:member_id))
+    end
+  end
+
+  def loans(as_of = Date.today)
+    if as_of.class == Date
+      Loan.all(:id => loan_center_memberships(:from.lte => as_of, :upto.gte => as_of, :club_id => self.id).aggregate(:member_id))
+    else
+      Loan.all(:id => loan_center_memberships(:club_id => self.id).aggregate(:member_id))
+    end
+  end
+
+
+
+  # Public: returns a list of all clients who have been clients but are not as of a particular date
+  def not_clients(as_of)
+    clients - clients(as_of)
+  end
+      
+      
+
   validates_is_unique   :code, :scope => :branch_id
   validates_length      :code, :min => 1, :max => 12
 

@@ -60,6 +60,8 @@ FactoryGirl.define do
     address         '101, Shrinathji, 15th Cross Road, Khar (W), Mumbai-52'
     telephone       '06-123123123'
   end
+  
+
 
   #
   # Users, StaffMembers, Clients, Funders, Guarantors
@@ -71,6 +73,14 @@ FactoryGirl.define do
     role                  'staff_member'
     active                true
   end
+
+  factory :admin, :parent => :user do
+    login                 'admin'
+    password              'password'
+    password_confirmation 'password'
+    role                  'admin'
+  end
+
 
   factory :staff_member do
     name            { Factory.next(:name) }
@@ -241,7 +251,6 @@ FactoryGirl.define do
     association                   :funding_line
     association                   :client
     association                   :loan_product
-    association                   :center
     # association                   :repayment_style
   end
 
@@ -355,9 +364,6 @@ FactoryGirl.define do
 
     association         :loan, :factory => :disbursed_loan
 
-    # It feels like these properties should be assigned automatically on creation or something?
-    c_center_id         { self.client.center.id }
-    c_branch_id         { self.client.center.branch.id }
   end
 
   factory :repayment_style do

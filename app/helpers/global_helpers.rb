@@ -38,14 +38,11 @@ module Merb
     def url_for_loan(loan, action = '', opts = {})
       # this is to generate links to loans, as the resouce method doesn't work for descendant classes of Loan
       # it expects the whole context (@branch, @center, @client) to exist
-      base = if @branch and @center and @client
-               url(:branch_center_client, @branch.id, @center.id, @client.id)
-             elsif @client
-               url(:branch_center_client, @client.center.branch_id, @client.center_id, @client.id)
-             else
-               client = loan.client
-               url(:branch_center_client, client.center.branch_id, client.center_id, client.id)
-             end
+      @date ||= Date.parse(params[:date]) rescue Date.today
+      @center = loan.center
+      @branch = @center.branch
+      @client = loan.client
+      base = url(:branch_center_client, @branch.id, @center.id, @client.id)
       base + "/loans/#{loan.id}/" + action.to_s + (opts.length>0 ? "?#{opts.inject([]){|s,x| s << "#{x[0]}=#{x[1]}"}.join("&")}" : '')
     end
 

@@ -330,7 +330,7 @@ describe Loan do
     end
     
     it "should have a center" do
-      @loan.center_id.should == @center.id
+      @loan.center.should == @center
     end
 
     it "should not change the center when the client center changes" do
@@ -338,7 +338,7 @@ describe Loan do
       @center2 = Factory(:center)
       @client.center = @center2
       @loan.valid?
-      @loan.center_id.should == @center.id
+      @loan.center.should == @center
     end
   end
 
@@ -360,6 +360,7 @@ describe Loan do
   describe "disbursed loan" do
     before :each do
       @disbursed_loan = Factory.build(:disbursed_loan, :loan_product => @loan_product)
+      @disbursed_loan.save
     end
 
     it "should have status :outstanding" do
@@ -415,6 +416,7 @@ describe Loan do
   describe "installment_dates" do
     before :each do
       @loan = Factory.build(:approved_loan, :loan_product => @loan_product)
+      @loan.save
       @dates = @loan.installment_dates
     end
 
@@ -445,6 +447,7 @@ describe Loan do
   describe "payments" do
     before :all do
       @disbursed_loan = Factory.build(:disbursed_loan, :loan_product => @loan_product)
+      @disbursed_loan.save
     end
 
     it ".payment_schedule should give correct results" do
@@ -469,8 +472,8 @@ describe Loan do
       @disbursed_loan.payments_hash.should_not be_blank
       @disbursed_loan.disbursal_date = @disbursed_loan.scheduled_disbursal_date
       @disbursed_loan.disbursed_by = @manager
-      @disbursed_loan.save
       @disbursed_loan.clear_cache
+      @disbursed_loan.save
       # @disbursed_loan.id = nil
       @disbursed_loan = Loan.get(@disbursed_loan.id)
       7.times do |i|
@@ -658,6 +661,8 @@ describe Loan do
 
 
     describe "scheduled dates" do
+      before :each do
+      end
       describe "without restriction" do
         it "should be valid if repayment dates are not center meeting dates" do
           @loan.scheduled_disbursal_date = Date.new(2000, 11, 30)
@@ -682,6 +687,7 @@ describe Loan do
       describe "with validation scheduled_dates_must_be_center_meeting_days" do
         before :each do
           @loan = Factory.build(:approved_loan)
+          @loan.save
           @loan_product = @loan.loan_product
           @loan_product.loan_validation_methods = "scheduled_dates_must_be_center_meeting_days"
           @loan_product.save

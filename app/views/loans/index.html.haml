@@ -62,7 +62,11 @@
       %tr.odd
         %td At center
         %td
-          = link_to @client.center.name, resource(@client.center), :target => "_blank"
+          - @client.client_center_memberships.sort_by{|x| x.from}.each do |m|
+            - c = Center.get(m.club_id)
+            = link_to c.name, resource(c), :target => "_blank"
+            == from #{m.from} to #{m.upto}
+            %br
           == (of branch #{link_to @branch.name, resource(@branch)})
           %br/
           %span.greytext

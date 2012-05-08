@@ -25,7 +25,6 @@ describe ClientCenterMembership do
     Client.all.destroy!
   end
 
-
   it "should not be valid without any values in it" do
     @ccm1 = ClientCenterMembership.new
     @ccm1.should_not be_valid
@@ -37,7 +36,7 @@ describe ClientCenterMembership do
       @client = Factory.build(:client, :center => @center)
       @client.save!
       @center.save!
-      @ccm1 = ClientCenterMembership.new(:client => @client, :center => @center)
+      @ccm1 = ClientCenterMembership.new(:member_id => @client.id, :club_id => @center.id)
     end
     it "should be valid with a client and a center" do
       @ccm1.should be_valid
@@ -62,43 +61,9 @@ describe ClientCenterMembership do
     end
 
     it "should allow client to have membership in multiple centers" do
-      @ccm2 = ClientCenterMembership.new(:client => @client, :center => @center2)
+      @ccm2 = ClientCenterMembership.new(:member => @client, :club => @center2)
       @ccm2.should be_valid
     end      
-    
-    it "should have a correct idea of its peers" do
-      debugger
-      @ccm2 = ClientCenterMembership.new(:client => @client, :center => @center2)
-      @ccm2.send(:peers).should == [@ccm1]
-    end
-    
-    it "should recognise overlaps correctly" do
-      @ccm1.upto = Date.today + 10
-      @ccm1.save
-      @ccm2 = ClientCenterMembership.create(:client => @client, :center => @center2, :from => Date.today + 11)
-      ClientCenterMembership.count.should == 2
-      @ccm2.overlap?(@ccm2.send(:peers)).should == false
-      @ccm2.from = Date.today + 10
-      @ccm2.overlap?(@ccm2.send(:peers)).should == true
-    end
-
-    it "should recognise empty space correctly" do
-      # @ccm1.upto = Date.today + 10
-      # @ccm1.save
-      # @ccm2 = ClientCenterMembership.create(:client => @client, :center => @center2, :from => Date.today + 11, :upto => Date.today + 15)
-      # @ccm3 = ClientCenterMembership.create(:client => @client, :center => @center2, :from => Date.today + 16)
-      # ClientCenterMembership.count.should == 3
-      # @ccm2.gaps?(@ccm2.send(:peers)).should == false
-      # @ccm2.from = Date.today + 12
-      # @ccm2.gaps?(@ccm2.send(:peers)).should == true
-    end    
-
-    it "should not allow a client to be without membership at any time" do
-      # @ccm1.upto = Date.today + 10
-      # @ccm1.save
-      # @ccm2 = ClientCenterMembership.create(:client => @client, :center => @center2, :from => Date.today + 20)
-      # @ccm2.should_not be_valid
-    end
   end
 
   describe "as of" do
@@ -117,7 +82,7 @@ describe ClientCenterMembership do
 
     it "should give correct as of date for multiple models" do
       @center2 = Factory.create(:center)
-      @ccm2 = ClientCenterMembership.create(:client => @client, :center => @center2)
+      @ccm2 = ClientCenterMembership.create(:member => @client, :club => @center2)
       Set.new(@client.client_center_memberships.as_of(Date.today)).should == Set.new([@center.id, @center2.id])
     end
 
@@ -125,10 +90,10 @@ describe ClientCenterMembership do
       @ccm1.upto = Date.today + 10
       @ccm1.save
       @center2 = Factory.create(:center)
-      @ccm2 = ClientCenterMembership.create(:client => @client, :center => @center2, :from => Date.today + 10)
+      @ccm2 = ClientCenterMembership.create(:member => @client, :club => @center2, :from => Date.today + 10)
       @ccm2.should be_valid
       @client.client_center_memberships.as_of(Date.today).should == [@center.id]
-      @client.client_center_memberships.as_of(Date.today + 10).should == [@center.id,@center2.id]
+      Set.new(@client.client_center_memberships.as_of(Date.today + 10)).should == Set.new([@center.id,@center2.id])
       @client.client_center_memberships.as_of(Date.today + 15).should == [@center2.id]
     end
     

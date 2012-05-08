@@ -46,13 +46,11 @@
       %tr
         %td Landmark
         %td=@center.landmark
-      - if total_attendance_at_branch = Attendance.count("client.center_id" => @center.id) and total_attendance_at_branch > 0
         %tr.odd
           %td
             Attendance
           %td
-            = (Attendance.count("client.center_id" => @center.id, :status => "present") * 100.0 / total_attendance_at_branch).round(2)
-            = "%"
+            WIP
 .shaded
   %div.tab_container
     %ul.tabs

@@ -133,9 +133,9 @@ class Client
   validates_with_method :date_joined, :method => :dates_make_sense
   validates_with_method :inactive_reason, :method => :cannot_have_inactive_reason_if_active
   
-  property :center_id, Integer
+  # property :center_id, Integer
 
-  has n, :client_center_memberships, :order => [:from]
+  has n, :client_center_memberships, :order => [:from], :child_key => [:member_id]
   #has n, :centers, :through => :client_center_membership
   
 
@@ -147,18 +147,35 @@ class Client
     end
   end
 
-  # updates the center memberships
+  # Public: updates the center memberships
+  # Clients do not belong to Centers directly but through Memberships. In this case, a ClientCenterMembership
+  # We are recreating the normal dm setters and getters to deal with this so we can still say @client.center = Center.last for example
   def center=(center)
     center, as_of = center.class == Array ? center : [center, self.date_joined]
     raise ArgumentError.new("expected a center") unless center.class == Center
-    cm = ClientCenterMembership.new(:from => as_of, :center => center, :client => self)
+    cm = ClientCenterMembership.new(:from => as_of, :club => center, :member => self)
     @c = nil; @center_id = center.id
     (self.client_center_memberships << cm)
   end
-  
-  def center(as_of = Date.today)
+
+  def center_id=(center_id)
+    center, as_of = center_id.class == Array ? center_id : [center_id, self.date_joined]
+    self.center = Center.get(center)
+  end
+
+  def loans_for_center(center)
+    loans.select{|l| l.center == center}
+  end
+
+
+  # Public: returns the center that a client is a member of on a particular Date
+  #
+  # as_of is a Date which defaults to today's date
+  # returns an array of Centers, since the client can belong to multiple centers on a given day
+  def center(as_of = nil)
+    as_of ||= Date.today
     @c ||= {}
-    @c[as_of] ||= Center.all(:id => client_center_memberships.as_of(as_of))
+    @c[as_of] ||= Center.all(:id => ClientCenterMembership.as_of(as_of, client_center_memberships))
   end
 
 

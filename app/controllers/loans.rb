@@ -500,7 +500,8 @@ class Loans < Application
       @loan = Loan.get(params[:id])
       raise NotFound unless @loan
       @client = @loan.client
-      @center = @client.center
+      debugger
+      @center = @client.center(@date)[0]
       @branch = @center.branch
     else
       if params[:client_id]
@@ -525,7 +526,7 @@ class Loans < Application
       klass = loan.class
     else
       loan_product = LoanProduct.get(params[:loan_product_id])
-      attrs = (params[loan_product.loan_type_string.snake_case.to_sym] || params[:loan]).dup
+      attrs = (params[:loan]).dup
       raise NotFound if not params[:loan_type]
       klass = Kernel::const_get(params[:loan_type])
     end

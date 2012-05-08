@@ -14,7 +14,7 @@
   :valid_upto: 2012-11-17
   :payment_validation_methods: ""
   :loan_validation_methods: ""
-  :loan_type: DefaultLoan
+  :repayment_style_id: 1
 2:
   :id: 2
   :name: "Income Generating Loan "
@@ -31,7 +31,7 @@
   :valid_upto: 2012-12-31
   :payment_validation_methods: amount_must_be_paid_in_full_or_not_at_all
   :loan_validation_methods: installments_are_integers?
-  :loan_type: DefaultLoan
+  :repayment_style_id: 1
 3:
   :id: 3
   :name: Best loan product
@@ -48,7 +48,7 @@
   :valid_upto: 2011-03-08
   :payment_validation_methods: amount_must_be_paid_in_full_or_not_at_all
   :loan_validation_methods: part_of_a_group_and_passed_grt?,installments_are_integers?,scheduled_dates_must_be_center_meeting_days
-  :loan_type: DefaultLoan
+  :repayment_style_id: 1
 4:
   :id: 4
   :name: Bullet
@@ -65,4 +65,4 @@
   :valid_upto: 2010-03-09
   :payment_validation_methods: amount_must_be_paid_in_full_or_not_at_all
   :loan_validation_methods: part_of_a_group_and_passed_grt?,installments_are_integers?,scheduled_dates_must_be_center_meeting_days
-  :loan_type: DefaultLoan
+  :repayment_style_id: 1

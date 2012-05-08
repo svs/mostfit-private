@@ -49,7 +49,7 @@
           %b= link_to client.name, resource(@branch, @center, client)
         %td
           %ul.inline
-            - client.loans.each do |l|
+            - client.loans_for_center(@center).each do |l|
               %li
                 = link_to l.short_tag, url_for_loan(l), :class => (l.info ? l.info[:status] : l.get_status)
         %td

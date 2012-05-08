@@ -1,3 +1,4 @@
+- debugger
 :javascript
   o = {"applied_by":#{@center.manager.id}, "approved_by":#{@center.branch.manager.id}, "disbursed_by":#{@center.manager.id}}
 - take_over_loan = /^TakeOver/.match(@loan_product.loan_type_string)
@@ -12,7 +13,7 @@
       %th
         Client
       %td
-        = select :client_id, :collection => @loan.client.center.clients, :value_method => :id, :text_method => :name
+        = select :client_id, :collection => @center.clients, :value_method => :id, :text_method => :name
     %tr
       %th
         Repayment Style
