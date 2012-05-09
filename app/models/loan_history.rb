@@ -3,6 +3,12 @@ class LoanHistory
   
   property :loan_id,                   Integer, :key => true
   property :date,                      Date,    :key => true                      # the day that this record applies to
+  property :relevant_until,            Date,    :index => true                    # this is a tough one but I will try to explain.
+  # when moving stuff between centers, if a loan moves from center_id 1 to center_id 2 on date D and we ask for the data from center_id 1 
+  # on date D + x, then the max composite key from this loan for that center will be returned but the problem is that those balances are no longer 
+  # relevant, because the loan has moved on and the balance in center_1 is 0. Therefore, we need a way to make sure that
+  # loan_history rows have a concept of relevance embedded into them. hope that made sense. email me (svs@svs.io) if you need more explanation.
+
   property :created_at,                DateTime                                   # automatic, nice for benchmarking runs
   property :run_number,                Integer, :nullable => false, :default => 0 
   property :current,                   Boolean                                    # tracks the row refering to the loans current status. we can query for these
@@ -203,7 +209,7 @@ class LoanHistory
     gb = params[:branch_id].blank? ? :branch_id : (params[:center_id].blank? ? :center_id : :loan_id) #group_by
     flow_sum = lh.filter(:date => from_date..to_date).select(*([gb] + (FLOW_COLS).map{|c| :sum[c]})).group_by(gb)
     flow_sum = flow_sum.all.map{|x| [x[gb], x]}.to_hash
-    bal_keys = lh.group_by(:loan_id).filter{ date < to_date }.select_map(:max[:composite_key])
+    bal_keys = lh.group_by(:loan_id).filter{ date < to_date }.filter{ relevant_until > from_date}.select_map(:max[:composite_key])
     bal_sum = lh.filter(:composite_key => bal_keys).select(*([gb] + (COLS).map{|c| :sum[c]})).group_by(gb)
     bal_sum = bal_sum.all.map{|x| [x[gb], x]}.to_hash
     bal_sum + flow_sum
