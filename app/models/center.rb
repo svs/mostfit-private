@@ -268,9 +268,6 @@ class Center
     centers
   end
   
-  def loans(hash={})
-    self.clients.loans.all(hash)
-  end
   
   def leader
     CenterLeader.first(:center => self, :current => true)

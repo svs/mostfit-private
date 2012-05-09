@@ -163,8 +163,8 @@ class Client
     self.center = Center.get(center)
   end
 
-  def loans_for_center(center)
-    loans.select{|l| l.center == center}
+  def loans_for_center(center, as_of = Date.today)
+    loans.select{|l| l.center(as_of) == center}
   end
 
 

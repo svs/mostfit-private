@@ -15,6 +15,8 @@ namespace :mostfit do
   namespace :data do
     desc "loads yml files from spec/fixtures"
     task :fixtures do
+      repository.adapter.execute("truncate table memberships")
+      repository.adapter.execute("truncate table loan_history")
       [StaffMember, RepaymentStyle, LoanProduct, Funder, FundingLine, Branch, Center, Client, Loan].each do |t|
         p = t.to_s.snake_case.pluralize
         puts "loading #{p}"

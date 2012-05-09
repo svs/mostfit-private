@@ -1,5 +1,6 @@
 Merb.logger.info("Compiling routes...")
 Merb::Router.prepare do
+  resources :memberships, :collection => {:move => [:post], :update => [:post]}
   resources :staff_member_attendances
   resources :report_formats
   resources :checkers
@@ -60,6 +61,9 @@ Merb::Router.prepare do
     resources :insurance_policies
     resources :attendances
     resources :claims
+    resources :loans do
+      resources :payments
+    end
   end
   resources :client_groups do
     resources :grts

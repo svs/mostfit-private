@@ -500,7 +500,6 @@ class Loans < Application
       @loan = Loan.get(params[:id])
       raise NotFound unless @loan
       @client = @loan.client
-      debugger
       @center = @client.center(@date)[0]
       @branch = @center.branch
     else

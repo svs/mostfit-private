@@ -14,7 +14,7 @@ class Membership
   #http://railstips.org/blog/archives/2006/11/18/class-and-instance-variables-in-ruby/
   class << self; attr_accessor :allow_overlap end
   @allow_overlap  = true   # allow overlap means to allow overlapping memberships of clients in different centers 
-                            # i.e. when allow_multiple is true and allow_overlap is false, client can belong to many centers but only one at a time
+                            # i.e. when allow_overlap is false, client can belong to many centers but only one at a time
   property :id,   Serial
   property :type, Discriminator
   
@@ -36,14 +36,20 @@ class Membership
 
 end
 
+# to add specific memberships, creating new child classes of Membership as shown below will suffice.
+# do also look at Client#center= and Client#center methods to get an idea of how to add getters and setters in the class
+# TODO: move getters and setters behind a nice api like so
+# class Client
+#    ...
+#    is_member_of :center, :overlap => true
+#    ...
+# end
 
 class ClientCenterMembership < Membership
-
   @allow_overlap = true
 
   belongs_to :member, :model => 'Client'
   belongs_to :club,   :model => 'Center'
-
 
 end
 
@@ -54,6 +60,5 @@ class LoanCenterMembership < Membership
 
   belongs_to :member, :model => 'Loan'
   belongs_to :club,   :model => 'Center'
-
 
 end

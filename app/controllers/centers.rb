@@ -22,12 +22,10 @@ class Centers < Application
     @center = Center.get(id)
     raise NotFound unless @center
     @branch  =  @center.branch if not @branch
-    @clients =  grouped_clients
-    if params[:format] and API_SUPPORT_FORMAT.include?(params[:format])
-      display [@center, @clients, @date]
-    else
-      display [@center, @clients, @date], 'clients/index'
-    end
+    @loans = @center.loans(@date)
+    @clients =  @center.clients
+    
+    display [@center, @clients, @date], 'clients/index'
   end
 
   def today(id)
@@ -137,6 +135,48 @@ class Centers < Application
     end
   end
 
+  # Public: Moves clients from one center to another
+  # optionally moves the loans as well.
+  def move(id)
+    if request.method == :get
+      @date = Date.parse(params[:date]) rescue Date.today
+      @center = Center.get(params[:id])
+      @loans = @center.loans(@date)
+      @clients = (@center.clients(@date) + @loans.clients).uniq
+      @branch = @center.branch
+      render
+    else
+      msg = ""
+      @clients = Client.all(:id => params[:clients].keys) if params[:clients]
+      @new_center = Center.get(params[:center_id])
+      @as_of = Date.parse(params[:as_of])
+      if @clients
+        client_count = 0
+        if params[:action] == "move" # we have to close the previous memberships
+          ClientCenterMembership.all(:member_id => @clients.aggregate(:id), :club_id => params[:old_center_id]).map do |c|
+            c.upto = @as_of - 1
+            c.save
+          end
+        end
+        @clients.each do |c|
+          c.center = [@new_center, @as_of]
+          client_count += 1 if c.save
+        end
+        msg += "#{client_count} clients"
+      end
+      # now move any chosen loans
+      # the beautiful Membership class ensures that we can just drop in the new memberships and the class will take care of overlaps
+      if params[:loans]
+        loan_count = 0
+        params[:loans].keys.each do |lid|
+          loan_count += (LoanCenterMembership.create(:member_id => lid, :club_id => @new_center.id, :from => @as_of) ? 1 : 0)
+        end
+        msg += (!msg.blank? ? " and " : "" ) + "#{loan_count} loans"
+      end
+      redirect resource(@new_center, :date => @as_of), :message => {:success => "#{msg} moved to center #{@new_center.name}"}
+    end
+  end
+
   def delete(id)
     edit(id)  # so far these are the same
   end
@@ -186,6 +226,7 @@ class Centers < Application
     partial "centers/misc"
   end
 
+
   private
   include DateParser  # for the parse_date method used somewhere here..
 
@@ -209,16 +250,5 @@ class Centers < Application
     end
   end
   
-  def grouped_clients
-    clients = {}
-    (@clients ? @clients.all(:center => @center) : @center.clients).each{|c|      
-      group_name = c.client_group ? c.client_group.name : "No group"
-      clients[group_name]||=[]
-      clients[group_name] << c
-    }
-    clients.each{|k, v|
-      clients[k]=v.sort_by{|c| c.name} if v
-    }.sort.collect{|k, v| v}.flatten
-  end
   
 end # Centers

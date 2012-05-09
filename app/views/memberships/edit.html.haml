@@ -1,0 +1,12 @@
+%h1
+  Edit 
+  = @type
+= error_messages_for @membership
+
+= form_for(@membership, :action => url(:membership, @membership)) do
+  = partial :fields
+  = submit "Update"
+
+= link_to 'Show', url(:membership, @membership)
+|
+= link_to 'Back', request.referer

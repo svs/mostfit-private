@@ -931,6 +931,11 @@ class Loan
       interest_in_default                    = outstanding ? ((date <= Date.today) ? [0,total_interest_paid.round(2) - total_interest_due.round(2)].min : 0)   : 0
 
       days_overdue                           = ((principal_in_default > 0  or interest_in_default > 0) and last_loan_history) ? last_loan_history[:days_overdue] + (date - last_loan_history[:date]) : 0
+      
+      center_for_date                        = center(date)
+      center_id_for_date                     = center_for_date.id
+      debugger
+      branch_id_for_date                     = (last_row ? (center_id_for_date == last_row[:center_id] ? last_row[:branch_id] : center_for_date.branch.id) : center_for_date.branch.id)
 
       current_row = {
         :loan_id                             => self.id,
@@ -978,8 +983,8 @@ class Loan
         :fees_due_today                      => fees_due_today,
         :fees_paid_today                     => fees_paid_today,
         :composite_key                       => "#{id}.#{(i/10000.0).to_s.split('.')[1]}".to_f,
-        :branch_id                           => center.branch.id,
-        :center_id                           => center.id,
+        :branch_id                           => branch_id_for_date,
+        :center_id                           => center_id_for_date,
         :client_group_id                     => 0,                                # not tracking as not relevant for reports....or is it?
         :client_id                           => client_id,
         :created_at                          => now,

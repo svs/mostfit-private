@@ -96,6 +96,15 @@
         %br
         = @loan.loan_product.repayment_style.name if @loan.loan_product.repayment_style
     %tr
+      %th.even Center History
+      %td
+        %ul
+          - @loan.loan_center_memberships.each do |m|
+            %li
+              from
+              = m.from
+              = link_to m.club.name, resource(m.club)
+    %tr
       %th.odd Installments
       %td
         = @loan.number_of_installments

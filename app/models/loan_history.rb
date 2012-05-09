@@ -195,6 +195,7 @@ class LoanHistory
   # if params is empty, report is split up per branch. If a a branch is given, report is provided for the centers in that branch
   # TODO - add more fancy selection support here
   def self.get_aggregate_report(params)
+    debugger
     params = params.map{|k,v| [k.to_sym, v]}.to_hash
     from_date = params[:from_date].class == String ? Date.parse(params[:from_date]) : params[:from_date]
     to_date   = params[:to_date].class   == String ? Date.parse(params[:to_date])   : params[:to_date]
