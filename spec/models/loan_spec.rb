@@ -444,7 +444,7 @@ describe Loan do
     
   end
 
-  describe "payments" do
+  describe "schedules" do
     before :all do
       @disbursed_loan = Factory.build(:disbursed_loan, :loan_product => @loan_product)
       @disbursed_loan.save
@@ -643,6 +643,98 @@ describe Loan do
         result[1][0].errors.should be_blank
       end
 
+    end
+
+    describe "pay_normal, prorata, etc" do
+      before :all do
+        @loan = Factory.build(:disbursed_loan)
+        @loan.save.should == true
+      end
+      
+      describe "normal payment split" do
+        it "should make a correct split when paid properly" do
+          r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager)
+          r[0].should == true
+          r[1].amount.should == 40
+          r[2].amount.should == 8
+        end
+        describe "second payment" do
+          before :all do
+            r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager)
+            @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 40
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 8
+          end
+        end
+        describe "delayed payment" do
+          before :all do
+            @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 32
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 16
+          end
+        end
+        describe "under payment" do
+          before :all do
+            @r = @loan3.repay(40, @user, @loan.scheduled_first_payment_date, @manager)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 32
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 8
+          end
+        end
+        describe "over payment" do
+          before :all do
+            @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 47
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 8
+          end
+        end
+        describe "all together" do
+          it "start with an overpayment" do
+            @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager)
+            @r[1].amount.should == 47
+            @r[2].amount.should == 8
+          end
+          it "is followed by an under payment" do
+            @r = @loan3.repay(20, @user, @loan.scheduled_first_payment_date + 7, @manager)
+            @r[1].amount.should == 12
+            @r[2].amount.should == 8
+          end
+          it "then an even worse underpayment two weeks later" do
+            @r = @loan3.repay(10, @user, @loan.scheduled_first_payment_date + 21, @manager)
+            @r[1].amount.should == 0
+            @r[2].amount.should == 10
+          end
+
+        end
+
+      end
     end
   end
 

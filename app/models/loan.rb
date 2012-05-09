@@ -211,7 +211,6 @@ class Loan
 
   def holidays
     return @holidays if @holidays
-    $debug = true
     @holidays = center.branch.holidays.map{|h| [h.date, h.new_date]}.to_hash
   end
 
@@ -934,7 +933,6 @@ class Loan
       
       center_for_date                        = center(date)
       center_id_for_date                     = center_for_date.id
-      debugger
       branch_id_for_date                     = (last_row ? (center_id_for_date == last_row[:center_id] ? last_row[:branch_id] : center_for_date.branch.id) : center_for_date.branch.id)
 
       current_row = {
