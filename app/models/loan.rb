@@ -840,6 +840,17 @@ class Loan
     t = Time.now
     Merb.logger.info "LOAN CACHE UPDATE TIME: #{(Time.now - t).round(4)} secs"
   end
+  
+  # Public: Returns a list of dates relevant to the loan
+  # these incude applied_on, approved_on, scheduled_disbursal_date, disbursal_date, written_off_on, scheduled_first_payment_date, etc.
+  # plus all scheduled payment dates plus all actual payment dates 
+  # PLUS all the dates as asked by other modules relevant to this loan.
+  # For example, relevant dates for a loan which has loan_center_memberships are the dates on which those memberships changed.
+  # LoanCenterMembership adds a hook to the Loan class to tell it what to do
+  # PS WE REALLY NEED TO UPDATE DATAMAPPER SO WE CAN HOOK ARBITRARY METHODS
+
+  def dates
+  end
 
 
   def calculate_history
@@ -858,7 +869,7 @@ class Loan
     ap_fees = fee_schedule.map{|k,v| [k,v.values.sum]}.to_hash
     dates = (([applied_on, approved_on, scheduled_disbursal_date, disbursal_date, written_off_on, scheduled_first_payment_date]).map{|d|
                (self.holidays[d] ? self.holidays[d].new_date : d)
-             } +  installment_dates + payment_dates).compact.uniq.sort
+             } +  installment_dates + payment_dates + loan_center_memberships.aggregate(:from)).compact.uniq.sort
 
 
     # initialize
@@ -935,6 +946,8 @@ class Loan
       center_id_for_date                     = center_for_date.id
       branch_id_for_date                     = (last_row ? (center_id_for_date == last_row[:center_id] ? last_row[:branch_id] : center_for_date.branch.id) : center_for_date.branch.id)
 
+      next_change_date                       = loan_center_memberships.map(&:from).select{|x| x > date}.sort[0] || dates.max
+
       current_row = {
         :loan_id                             => self.id,
         :date                                => date,
@@ -984,6 +997,7 @@ class Loan
         :branch_id                           => branch_id_for_date,
         :center_id                           => center_id_for_date,
         :client_group_id                     => 0,                                # not tracking as not relevant for reports....or is it?
+        :relevant_until                      => next_change_date,
         :client_id                           => client_id,
         :created_at                          => now,
         :funding_line_id                     => funding_line_id,
