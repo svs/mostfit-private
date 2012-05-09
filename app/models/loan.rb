@@ -338,7 +338,6 @@ class Loan
     # if vals is a single number, then split it per the chosen style
     # else vals is like {:fees => 123, :interest => 456, :principal => 789}
     vals = input.is_a?(Hash) ? input : self.send("pay_#{style}",input, received_on) 
-                              
     payments = []
     [:fees, :interest, :principal].each do |type|
       if ((vals[type] || 0) > 0)
@@ -437,17 +436,9 @@ class Loan
   # This method separates a received payment into :interest en :pricipal portions.
   # First the interest is taken out of the amount and any remaining amount is paid
   # towards the principal.
-  #
-  # NOTE: We don't seem to check against negative values? If the "total" amount is
-  # lower than the outstanding interest, it seems we count the interest as paid and
-  # we make a negative payment to the principal.
-  # 
-  # After looking at #make_payments it seems that all payment parts are done as a single
-  # transaction in MySQL. If one part of the payment fails to validate (like on a
-  # negative amount) all the payment parts are rolled back. So there is a safeguard.
   def pay_normal(total, received_on)
     lh = info(received_on)
-    {:interest => lh.interest_due, :principal => total - lh.interest_due}
+    {:interest => [lh.interest_due,total].min, :principal => total - [total,lh.interest_due].min}
   end
 
   def pay_reallocate_normal(total, received_on)

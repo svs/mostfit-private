@@ -646,9 +646,9 @@ describe Loan do
     end
 
     describe "pay_normal, prorata, etc" do
-      before :all do
-        @loan = Factory.build(:disbursed_loan)
-        @loan.save.should == true
+      before :each do
+        #@loan3 = Factory.build(:disbursed_loan)
+        #@loan3.save.should == true
       end
       
       describe "normal payment split" do
@@ -720,21 +720,193 @@ describe Loan do
             @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager)
             @r[1].amount.should == 47
             @r[2].amount.should == 8
-          end
-          it "is followed by an under payment" do
             @r = @loan3.repay(20, @user, @loan.scheduled_first_payment_date + 7, @manager)
             @r[1].amount.should == 12
             @r[2].amount.should == 8
-          end
-          it "then an even worse underpayment two weeks later" do
             @r = @loan3.repay(10, @user, @loan.scheduled_first_payment_date + 21, @manager)
-            @r[1].amount.should == 0
+            @r[1].should == nil            # no principal paid
             @r[2].amount.should == 10
+            @r = @loan3.repay(155, @user, @loan.scheduled_first_payment_date + 28, @manager)
+            @r[1].amount.should == 141
+            @r[2].amount.should == 14
           end
-
         end
 
       end
+
+      describe "prorata payment split" do
+        it "should make a correct split when paid properly" do
+          r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
+          r[0].should == true
+          r[1].amount.should == 40
+          r[2].amount.should == 8
+        end
+        describe "second payment" do
+          before :all do
+            r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
+            @loan3.reload
+            @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :prorata)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 40
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 8
+          end
+        end
+        describe "delayed payment" do
+          before :all do
+            @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :prorata)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 40
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 8
+          end
+        end
+        describe "under payment" do
+          before :all do
+            @r = @loan3.repay(40, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == (40 * 40/48.0).round(2)
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == (40 * 8 / 48.0).round(2)
+          end
+        end
+        describe "over payment" do
+          before :all do
+            @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == (55 * 40/48.0).round(2)
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == (55 * 8/48.0).round(2)
+          end
+        end
+        describe "all together" do
+          it "start with an overpayment" do
+            @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
+            @r[1].amount.should == (55 * 40/48.0).round(2)
+            @r[2].amount.should == (55 * 8/48.0).round(2)
+            @loan3.reload
+            @r = @loan3.repay(20, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :prorata)
+            @r[1].amount.should == (20 * 40/48.0).round(2)
+            @r[2].amount.should == (20 * 8/48.0).round(2)
+            @loan3.reload
+            @r = @loan3.repay(10, @user, @loan.scheduled_first_payment_date + 21, @manager, false, :prorata)
+            @r[1].amount.should == (10 * 40/48.0).round(2)
+            @r[2].amount.should == (10 * 8/48.0).round(2)
+            @loan3.reload
+            @r = @loan3.repay(155, @user, @loan.scheduled_first_payment_date + 28, @manager, false, :prorata)
+            @r[1].amount.round(2).should == (155 * 40/48.0).round(2)
+            @r[2].amount.should == (155 * 8/48.0).round(2)
+          end
+        end
+
+      end
+      describe "sequential payment split" do
+        it "should make a correct split when paid properly" do
+          r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
+          r[0].should == true
+          r[1].amount.should == 40
+          r[2].amount.should == 8
+        end
+        describe "second payment" do
+          before :all do
+            r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
+            @loan3.reload
+            @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :sequential)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 40
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 8
+          end
+        end
+        describe "delayed payment" do
+          before :all do
+            @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :sequential)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 40
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 8
+          end
+        end
+        describe "under payment" do
+          before :all do
+            @r = @loan3.repay(40, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 32
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 8
+          end
+        end
+        describe "over payment" do
+          before :all do
+            @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
+          end
+          it "should make the second payment also properly" do
+            @r[0].should == true
+          end
+          it "should split principal properly" do
+            @r[1].amount.should == 40
+          end
+          it "should split interest propery" do
+            @r[2].amount.should == 15
+          end
+        end
+        describe "all together" do
+          it "start with an overpayment" do
+            @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
+            @r[1].amount.should == 40
+            @r[2].amount.should == 15
+            @loan3.reload
+            @r = @loan3.repay(20, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :sequential)
+            @r[1].amount.should == 19
+            @r[2].amount.should == 1
+            @loan3.reload
+            @r = @loan3.repay(10, @user, @loan.scheduled_first_payment_date + 21, @manager, false, :sequential)
+            @r[1].amount.should == 10
+            @r[2].should == nil 
+            @loan3.reload
+            @r = @loan3.repay(155, @user, @loan.scheduled_first_payment_date + 28, @manager, false, :sequential)
+            @r[1].amount.round(2).should == 131
+            @r[2].amount.should == 24
+          end
+        end
+
+      end
+
     end
   end
 
