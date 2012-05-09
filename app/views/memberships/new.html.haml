@@ -1,0 +1,13 @@
+%h1 Memberships controller, new action
+
+%p 
+  Edit this file in 
+  %tt app/views/memberships/new.html.erb
+
+= error_messages_for @membership
+
+= form_for(@membership, :action => url(:memberships) ) do
+  %p
+    = submit "Create"
+
+= link_to 'Back', url(:memberships)

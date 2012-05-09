@@ -35,12 +35,11 @@ class DataAccessObserver
         end
         return if diff.length==0
         model = (/Loan$/.match(obj.class.to_s) ? "Loan" : obj.class.to_s)
-        log = AuditTrail.new(:auditable_id => obj.id, :action => @action, :changes => diff.to_yaml, :type => :log,
+        log = AuditTrail.new(:auditable_id => obj.send(:id), :action => @action, :changes => diff.to_yaml, :type => :log,
                              :auditable_type => model, :user => @_user, :created_at => DateTime.now)
         log.save
       end
     rescue Exception => e
-      p diff if diff
       Merb.logger.info(e.to_s)
       Merb.logger.info(e.backtrace.join("\n"))
     end

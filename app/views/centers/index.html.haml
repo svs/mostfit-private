@@ -40,12 +40,12 @@
         %th.even Area
         - area = @branch.area
         %td=link_to(area.name, resource(area)) if area
-      - if total_attendance_at_branch = Attendance.count("client.center.branch_id" => @branch.id) and total_attendance_at_branch > 0
+      - if total_attendance_at_branch = Attendance.count("center.branch_id" => @branch.id) and total_attendance_at_branch > 0
         %tr.odd
           %th.odd
             Attendance
           %td
-            = (Attendance.count("client.center.branch_id" => @branch.id, :status => "present") * 100.0 / total_attendance_at_branch).round(2)
+            = (Attendance.count("center.branch_id" => @branch.id, :status => "present") * 100.0 / total_attendance_at_branch).round(2)
             = "%"
         %tr
           %td{:colspan => "2"}

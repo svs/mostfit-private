@@ -1,0 +1,33 @@
+%h1
+  = @type.to_s
+%h2
+  for 
+  = @member_model
+  = link_to @member.name, resource(@member)
+
+%table.narrow.shaded
+  %thead
+    %tr
+      %th
+        = @type.relationships["club"].parent_model
+      %th
+        from
+      %th
+        to
+      %th actions
+  %tr
+  - for membership in @memberships
+    %tr
+      %td
+        - club = @club_model.get(membership.club_id)
+        = link_to club.name, resource(club)
+      %td
+        = membership.from
+      %td
+        - if membership.model.allow_overlap
+          = membership.upto == SEP_DATE ? "forever" : membership.upto
+      %td
+        = link_to 'Edit', url(:edit_membership,  membership)
+        = link_to 'Delete',url(:controller => "application", :action => "delete", :id => membership.id, :model => "client_center_membership", :return => request.referer)
+
+= link_to 'New', url(:new_membership)

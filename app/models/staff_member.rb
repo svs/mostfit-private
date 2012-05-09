@@ -1,6 +1,6 @@
 class StaffMember
   include DataMapper::Resource
-  include Identified
+  #include Identified
   include Pdf::DaySheet if PDF_WRITER
   
   property :id,      Serial
@@ -30,7 +30,7 @@ class StaffMember
   has n, :write_off_rejected_loans,    :child_key => [:write_off_rejected_by_staff_id],    :model => 'Loan'
   has n, :payments, :child_key  => [:received_by_staff_id]
   has n, :monthly_targets
-  has n, :weeksheets
+
   has n, :staff_member_attendances
 
   belongs_to :user

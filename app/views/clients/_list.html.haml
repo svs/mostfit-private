@@ -1,5 +1,5 @@
 %span{:style => "font-family: Georgia; font-size: 2em;"} 
-  == #{@clients.count} clients in this center
+  == #{@clients.count rescue 0} clients in this center
 
 .menu-strip
   %b Key =>
@@ -10,7 +10,7 @@
   %span.arrears in arrears
   %span.written-off written-off
   %span.preclosed preclosed
-- if @clients.blank? and @center.client_groups.length==0
+- if @clients.blank? and @center.client_groups.length==0 and @loans.clients.empty?
   %p
     %i== No clients for the #{@branch.name} branch yet.
 - else
@@ -24,38 +24,25 @@
         %th
     %tbody
     - group=-1
-    - @clients.sort_by{|x| [x.client_group.id, x.id]}.each do |client|
-      - if group!=client.client_group_id
-        - group = client.client_group_id 
+    - unless @clients.empty?
+      - grouped_clients(@clients).each do |group, clients|
         %tr.group
           %td{:colspan => 5}
-            - if client.client_group
+            - if group
               %b
-                = link_to client.client_group.name, resource(client.client_group)
+                = link_to group.name, resource(group)
                 (
-                = link_to('edit', resource(@branch, @center, client.client_group, :edit))
+                = link_to('edit', resource(@branch, @center, group, :edit))
                 )
             - else
               Not attached to any group
-            
-      %tr{ :class => cycle('odd','')}
-        %td &nbsp;
-        %td
-          = client.id
-          - unless client.active
-            %i{:style => "background-color : #{client.active ? '#fff' : '#fdd'}; padding: 3px;" }
-              inactive 
-        %td
-          %b= link_to client.name, resource(@branch, @center, client)
-        %td
-          %ul.inline
-            - client.loans.each do |l|
-              %li
-                = link_to l.short_tag, url_for_loan(l), :class => (l.info ? l.info[:status] : l.get_status)
-        %td
-          = link_to 'edit', resource(@branch, @center, client, :edit)
-          &nbsp;|&nbsp;
-          = link_to 'new loan', resource(@branch, @center, client, :loans, :new)
+        - clients.sort_by{|c| c.name}.each do |client|
+          = partial 'clients/list_client_row', :client => client
+    %tr.group
+      %td{:colspan => 5}
+        Loans whose clients are elsewhere
+    - (@loans.clients - @clients).each do |client|
+      = partial 'clients/list_client_row', :client => client
     - ClientGroup.all(:center => @center).reject{|cg| cg.clients.count!=0}.each do |client_group|
       %tr.group
         %td{:colspan => 5}
@@ -65,7 +52,6 @@
             = link_to('edit', resource(@branch, @center, client_group, :edit))
             )
       %tr
-
         %td{:colspan => 5}
           %i No clients yet in this group
     %tfoot

@@ -581,6 +581,7 @@ function fillCenters(){
 						url: "/branches/centers/"+$("#branch_selector").val(),
 						success: function(data){
 						    $("#center_selector").html(data);
+						      $("#center_selector").trigger("liszt:updated");
 						}
 					    });
 				 });

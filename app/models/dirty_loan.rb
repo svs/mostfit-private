@@ -34,8 +34,8 @@ class DirtyLoan
         dl.cleaned_at = Time.now
         dl.save
       rescue Exception => e
-        puts e.message
-        puts e.backtrace
+        # puts e.message
+        # puts e.backtrace
       end
     }
     @@poke_thread = false if pending.length ==  0

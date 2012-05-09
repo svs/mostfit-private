@@ -325,19 +325,20 @@ describe Loan do
   
   describe "center" do
     before :all do
-      @loan = Factory.build(:loan, :client => @client)
+      @loan = Factory.build(:loan, :client => @client, :center => nil)
       @loan.save
     end
     
     it "should have a center" do
-      @loan.center_id = @center.id
+      @loan.center.should == @center
     end
 
     it "should not change the center when the client center changes" do
+      @center = @client.center[0]
       @center2 = Factory(:center)
       @client.center = @center2
       @loan.valid?
-      @loan.center.id.should == @center.id
+      @loan.center.should == @center
     end
   end
 
@@ -359,6 +360,7 @@ describe Loan do
   describe "disbursed loan" do
     before :each do
       @disbursed_loan = Factory.build(:disbursed_loan, :loan_product => @loan_product)
+      @disbursed_loan.save
     end
 
     it "should have status :outstanding" do
@@ -414,6 +416,7 @@ describe Loan do
   describe "installment_dates" do
     before :each do
       @loan = Factory.build(:approved_loan, :loan_product => @loan_product)
+      @loan.save
       @dates = @loan.installment_dates
     end
 
@@ -429,7 +432,7 @@ describe Loan do
       _D = @loan.installment_dates[5].dup
       @h = Holiday.new(:name => "test", :date => _D, :new_date => _D + 2)
       @h.save
-      @hc = HolidayCalendar.new(:branch_id => @loan.client.center.branch.id)
+      @hc = HolidayCalendar.new(:branch_id => @loan.center.branch.id)
       @hc.add_holiday(@h)
       @hc.save
       @loan.update_history
@@ -444,6 +447,7 @@ describe Loan do
   describe "payments" do
     before :all do
       @disbursed_loan = Factory.build(:disbursed_loan, :loan_product => @loan_product)
+      @disbursed_loan.save
     end
 
     it ".payment_schedule should give correct results" do
@@ -468,8 +472,8 @@ describe Loan do
       @disbursed_loan.payments_hash.should_not be_blank
       @disbursed_loan.disbursal_date = @disbursed_loan.scheduled_disbursal_date
       @disbursed_loan.disbursed_by = @manager
-      @disbursed_loan.save
       @disbursed_loan.clear_cache
+      @disbursed_loan.save
       # @disbursed_loan.id = nil
       @disbursed_loan = Loan.get(@disbursed_loan.id)
       7.times do |i|
@@ -652,16 +656,13 @@ describe Loan do
       @loan_product.loan_validation_methods = "loans_must_not_be_duplicated"
       @loan_product.save
       @loan2 = Loan.new(@loan.attributes.except(:id).merge(:loan_product => @loan_product))
-      debugger
       @loan2.should_not be_valid
-      client = Factory.build(:client, :center => @center, :date_joined => Date.parse('2006-01-01'))
-      client.save!
-      @loan = Loan.new(:amount => 1000, :interest_rate => 0.2, :installment_frequency => :weekly, :number_of_installments => 25, :scheduled_first_payment_date => "2000-12-06", :applied_on => "2000-02-01", :scheduled_disbursal_date => "2000-06-14", :applied_by => @manager, :client => Client.get(client.id), :funding_line => @funding_line, :loan_product => @loan_product, :approved_by => @manager, :approved_on => "2000-02-03")
-      @loan.save.should be_true
     end
 
 
     describe "scheduled dates" do
+      before :each do
+      end
       describe "without restriction" do
         it "should be valid if repayment dates are not center meeting dates" do
           @loan.scheduled_disbursal_date = Date.new(2000, 11, 30)
@@ -686,10 +687,11 @@ describe Loan do
       describe "with validation scheduled_dates_must_be_center_meeting_days" do
         before :each do
           @loan = Factory.build(:approved_loan)
+          @loan.save
           @loan_product = @loan.loan_product
           @loan_product.loan_validation_methods = "scheduled_dates_must_be_center_meeting_days"
           @loan_product.save
-          @cmd = CenterMeetingDay.new(:meeting_day => :tuesday, :valid_from => @loan.scheduled_first_payment_date + 29, :center => @loan.client.center)
+          @cmd = CenterMeetingDay.new(:meeting_day => :tuesday, :valid_from => @loan.scheduled_first_payment_date + 29, :center => @loan.center)
           @cmd.save
           @loan.reload
           @loan.clear_cache

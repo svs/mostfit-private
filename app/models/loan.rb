@@ -99,11 +99,12 @@ class Loan
   property :loan_utilization_id,                Integer, :lazy => true, :nullable => true
   property :under_claim_settlement,             Date, :nullable => true
   property :repayment_style_id,                 Integer, :nullable => true
+
+  # property :center_id, Integer                 #temporary, while we fix the loan_center_memberships
   
 
   # associations
   belongs_to :client
-  belongs_to :center
   belongs_to :funding_line,              :nullable => true
   belongs_to :loan_product
   belongs_to :loan_purpose,              :nullable  => true
@@ -129,6 +130,8 @@ class Loan
   has n, :portfolio_loans
   has 1, :insurance_policy
   has n, :applicable_fees,    :child_key => [:applicable_id], :applicable_type => "Loan"
+
+  has n, :loan_center_memberships, :child_key => [:member_id]
 
   #validations
   validates_present      :client, :scheduled_disbursal_date, :scheduled_first_payment_date, :applied_by, :applied_on
@@ -179,9 +182,37 @@ class Loan
   validates_with_method  :insurance_policy,             :method => :check_insurance_policy    
 
 
+  # Public: updates the center memberships
+  # Loans do not belong to Centers directly but through Memberships. In this case, a LoanCenterMembership
+  # We are recreating the normal dm setters and getters to deal with this so we can still say @loan.center = Center.last for example
+  def center=(center)
+    # puts "enter center= #{loan_center_memberships}: center = #{center.id}"
+    center, as_of = center.class == Array ? center : [center, self.applied_on]
+    return unless center.class == Center # fail silently. the validation will catch the invalid loan
+    cm = LoanCenterMembership.new(:from => as_of, :club => center, :member => self)
+    @c = nil
+    (self.loan_center_memberships << cm)
+    # puts "exits center= #{loan_center_memberships}: center = #{center.id}"
+  end
+  
+  # Public: returns the center that a client is a member of on a particular Date
+  #
+  # as_of is a Date which defaults to today's date
+  # returns an array of Centers, since the client can belong to multiple centers on a given day
+  #
+  # TODO this does too many wasteful lookups. we can optimise this
+  def center(as_of = applied_on)
+    as_of ||= applied_on
+    @c ||= {}
+    @c[as_of] ||= Center.get(LoanCenterMembership.as_of(as_of, loan_center_memberships))
+  end
+
+
+
   def holidays
     return @holidays if @holidays
-    @holidays = client.center.branch.holidays.map{|h| [h.date, h.new_date]}.to_hash
+    $debug = true
+    @holidays = center.branch.holidays.map{|h| [h.date, h.new_date]}.to_hash
   end
 
   def amt_sanctioned
@@ -678,7 +709,7 @@ class Loan
   # the number of payment dates before 'date' (if date is a payment 'date' it is counted in)
   # used to calculate the outstanding value, and in the views
   def number_of_installments_before(date)
-    installment_dates.select{|d| d <= date}
+    installment_dates.select{|d| d <= date}.count
   end
 
 
@@ -797,8 +828,8 @@ class Loan
   
   def update_history(forced=false)
     t = Time.now
-    reload
-    Merb.logger.info "RELOAD: #{Time.now - t} secs"
+    #reload unless new?
+    #Merb.logger.info "RELOAD: #{Time.now - t} secs"
     extend_loan
     return true if Mfi.first.dirty_queue_enabled and DirtyLoan.add(self) and not forced
     return if @already_updated and not forced
@@ -900,6 +931,11 @@ class Loan
       interest_in_default                    = outstanding ? ((date <= Date.today) ? [0,total_interest_paid.round(2) - total_interest_due.round(2)].min : 0)   : 0
 
       days_overdue                           = ((principal_in_default > 0  or interest_in_default > 0) and last_loan_history) ? last_loan_history[:days_overdue] + (date - last_loan_history[:date]) : 0
+      
+      center_for_date                        = center(date)
+      center_id_for_date                     = center_for_date.id
+      debugger
+      branch_id_for_date                     = (last_row ? (center_id_for_date == last_row[:center_id] ? last_row[:branch_id] : center_for_date.branch.id) : center_for_date.branch.id)
 
       current_row = {
         :loan_id                             => self.id,
@@ -947,8 +983,8 @@ class Loan
         :fees_due_today                      => fees_due_today,
         :fees_paid_today                     => fees_paid_today,
         :composite_key                       => "#{id}.#{(i/10000.0).to_s.split('.')[1]}".to_f,
-        :branch_id                           => client.branch_for_date(date),
-        :center_id                           => client.center_for_date(date),
+        :branch_id                           => branch_id_for_date,
+        :center_id                           => center_id_for_date,
         :client_group_id                     => 0,                                # not tracking as not relevant for reports....or is it?
         :client_id                           => client_id,
         :created_at                          => now,
@@ -1037,9 +1073,22 @@ class Loan
   include DateParser  # mixin for the hook "before :valid?, :parse_dates"
   include Misfit::LoanValidators
 
-  def set_center
-    return false unless self.client
-    self.center = self.client.center unless self.center
+  # Sets the center of the loan to be whatever the client's center was when he applied for the loan.
+  # this can subsequently be changed manually as we move stuff around.
+  def set_center(center = nil, as_of = nil)
+    # puts "set_center entry: #{loan_center_memberships}"
+    if center and as_of
+      LoanCenterMemberships.create(:club => center, :member => self, :from => as_of)
+    else
+      return if loan_center_memberships.size > 0
+      return unless client
+      client_centers = self.client.center(applied_on)
+      if client_centers.count == 1
+        self.center = client_centers[0]
+      else
+        raise "Need to specify a center as the client is a member of #{client_centers.count} centers"
+      end
+    end
   end
 
   def installment_source
