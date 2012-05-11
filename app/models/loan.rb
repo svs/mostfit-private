@@ -327,7 +327,7 @@ class Loan
   #
   def get_payments(input, user, received_on, received_by, defer_update = false, style = NORMAL_REPAYMENT_STYLE, context = :default, desktop_id = nil, origin = nil) 
     # this is the way to repay loans, _not_ directly on the Payment model
-    # this to allow validations on the Payment to be implemented in (subclasses of) the Loan
+    
     self.extend_loan
     # only possible if we get a hash or a single number.
     unless input.is_a? Fixnum or input.is_a? Float or input.is_a?(Hash)
@@ -336,17 +336,9 @@ class Loan
     raise "cannot repay a loan that has not been saved" if new?
 
     # if vals is a single number, then split it per the chosen style
-    # else vals is like {:fees => 123, :interest => 456, :principal => 789}
-    vals = input.is_a?(Hash) ? input : self.send("pay_#{style}",input, received_on) 
-    payments = []
-    [:fees, :interest, :principal].each do |type|
-      if ((vals[type] || 0) > 0)
-        payments.push(Payment.new(:loan => self, :created_by => user,
-                                :received_on => received_on, :received_by => received_by,
-                                :amount => vals[type] || 0, :type => type, :desktop_id => desktop_id, :origin => origin))
-      end
-    end
-    payments             
+    # else vals is like {:fees => <Payment>, :interest => <Payment>, :principal => <Payment>}
+    payments = input.is_a?(Hash) ? input : self.send("split_#{style}",input, received_on) 
+    payments.map{|p| Payment.new(p.merge!(:loan => self, :created_by => user, :received_by => received_by))}
   end
 
   # This method attempts to register the given payments. The input is assumed to be a collection of Payment objects.
@@ -364,14 +356,14 @@ class Loan
   # the loan_history (persumably this is done manually after the batch update.)
   #
   def make_payments(payments, context = :default, defer_update = false)
-    return [false, nil, nil, nil] if payments.empty?
+    return {:status => false, :reason => "No payments given to make"} if payments.empty?
     Payment.transaction do |t|
       self.history_disabled=true
       n = DateTime.now
       payments.each{|p| p.override_create_observer = true; p.created_at = n}    
       if payments.collect{|payment| payment.save(context)}.include?(false)
         t.rollback
-        return [false, payments.find{|p| p.type==:principal}, payments.find{|p| p.type==:interest}, payments.find_all{|p| p.type==:fees}]
+        return {:status => false, :reason => payments.map{|p| [p.id, p.errors]}.to_hash}
       end
     end
     unless defer_update #i.e. bulk updating loans
@@ -381,13 +373,11 @@ class Loan
       self.reload if payments.map{|p| p.received_on}.map{|d| installment_dates.include?(d)}.include?(false)
       update_history(true)  # update the history if we saved a payment
     end
-    # Perhaps it would be more efficient to check for zero length at the start?
-    if payments.length > 0
-      return [true, payments.find{|p| p.type==:principal}, payments.find{|p| p.type==:interest}, payments.find_all{|p| p.type==:fees}]
-    else
-      return [false, nil, nil, nil]
-    end
-    # return the success boolean and the payment object itself for further processing
+    return {
+      :status => true, 
+      :principal => payments.find_all{|p| p.type==:principal}, 
+      :interest  => payments.find_all{|p| p.type==:interest}
+    }
   end
 
 
@@ -435,10 +425,34 @@ class Loan
 
   # This method separates a received payment into :interest en :pricipal portions.
   # First the interest is taken out of the amount and any remaining amount is paid
-  # towards the principal.
-  def pay_normal(total, received_on)
-    lh = info(received_on)
-    {:interest => [lh.interest_due,total].min, :principal => total - [total,lh.interest_due].min}
+  # towards the principal. It makes separate payments on all dates that are required to make a note of overdues,
+  # advances, preclosures, adjustments, etc.
+  def split_normal(total, received_on)
+    scheduled                              = get_scheduled(:all, received_on)
+    actual                                 = get_actual(:all, received_on)
+    int_to_pay = scheduled[:interest]  - actual[:interest]
+    prin_to_pay = scheduled[:principal] - actual[:principal]
+    payments = []
+    int_amount_remaining  = [int_to_pay, total].min
+    prin_amount_remaining = [prin_to_pay, total - int_amount_remaining].min
+    total_amount_remaining = total
+    puts "--------------#{received_on}----#{total_amount_remaining}-=>--#{int_to_pay}+#{prin_to_pay}-----"
+    loan_history.all(:order => [:date]).each do |lh|
+      puts "#{lh.date} : remaining => #{total_amount_remaining} p_due => #{lh.principal_due} i_due => #{lh.interest_due}"
+      break if total_amount_remaining == 0
+      next if ((lh.interest_due + lh.principal_due) == 0)
+      timeliness = lh.date == received_on ? "normal" : (lh.date > received_on ? "advance" : "overdue")
+      int_to_pay_today = [lh.interest_due, int_amount_remaining].min.round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
+      payments.push(:amount => int_to_pay_today, :received_on => received_on, :received_for => lh.date, 
+                    :type => :interest, :timeliness => timeliness)
+      int_amount_remaining -= int_to_pay_today
+      prin_to_pay_today = [lh.principal_due, prin_amount_remaining].min.round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
+      payments.push(:amount => prin_to_pay_today, :received_on => received_on, :received_for => lh.date, 
+                    :type => :principal, :timeliness => timeliness)
+      prin_amount_remaining -= prin_to_pay_today
+      total_amount_remaining = (prin_amount_remaining + int_amount_remaining)
+    end
+    payments
   end
 
   def pay_reallocate_normal(total, received_on)
