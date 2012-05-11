@@ -105,7 +105,6 @@ class Payments < Application
   include DateParser
 
   def get_context
-    debugger
     @branch = Branch.get(params[:branch_id])
     @center = Center.get(params[:center_id])
     @client = Client.get(params[:client_id])

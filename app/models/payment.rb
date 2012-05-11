@@ -1,6 +1,6 @@
 # dont call save or update or anything on this method directly!!
 # this class is managed by the loan, and should be completely managed by it.
-
+# This class will soon be renamed Transactions
 class Payment
   include DataMapper::Resource
   before :valid?, :parse_dates
@@ -15,9 +15,12 @@ class Payment
   property :id,                  Serial
   property :guid,                String, :default => lambda{ |obj, p| UUID.generate }
   property :amount,              Float, :nullable => false, :index => true
-  property :type,                Enum.send('[]',*PAYMENT_TYPES), :index => true
+  property :type,                Enum.send('[]',*PAYMENT_TYPES), :index => true  # is it principal, interest or fees?
+  property :timeliness,          String, :length => 12
+  property :transaction_type,    String, :length => 50
   property :comment,             String, :length => 50
   property :received_on,         Date,    :nullable => false, :index => true
+  property :received_for,         Date,    :nullable => false, :index => true
   property :deleted_by_user_id,  Integer, :nullable => true
   # Default this one to today?
   property :created_at,          DateTime,:nullable => false, :index => true

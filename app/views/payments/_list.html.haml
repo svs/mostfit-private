@@ -1,4 +1,3 @@
-%h2== Repayments #{link_to 'new repayment', url_for_loan(@loan, 'payments/new'), :class => "add"}
 - if @payments.blank?
   %p
     %i No repayments have been made so far.
@@ -12,6 +11,7 @@
       %th
       %th id
       %th received on
+      %th received for
       %th received by
       %th amount
       %th type
@@ -34,6 +34,10 @@
         = payment.id
       %td
         %i= payment.received_on
+      %td
+        %i= payment.received_for
+        %br
+        = payment.timeliness
       %td
         %b= link_to payment.received_by.name, resource(payment.received_by)
       %td
