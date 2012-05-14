@@ -8,9 +8,9 @@ class Organization
   property :org_guid, String
   property :name,     String
 
-  has 1, :accounting_period
-  has n, :domains
-  has n, :payments, :parent_key => [:org_guid], :child_key => [:parent_org_guid]
+#  has 1, :accounting_period
+#  has n, :domains
+#  has n, :payments, :parent_key => [:org_guid], :child_key => [:parent_org_guid]
   
   def self.get_organization(date)
     accounting_period = AccountingPeriod.get_accounting_period(date)

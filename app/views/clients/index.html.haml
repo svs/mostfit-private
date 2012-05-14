@@ -1,7 +1,7 @@
 .shaded{:style => "padding: 5px; margin-bottom: 10px;"}
   .graph
     = ofc2(530, 300, url(:graph_data, :action => 'center', :id => @center.id, :scope_unit => 'months', :scope_size => 3) )
-  %h1== Center: <i>#{@center.name}</i> (#{@clients.count} clients)
+  %h1== Center: <i>#{@center.name}</i> (#{@clients.count rescue 0} clients)
   .menu-strip
     = link_to 'edit center', resource(@branch, @center, :edit), :class => "edit grey_button"
     = link_to 'new client', resource(@branch, @center, :clients, :new), :class => "add grey_button", :style => "margin: 0px; padding-right: 3px;"
@@ -46,13 +46,11 @@
       %tr
         %td Landmark
         %td=@center.landmark
-      - if total_attendance_at_branch = Attendance.count("client.center_id" => @center.id) and total_attendance_at_branch > 0
         %tr.odd
           %td
             Attendance
           %td
-            = (Attendance.count("client.center_id" => @center.id, :status => "present") * 100.0 / total_attendance_at_branch).round(2)
-            = "%"
+            WIP
 .shaded
   %div.tab_container
     %ul.tabs

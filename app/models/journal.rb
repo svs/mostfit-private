@@ -13,7 +13,7 @@ class Journal
   property :deleted_at,     ParanoidDateTime, :index => true  
   property :batch_id,       Integer, :nullable => true
   property :uuid,           String, :default => lambda{ |obj, p| UUID.generate }
-  belongs_to :batch
+
   belongs_to :journal_type
   has n, :postings
   has n, :accounts, :through => :postings

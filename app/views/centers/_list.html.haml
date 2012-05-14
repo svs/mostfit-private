@@ -21,7 +21,7 @@
       %th Clients
       %th Edit
     %tbody
-    - clients_count = Client.all(:center => @centers).aggregate(:center_id, :id.count).to_hash
+    - clients_count = ClientCenterMembership.all(:club_id => @centers.aggregate(:id), :from.lte => @date, :upto.gte => @date).aggregate(:club_id, :member_id.count).to_hash
     - today = Date.today.weekday
     - @centers.sort_by{|c| c.id}.each do |center|
       %tr{:class => cycle('odd','')}

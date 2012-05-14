@@ -44,7 +44,7 @@
       %td.number
         = text_field :name => "loans[#{loan.id}][amount_sanctioned]", :value => loan.amount, :size => 6
       %td.text
-        = link_to client.center.name, url(:quick_link, "centers", client.center.id)
+        = link_to loan.center.name, url(:quick_link, "centers", loan.center.id)
       %td.text
         - min_date = (loan.applied_on > Date.min_transaction_date ? loan.applied_on : Date.min_transaction_date)
         = date_select("loans[#{loan.id}][approved_on]", min_date, :id => "loans_#{loan.id}_approved_on", :min_date => min_date, :max_date => Date.max_transaction_date)
@@ -58,13 +58,13 @@
         = date_select("loans[#{loan.id}][scheduled_first_payment_date]", min_date, :id => "loans_#{loan.id}_scheduled_first_payment_date", :min_date => min_date, :max_date => Date.max_transaction_date)
         = loan.scheduled_first_payment_date.strftime('%A')
       %td.text
-        = loan.client.center.meeting_day.to_s.camelcase
+        = loan.center.meeting_day.to_s.camelcase
       %td.text
         = loan.status.to_s.camelcase(' ')
       %td
         = check_box :name => "loans[#{loan.id}][approved?]", :class => "approve"
       %td.text
-        = select :name => "loans[#{loan.id}][approved_by_staff_id]", :collection => staff_members_allowed, :selected => client.center.branch.manager.id.to_s
+        = select :name => "loans[#{loan.id}][approved_by_staff_id]", :collection => staff_members_allowed, :selected => loan.center.branch.manager.id.to_s
   %tfoot
     %tr
       %td{:colspan => 12}

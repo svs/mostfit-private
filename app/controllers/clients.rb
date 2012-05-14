@@ -1,10 +1,9 @@
 class Clients < Application
-  before :get_context, :exclude => ['redirect_to_show', 'bulk_entry']
+  #before :get_context, :exclude => ['redirect_to_show', 'bulk_entry']
   provides :xml, :yaml, :js
   before :do_params, :only => [:create, :update]
 
   def index
-#    @clients = @center.clients
 #    display @clients
     if request.xhr?
       @clients = @center.clients
@@ -20,12 +19,12 @@ class Clients < Application
     @client = Client.get(id)
     raise NotFound unless @client
     
-    if @center
+    # if @center
       @loans = @loans ? @loans.find_all{|l| l.client_id == @client.id} : @client.loans
       display [@client, @loans, @option], 'loans/index'
-    else
-      redirect_to_show(params[:id])
-    end
+    #else
+    #  redirect_to_show(params[:id])
+    #end
   end
 
   def new

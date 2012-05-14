@@ -38,16 +38,6 @@
         = form_for(@loan, :action => url(:controller => 'loans', :action => 'levy_fees', :id => @loan.id)) do
           = submit 'Apply Fees'
       = partial "applicable_fees/list", :layout => false, :applicable_fees => @loan.applicable_fees, :return_url => url_for_loan(@loan) + "#misc"
-  .box
-    %fieldset
-      %legend Values
-      %table.narrow{:style =>" width: 40%"}
-        - [:c_branch_id, :c_center_id, :c_scheduled_maturity_date, :c_maturity_date, :c_actual_first_payment_date, :c_last_status, :c_principal_received, :c_interest_received, :c_last_payment_received_on, :c_last_payment_id].each do |a|
-          %tr
-            %th
-              = a
-            %td
-              = @loan.send(a)
 - if session.user.role==:admin
   .box
     %fieldset

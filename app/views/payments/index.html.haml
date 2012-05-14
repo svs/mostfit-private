@@ -18,7 +18,7 @@
   .menu-strip{:style => "margin-bottom: 0.5em; margin-left: 0px; margin-top: 0px"}
     = link_to 'edit this loan', url_for_loan(@loan, 'edit'), :class => "edit"
     = link_to 'make repayment', url_for_loan(@loan, 'payments/new'), :class => "add"
-    = link_to 'visit center', resource(@loan.client.center)
+    = link_to 'visit center', resource(@loan.center)
     = link_to 'diagnose', url(:controller => :loans, :action => 'diagnose', :id => @loan.id), :class => "edit"
   
   %table.loan{ :style => 'width : 50%; border: solid 1px #c9c9c9' }
@@ -95,6 +95,15 @@
         = link_to @loan.loan_product.name, resource(@loan.loan_product)
         %br
         = @loan.loan_product.repayment_style.name if @loan.loan_product.repayment_style
+    %tr
+      %th.even Center History
+      %td
+        %ul
+          - @loan.loan_center_memberships.each do |m|
+            %li
+              from
+              = m.from
+              = link_to m.club.name, resource(m.club)
     %tr
       %th.odd Installments
       %td
@@ -218,11 +227,8 @@
                 %td{ :colspan => 6, :style => "text-align: center;" }
                   %span.greytext== today (#{Date.today})
           - first = false
-          - if lh.date <= Date.today and lh.date >= (@loan.c_actual_first_payment_date || @loan.scheduled_first_payment_date)
-            - default =  lh.actual_outstanding_total - lh.scheduled_outstanding_total
-          - else
-            - default = 0
-          - default_class = default ? (default > 0 ? 'due' : (default < 0 ? 'overpaid' : 'paid')) : ""
+          - default =  lh.principal_in_default + lh.interest_in_default
+          - default_class = default ? (default.abs > 0 ? 'due' : (default > 0 ? 'overpaid' : 'paid')) : ""
           
           %tr{ :class => cycle('odd','even') }
             %td{:class => default_class}
@@ -236,22 +242,20 @@
               %br/
               %span.greytext== #{scheduled_principal.round(2)} principal + #{scheduled_interest.round(2)} interest
             %td
-              - if last_payment_date and (lh.date <= last_payment_date or lh.date <= Date.today)
-                %b= lh.actual_outstanding_principal.round(2)
+              %b= lh.actual_outstanding_principal.round(2)
             %td
-              - if last_payment_date and (lh.date <= last_payment_date or lh.date <= Date.today)
-                %b= (lh.principal_paid + lh.interest_paid)
-                %br/
-                %span.greytext
-                  == #{lh.principal_paid.to_currency} principal + #{lh.interest_paid.to_currency} interest
+              %b= (lh.principal_paid + lh.interest_paid)
+              %br/
+              %span.greytext
+                == #{lh.principal_paid.to_currency} principal + #{lh.interest_paid.to_currency} interest
             - if default
-              %td{:class => (default > 0 ? 'due' : (default < 0 ? 'overpaid' : 'paid')) }
+              %td{:class => (default < 0 ? 'due' : (default > 0 ? 'overpaid' : 'paid')) }
                 %b
                   = default.to_currency
                 %br/
                 %span.greytext
                   = format("%.0f%", (default.abs.to_f / @loan.total_to_be_received) * 100)
-                  = default <= 0 ? 'overpaid' : 'shortfall'
+                  = default >= 0 ? 'overpaid' : 'shortfall'
             - else
               %td
         %tfoot

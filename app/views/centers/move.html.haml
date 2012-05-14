@@ -1,0 +1,31 @@
+.shaded{:style => "margin: 20px"}
+  %h1== Move clients of center #{@center.name}
+  
+  
+  = form_for(@center, :action => :move) do
+    = select :name => "action", :collection => ["move","add"]
+    selected clients to branch
+    = select :name => 'branch_id', :id => "branch_selector", :collection => Branch.all, :text_method => :name, :value_method => :id, :selected => @branch.id.to_s, :prompt => 'Select a branch', :class => 'chosen'
+    and center
+    = select :name => 'center_id', :id => 'center_selector', :collection => (Center.all(:branch_id => @branch.id) - [@center]).map{|c| [c.id, "#{c.id} : #{c.name}"]}, :selected => params[:center_id].to_s, :prompt => 'Select a center', :class => 'chosen'
+    as of
+    = date_select :as_of, @as_of || Date.today
+    = hidden_field :name => "old_center_id", :value => @center.id
+    %br
+    %table
+      - @clients.each do |c|
+        %tr
+          %td
+            - if c.center(@date).include?(@center)
+              = check_box :name => "clients[#{c.id}]", :checked => true
+            = link_to c.name, resource(c)
+          %td
+            %ul
+              - @loans.select{|l| l.client == c}.each do |l|
+                %li
+                  = check_box :name => "loans[#{l.id}]"
+                  = l.description
+            
+    = submit "move selected clients and loans", :class => "greenButton"
+      
+  

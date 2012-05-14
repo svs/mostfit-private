@@ -3,6 +3,12 @@ class LoanHistory
   
   property :loan_id,                   Integer, :key => true
   property :date,                      Date,    :key => true                      # the day that this record applies to
+  property :relevant_until,            Date,    :index => true                    # this is a tough one but I will try to explain.
+  # when moving stuff between centers, if a loan moves from center_id 1 to center_id 2 on date D and we ask for the data from center_id 1 
+  # on date D + x, then the max composite key from this loan for that center will be returned but the problem is that those balances are no longer 
+  # relevant, because the loan has moved on and the balance in center_1 is 0. Therefore, we need a way to make sure that
+  # loan_history rows have a concept of relevance embedded into them. hope that made sense. email me (svs@svs.io) if you need more explanation.
+
   property :created_at,                DateTime                                   # automatic, nice for benchmarking runs
   property :run_number,                Integer, :nullable => false, :default => 0 
   property :current,                   Boolean                                    # tracks the row refering to the loans current status. we can query for these
@@ -142,11 +148,60 @@ class LoanHistory
                :total_advance_adjusted_today] + STATUSES.map{|s| [s, "#{s}_count".to_sym] unless s == :outstanding}.compact.flatten
 
 
+  ########### NICE NEW FUNCTIONS ###########################
+
+  def self.get_composite_keys(selection = {})
+    # this function is for speed.
+    # it should return the same result as LoanHistory.all(selection).aggregate(:composite_key)
+    q = "SELECT composite_key FROM loan_history WHERE " + get_where_from_hash(selection)
+    repository.adapter.query(q).map{|x| x.to_f.round(4)}
+  end
+
+  def self.latest_keys(hash = {}, date = Date.today)
+    # returns the composite key for the last row before date per loan from loan history and filters by hash
+    #LoanHistory.all(hash.merge(:date.lte => date)).aggregate(:loan_id,:composite_key.max).map{|x| x[1]}
+
+    # updated for speed
+    q(%Q{
+          SELECT loan_id, max(composite_key)
+          FROM   loan_history 
+          WHERE  #{(get_where_from_hash(hash) + " AND ") unless hash.blank?} 
+                 date <= '#{date.strftime('%Y-%m-%d')}'
+          GROUP BY loan_id
+        }).map{|x| x[1].round(4)} 
+  end
+
+  def self.latest(hash = {}, date = Date.today)
+    # returns the last LoanHistory per loan before date
+    LoanHistory.all(:composite_key => LoanHistory.latest_keys(hash, date))
+  end
+
+  def self.latest_by_status(options)
+    # to select, for example, only outstanding loans on a particular date,
+    # we cannot simply say LoanHistory.latest(:status => :outstanding, @date)
+    # because this will simply return the last row when the loan was outstanding even if the loan has been
+    # repaid before @date. Hence we need to take a circuituous route where we first select the latest row and then filter for outstanding loans
+    selection = options.except(:status)
+    date = options[:date] || Date.today
+    status = options[:status]
+    cks = LoanHistory.latest_keys(selection,date)
+    LoanHistory.all(:composite_key => cks, :status => status)
+  end
+    
+
+
+  def self.latest_sum(hash = {}, date = Date.today, group_by = [], cols = [])
+    # sums up the latest loan_history row per loan, even groups by any attribute
+    LoanHistory.composite_key_sum(LoanHistory.latest_keys(hash,date),group_by, cols)
+  end
+
+
   # Takes all the loan history rows per params and aggregates them.
   # params is a Hash of {:branch_id => , :center_id =>, :from_date, :to_date}
   # if params is empty, report is split up per branch. If a a branch is given, report is provided for the centers in that branch
   # TODO - add more fancy selection support here
   def self.get_aggregate_report(params)
+    debugger
     params = params.map{|k,v| [k.to_sym, v]}.to_hash
     from_date = params[:from_date].class == String ? Date.parse(params[:from_date]) : params[:from_date]
     to_date   = params[:to_date].class   == String ? Date.parse(params[:to_date])   : params[:to_date]
@@ -154,7 +209,7 @@ class LoanHistory
     gb = params[:branch_id].blank? ? :branch_id : (params[:center_id].blank? ? :center_id : :loan_id) #group_by
     flow_sum = lh.filter(:date => from_date..to_date).select(*([gb] + (FLOW_COLS).map{|c| :sum[c]})).group_by(gb)
     flow_sum = flow_sum.all.map{|x| [x[gb], x]}.to_hash
-    bal_keys = lh.group_by(:loan_id).filter{ date < to_date }.select_map(:max[:composite_key])
+    bal_keys = lh.group_by(:loan_id).filter{ date < to_date }.filter{ relevant_until > from_date}.select_map(:max[:composite_key])
     bal_sum = lh.filter(:composite_key => bal_keys).select(*([gb] + (COLS).map{|c| :sum[c]})).group_by(gb)
     bal_sum = bal_sum.all.map{|x| [x[gb], x]}.to_hash
     bal_sum + flow_sum

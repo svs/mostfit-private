@@ -1,0 +1,13 @@
+%table.tall.shaded
+  %tr
+    %th
+      From
+    %td
+      = date_select :from
+  - if @membership.model.allow_overlap
+    %tr
+      %th
+        To
+      %td
+        = date_select :upto, (@membership.upto == SEP_DATE ? nil : @membership.to)
+  

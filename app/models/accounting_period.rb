@@ -27,9 +27,6 @@ class AccountingPeriod
   has n, :account_balances
   has n, :accounts, :through => :account_balances
   
-  belongs_to :organization
-  property :organization_id, Integer, :nullable => true
-
   # Let's make sure closed is never nil to avoid confusing error messages from #closing_done_sequentially
   # which may bork if closed is nil instead of false
   validates_present :closed

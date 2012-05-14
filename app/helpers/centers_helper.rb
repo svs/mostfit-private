@@ -21,6 +21,13 @@ module Merb
       end
     end
 
+
+    # Returns a hash of clients grouped by their client_group
+    def grouped_clients(clients)
+      clients.group_by{|c| c.client_group}.sort_by{|cg,cs| cg ? -cg.id : 0}.reverse
+    end
+
+
   end
 
 

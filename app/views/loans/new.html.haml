@@ -26,7 +26,5 @@
   = link_to 'cancel', resource(@branch, @center, @client)
 - else
   = form_for(@loan, :action => resource(@branch, @center, @client, :loans, {:return => params[:return]}), :onsubmit => "javascript: return confirm_for(o);") do
-    - if @loan.fields_partial.blank?
-      = partial :fields, :submit_text => "Create loan for #{@client.name}", :cancel_link => resource(@branch, @center, @client)
-    - else
-      = @loan.fields_partial
+    = partial :fields, :submit_text => "Create loan for #{@client.name}", :cancel_link => resource(@branch, @center, @client)
+

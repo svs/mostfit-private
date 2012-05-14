@@ -36,7 +36,6 @@ class Client
   property :date_joined,     Date,    :index => true
   property :grt_pass_date,   Date,    :index => true, :nullable => true
   property :client_group_id, Integer, :index => true, :nullable => true
-  property :center_id,       Integer, :index => true, :nullable => true
   property :created_at,      DateTime, :default => Time.now
   property :deleted_at,      ParanoidDateTime
   property :updated_at,      DateTime
@@ -172,58 +171,15 @@ class Client
   property :not_in_school_working_sons, Integer, :length => 10, :default => 0, :lazy => true
   property :not_in_school_bonded_sons, Integer, :length => 10, :default => 0, :lazy => true
 
-  property :center_history, Text # marshal.dump of past centers in format{date_upto => center_id}
+  property :as_of, Date
 
-  def past_centers=(hash)
-      self.center_history = hash.to_json
-  end
+  is_versioned :on => :as_of
 
-  def past_centers
-    return @pcs if @pcs
-    @pcs = self.center_history ? JSON::parse(self.center_history).map{|k,v| [Date.parse(k),v]}.to_hash : {}
-  end
-
-
-  def past_branches
-    # later this must support movement of centers between branches as as well
-    return @pbs if @pbs
-    bs = Center.all(:id => past_centers.values).aggregate(:id, :branch_id).to_hash
-    @pbs = past_centers.map{|k,v| [k, bs[v]]}.to_hash
-  end
-
-
-  def move_to_center(center, as_of_date)
-    center = center.class == Center ? center : Center.get(center_id)
-    pcs = self.past_centers || {}
-    pcs[as_of_date - 1] = self.center.id
-    self.center = center
-    self.past_centers = pcs
-    self.client_group = nil
-    self.save!
-    self.loans.each{|l| l.update_history}
-    return true
-  end
-
-  def center_for_date(date)
-    return center_id if past_centers.blank?
-    return center_id if self.past_centers.keys.max < date
-    self.past_centers[self.past_centers.select{|k,v| k >= date}.to_hash.keys.sort[0]]
-  end
-
-  def branch_for_date(date)
-    return center.branch_id if past_centers.blank? or self.past_centers.keys.max < date
-    self.past_branches[self.past_branches.select{|k,v| k >= date}.to_hash.keys.sort[0]]
-  end
 
   validates_length :number_of_family_members, :max => 20
   validates_length :school_distance, :max => 200
   validates_length :phc_distance, :max => 500
 
-  belongs_to :organization, :parent_key => [:org_guid], :child_key => [:parent_org_guid], :required => false
-  property   :parent_org_guid, String, :nullable => true
-  
-  belongs_to :domain, :parent_key => [:domain_guid], :child_key => [:parent_domain_guid], :required => false
-  property   :parent_domain_guid, String, :nullable => true
   property   :client_type_id,     Integer, :default => 1
   has n, :loans
   has n, :payments
@@ -234,7 +190,6 @@ class Client
   has n, :applicable_fees,    :child_key => [:applicable_id], :applicable_type => "Client"
   validates_length :account_number, :max => 20
 
-  belongs_to :center
   belongs_to :client_group
   belongs_to :occupation, :nullable => true
   belongs_to :client_type
@@ -260,47 +215,18 @@ class Client
     :path => "#{Merb.root}/public/uploads/:class/:id/:basename.:extension"
 
   validates_length    :name, :min => 3
-  validates_present   :center
   validates_present   :date_joined
   validates_is_unique :reference
   validates_with_method  :verified_by_user_id,          :method => :verified_cannot_be_deleted, :if => Proc.new{|x| x.deleted_at != nil}
   validates_attachment_thumbnails :picture
-
-#  validates_with_method :date_joined, :method => :dates_make_sense
+  validates_with_method :date_joined, :method => :dates_make_sense
   validates_with_method :inactive_reason, :method => :cannot_have_inactive_reason_if_active
+  
+  # property :center_id, Integer
 
-  def self.from_csv(row, headers)
-    if center_attr = row[headers[:center]].strip
-      if center   = Center.first(:name => center_attr)
-      elsif center   = Center.first(:code => center_attr)
-      elsif /\d+/.match(center_attr)
-        center   = Center.get(center_attr)
-      end
-    end
-    raise ArgumentError("No center with code/id #{center_attr}") unless center
-    branch         = center.branch
-    #creating group either on group ccode(if a group sheet is present groups should be already in place) or based on group name
-    if headers[:group_code] and row[headers[:group_code]]
-      client_group  =  ClientGroup.first(:code => row[headers[:group_code]].strip)
-    elsif headers[:group] and row[headers[:group]]
-      name          = row[headers[:group]].strip
-      client_group  = ClientGroup.first(:name => name)||ClientGroup.create(:name => name, :center => center, :code => name.split(' ').join, :upload_id => row[headers[:upload_id]])
-    else
-      client_group  = nil
-    end
-    client_type     = ClientType.first||ClientType.create(:type => "Standard")
-    grt_date        = row[headers[:grt_date]] ? Date.parse(row[headers[:grt_date]]) : nil
-    keys = [:reference, :name, :spouse_name, :date_of_birth, :address, :date_joined, :center, :grt_date, :created_by_staff, :group]
-    missing_keys = keys - headers.keys
-    raise ArgumentError.new("missing keys #{missing_keys.join(',')}") unless missing_keys.blank?
-    hash = {:reference => row[headers[:reference]], :name => row[headers[:name]], :spouse_name => row[headers[:spouse_name]],
-      :date_of_birth => Date.parse(row[headers[:date_of_birth]]), :address => row[headers[:address]], 
-      :date_joined => row[headers[:date_joined]], :center => center, :grt_pass_date => grt_date, :created_by => User.first,
-      :created_by_staff_member_id => StaffMember.first(:name => row[headers[:created_by_staff]]).id,
-      :client_group => client_group, :client_type => client_type, :upload_id => row[headers[:upload_id]]}
-    obj             = new(hash)
-    [obj.save!, obj]
-  end
+  has n, :client_center_memberships, :order => [:from], :child_key => [:member_id]
+  #has n, :centers, :through => :client_center_membership
+  
 
   def self.search(q, per_page=10)
     if /^\d+$/.match(q)
@@ -309,6 +235,38 @@ class Client
       all(:conditions => ["reference=? or name like ?", q, q+'%'], :limit => per_page)
     end
   end
+
+  # Public: updates the center memberships
+  # Clients do not belong to Centers directly but through Memberships. In this case, a ClientCenterMembership
+  # We are recreating the normal dm setters and getters to deal with this so we can still say @client.center = Center.last for example
+  def center=(center)
+    center, as_of = center.class == Array ? center : [center, self.date_joined]
+    raise ArgumentError.new("expected a center") unless center.class == Center
+    cm = ClientCenterMembership.new(:from => as_of, :club => center, :member => self)
+    @c = nil; @center_id = center.id
+    (self.client_center_memberships << cm)
+  end
+
+  def center_id=(center_id)
+    center, as_of = center_id.class == Array ? center_id : [center_id, self.date_joined]
+    self.center = Center.get(center)
+  end
+
+  def loans_for_center(center, as_of = Date.today)
+    loans.select{|l| l.center(as_of) == center}
+  end
+
+
+  # Public: returns the center that a client is a member of on a particular Date
+  #
+  # as_of is a Date which defaults to today's date
+  # returns an array of Centers, since the client can belong to multiple centers on a given day
+  def center(as_of = nil)
+    as_of ||= Date.today
+    @c ||= {}
+    @c[as_of] ||= Center.all(:id => ClientCenterMembership.as_of(as_of, client_center_memberships))
+  end
+
 
 
   def pay_fees(amount, date, received_by, created_by)
@@ -382,14 +340,14 @@ class Client
   end
 
   def add_created_by_staff_member
-    if self.center and self.new?
-      self.created_by_staff_member_id = self.center.manager_staff_id
+    if @center_id and self.new?
+      self.created_by_staff_member_id = Center.get(@center_id).manager_staff_id
     end
   end
 
   def dates_make_sense
     return true if not grt_pass_date or not date_joined 
-    return [false, "Client cannot join this center before the center was created"] if center and center.creation_date and center.creation_date > date_joined
+    # return [false, "Client cannot join this center before the center was created"] if center and center.creation_date and center.creation_date > date_joined
     return [false, "GRT Pass Date cannot be before Date Joined"]  if grt_pass_date < date_joined
     return [false, "Client cannot die before he became a client"] if deceased_on and (deceased_on < date_joined or deceased_on < grt_pass_date)
     true

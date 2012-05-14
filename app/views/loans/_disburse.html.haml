@@ -58,7 +58,7 @@
       %td
         = text_field :name => "loans[#{loan.id}][cheque_number]", :size => 8, :value => loan.cheque_number
       %td
-        = select :name => "loans[#{loan.id}][disbursed_by_staff_id]", :collection => staff_members, :selected => loan.client.center.manager.id.to_s
+        = select :name => "loans[#{loan.id}][disbursed_by_staff_id]", :collection => staff_members, :selected => loan.center.manager.id.to_s
   %tfoot
     %tr
       %td{:colspan => 10}

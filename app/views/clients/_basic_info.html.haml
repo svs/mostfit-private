@@ -4,7 +4,7 @@
       As of
     %td
       = date_select_for(@client, :as_of)
-  - if @center.blank? 
+  - if @client.center.blank? 
     %tr
       %td
         For center:

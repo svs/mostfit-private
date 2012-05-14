@@ -32,12 +32,6 @@ class Payment
   property :desktop_id,          Integer
   property :origin,              String, :default => DEFAULT_ORIGIN
 
-  belongs_to :organization, :parent_key => [:org_guid], :child_key => [:parent_org_guid], :required => false
-  property   :parent_org_guid, String, :nullable => true
-  
-  belongs_to :domain, :parent_key => [:domain_guid], :child_key => [:parent_domain_guid], :required => false
-  property   :parent_domain_guid, String, :nullable => true
-
   belongs_to :loan, :nullable => true
   belongs_to :client
   belongs_to :fee
@@ -64,8 +58,8 @@ class Payment
   # validates_with_method :is_last_payment?, :if => Proc.new{|p| p.deleted_at == nil and p.deleted_by == nil}
   
   def add_center_and_branch
-    self.c_center_id = self.client.center.id
-    self.c_branch_id = self.client.center.branch.id
+    self.c_center_id = self.loan.center.id
+    self.c_branch_id = self.loan.center.branch.id
   end
 
   def self.from_csv(row, headers, loans)

@@ -87,7 +87,7 @@ class Branches < Application
       branch = Branch.get(params[:id])
       next unless branch
       centers = params[:paying] ? Center.paying_today(session.user, Date.parse(params[:date]), params[:id]) : branch.centers(:order => [:name]) 
-      return("<option value=''>Select center</option>"+centers.map{|cen| "<option value=#{cen.id}>#{cen.name}:#{cen.branch.name}</option>"}.join)
+      return("<option value=''>Select center</option>"+centers.map{|cen| "<option value=#{cen.id}>#{cen.id} : #{cen.name}</option>"}.join)
     end
   end
 
