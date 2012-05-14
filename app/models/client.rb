@@ -133,7 +133,7 @@ class Client
   validates_with_method :date_joined, :method => :dates_make_sense
   validates_with_method :inactive_reason, :method => :cannot_have_inactive_reason_if_active
   
-  # property :center_id, Integer
+  property :center_id, Integer
 
   has n, :client_center_memberships, :order => [:from], :child_key => [:member_id]
   #has n, :centers, :through => :client_center_membership

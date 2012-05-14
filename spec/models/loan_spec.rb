@@ -573,6 +573,16 @@ describe Loan do
         lh.advance_principal_adjusted_today.should == 40
       end
 
+      it "should show the same numbers when the schedule changes" do
+        @loan.clear_cache
+        @loan.scheduled_first_payment_date += 7
+        @loan.save
+        @loan.reload
+        lh = @loan.loan_history.find{|lh| lh.date == @loan.scheduled_first_payment_date - 7}
+        lh.advance_principal_paid_today.should == 52
+        lh = @loan.loan_history.find{|lh| lh.date == @loan.scheduled_first_payment_date}
+        lh.advance_principal_adjusted_today.should == 40
+      end
     end
   end
     
