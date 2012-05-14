@@ -869,6 +869,29 @@ class Loan
     @already_updated=true
     Merb.logger.info "LOAN CACHE UPDATE TIME: #{(Time.now - t).round(4)} secs"
   end
+
+  # Public: Gives a list of all dates that are relevant to the loan
+  def history_dates
+    (([applied_on, approved_on, scheduled_disbursal_date, disbursal_date, written_off_on, scheduled_first_payment_date]).map{|d|
+               (self.holidays[d] ? self.holidays[d].new_date : d)
+     } +  installment_dates + payment_dates + loan_center_memberships.aggregate(:from)).compact.uniq.sort
+  end
+
+  # Public - returns the advance principal received and adjusted on a particular date
+  # returns a hash like
+  # {:received => {:principal => 100, :interest => 10, :fees => 0}...}, :adjusted => {:pr...}, :balance => {...}}
+  def advances_on(date)
+    payments.reload if payments.blank?
+    # sum up all the payments that have timeliness marked as advance and received on this date
+    received = {:principal => 0, :interest => 0, :fees => 0} + payments.select{|p| 
+      p.received_on == date and p.timeliness == "advance"}.group_by(&:type).map{|k,v| [k,v.map(&:amount).sum]
+    }.to_hash
+    # sum up all the payments that have timeliness marked as advance and received for this date
+    adjusted = {:principal => 0, :interest => 0, :fees => 0} + payments.select{|p| 
+      p.received_for == date and p.timeliness == "advance"}.group_by(&:type).map{|k,v| [k,v.map(&:amount).sum]
+    }.to_hash
+    {:received => received, :adjusted => adjusted}
+  end
   
   def calculate_history
     return @history_array if @history_array
@@ -884,13 +907,10 @@ class Loan
       [k,amt]
     end.to_hash
     ap_fees = fee_schedule.map{|k,v| [k,v.values.sum]}.to_hash
-    dates = (([applied_on, approved_on, scheduled_disbursal_date, disbursal_date, written_off_on, scheduled_first_payment_date]).map{|d|
-               (self.holidays[d] ? self.holidays[d].new_date : d)
-             } +  installment_dates + payment_dates + loan_center_memberships.aggregate(:from)).compact.uniq.sort
-
+    dates = history_dates
 
     # initialize
-    total_principal_due = total_interest_due = total_principal_paid = total_interest_paid = advance_principal_paid = advance_interest_paid = 0
+    total_principal_due = total_interest_due = total_principal_paid = total_interest_paid = advance_principal_paid = advance_interest_paid = advance_principal_adjusted = advance_interest_adjusted = 0
 
     # find the actual total principal and interest paid.
     # this is helpful for adjusting interest and principal due on a particular date while taking into account future payments
@@ -927,25 +947,31 @@ class Loan
       actual_outstanding_total               = outstanding ? actual[:total_balance].round(2) : 0
       actual_outstanding_interest            = outstanding ? (actual_outstanding_total - actual_outstanding_principal) : 0
 
-      _apo                                   = [0,total_principal_paid.round(2) - total_principal_due.round(2)].max # advance principal outstanding at the start
-      _api                                   = [0,total_interest_paid.round(2) - total_interest_due.round(2)].max
-      advance_principal_outstanding          = outstanding ?  _apo : 0
-      advance_interest_outstanding           = outstanding ?  _api : 0
+      # ADVANCES
+      # debugger if date == Date.new(2000,12,6)
+      advance                                = advances_on(date)
+      advance_principal_paid_today           = advance[:received][:principal]
+      advance_principal_adjusted_today       = advance[:adjusted][:principal]
+      advance_principal_outstanding          = (last_row ? last_row[:advance_principal_outstanding] : 0) + advance_principal_paid_today - advance_principal_adjusted_today
+
+      advance_interest_paid_today            = advance[:received][:interest]
+      advance_interest_adjusted_today        = advance[:adjusted][:interest]
+      advance_interest_outstanding           = (last_row ? last_row[:advance_interest_outstanding] : 0) + advance_interest_paid_today - advance_interest_adjusted_today
+
       total_advance_outstanding              = advance_interest_outstanding + advance_principal_outstanding
-      advance_principal_paid_today           = outstanding_at_start ? (last_row ? [0,_apo - (last_row[:advance_principal_outstanding] || 0)].max : 0) : 0
-      advance_interest_paid_today            = outstanding_at_start ? (last_row ? [0,_api -  (last_row[:advance_interest_outstanding] || 0)].max   : 0) : 0
       total_advance_paid_today               = advance_principal_paid_today + advance_interest_paid_today
+      total_advance_adjusted_today           = advance_interest_adjusted_today + advance_principal_adjusted_today
+
       advance_principal_paid                += advance_principal_paid_today
       advance_principal_paid                 = outstanding_at_start ? advance_principal_paid : 0
       advance_interest_paid                 += advance_interest_paid_today
       advance_interest_paid                  = outstanding_at_start ? advance_interest_paid  : 0
+      advance_principal_adjusted            += advance_principal_adjusted_today
+      advance_interest_adjusted             += advance_interest_adjusted_today
       total_advance_paid                     = advance_principal_paid + advance_interest_paid 
 
-      advance_principal_adjusted             = outstanding_at_start ? advance_principal_paid - advance_principal_outstanding : 0
-      advance_interest_adjusted              = advance_interest_paid  - advance_interest_outstanding
-      advance_principal_adjusted_today       = outstanding_at_start ? (last_row ? [0, _apo - last_row[:advance_principal_adjusted]].max : 0) : 0
-      advance_interest_adjusted_today        = outstanding_at_start ? (last_row ? [0, _api - last_row[:advance_principal_adjusted]].max  : 0) : 0
-      total_advance_adjusted_today           = advance_interest_adjusted_today + advance_principal_adjusted_today
+
+      # FEES
 
       total_fees_due                         = ap_fees.select{|dt,af| dt <= date}.to_hash.values.sum || 0
       total_fees_paid                        = fee_payments.select{|dt,fp| dt <= date}.to_hash.values.sum || 0

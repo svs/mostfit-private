@@ -274,6 +274,7 @@ FactoryGirl.define do
     disbursal_date                { Date.new(2000,6,13) }
     scheduled_first_payment_date  { Date.new(2000,12,6) }
     disbursed_by                  { self.applied_by }
+    history_disabled              false
   end
 
   factory :loan_product do
@@ -367,8 +368,8 @@ FactoryGirl.define do
   end
 
   factory :repayment_style do
-    name                'EquatedWeekly'
-    style               'EquatedWeekly'
+    name                'Flat'
+    style               'Flat'
     rounding_style      'round' # Took me forever to figure this one out but if we don't specify a rounding style loans will bork badly
     round_total_to      1
     round_interest_to   1

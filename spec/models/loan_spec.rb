@@ -499,62 +499,84 @@ describe Loan do
   end
     
   describe "loan history" do
-    before :all do
-      Payment.all.destroy!
-      LoanHistory.all.destroy!
-      @center2 = Factory.create(:center, :manager => @manager, :branch => @branch, :meeting_day => (Date.today + 10).weekday, :creation_date => Date.new(1999,12,31))
-      @center2.save
-      @client2 = Factory.create(:client, :center => @center2, :created_by_user_id => @user.id)
-      @loan2 = Factory.build(:disbursed_loan, :client => @client2, :repayment_style => @flat, :history_disabled => false)
-      @loan2.save
-      7.times do |i|
-        p = @loan2.repay(48, @user, @loan2.scheduled_first_payment_date + (7*i), @manager)
-        p[:status].should be_true
+    describe "normal operation" do
+      before :all do
+        Payment.all.destroy!
+        LoanHistory.all.destroy!
+        @center2 = Factory.create(:center, :manager => @manager, :branch => @branch, :meeting_day => (Date.today + 10).weekday, :creation_date => Date.new(1999,12,31))
+        @center2.save
+        @client2 = Factory.create(:client, :center => @center2, :created_by_user_id => @user.id)
+        @loan2 = Factory.build(:disbursed_loan, :client => @client2, :repayment_style => @flat, :history_disabled => false)
+        @loan2.save
+        7.times do |i|
+          p = @loan2.repay(48, @user, @loan2.scheduled_first_payment_date + (7*i), @manager)
+          p[:status].should be_true
+        end
       end
-    end
       
-    it "should be correctly calculated" do
-      @loan2.clear_cache
-      hist = @loan2.calculate_history
-      os_prin = 1000
-      os_tot = 1200
-      hist.each_with_index do |h,i|
-        h[:scheduled_outstanding_principal].should == 1000 - (40*([0,i-2].max))
-        h[:scheduled_outstanding_total].should == 1200 -(48 * ([0,i-2].max))
-        h[:status].should == STATUSES.index(:disbursed) + 1 if i == 2
-        if i > 2
-          if i < 10
-            h[:principal_due].should == 0
-            h[:interest_due].should == 0
-            h[:principal_paid].should == 40
-            h[:interest_paid].should == 8
-            h[:actual_outstanding_principal].should == 1000 -(40 * ([0,i-2].max)) 
-          else
-            h[:principal_due].should == (i - 9) * 40
-            h[:interest_due].should == (i - 9) * 8
-            h[:principal_paid].should == 0
-            h[:interest_paid].should == 0
-            h[:actual_outstanding_principal].should == 1000 -(40 * 7) 
-            #if h[:date] > @loan2.scheduled_first_payment_date + (7 * 6)
-            #  h[:days_overdue].should ==  (h[:date] - @loan2.scheduled_first_payment_date - 42).to_i
-            #end
+      it "should be correctly calculated" do
+        @loan2.clear_cache
+        hist = @loan2.calculate_history
+        os_prin = 1000
+        os_tot = 1200
+        hist.each_with_index do |h,i|
+          h[:scheduled_outstanding_principal].should == 1000 - (40*([0,i-2].max))
+          h[:scheduled_outstanding_total].should == 1200 -(48 * ([0,i-2].max))
+          h[:status].should == STATUSES.index(:disbursed) + 1 if i == 2
+          if i > 2
+            if i < 10
+              h[:principal_due].should == 0
+              h[:interest_due].should == 0
+              h[:principal_paid].should == 40
+              h[:interest_paid].should == 8
+              h[:actual_outstanding_principal].should == 1000 -(40 * ([0,i-2].max)) 
+            else
+              h[:principal_due].should == (i - 9) * 40
+              h[:interest_due].should == (i - 9) * 8
+              h[:principal_paid].should == 0
+              h[:interest_paid].should == 0
+              h[:actual_outstanding_principal].should == 1000 -(40 * 7) 
+              #if h[:date] > @loan2.scheduled_first_payment_date + (7 * 6)
+              #  h[:days_overdue].should ==  (h[:date] - @loan2.scheduled_first_payment_date - 42).to_i
+              #end
+            end
           end
+        end
+      end
+      
+      describe "database" do
+        it "should have correct values" do
+          repository.adapter.query("SELECT SUM(principal_paid) from loan_history")[0].should == 280
+        end
+        it "should have correct number of rows" do
+          repository.adapter.query("SELECT COUNT(*) from loan_history")[0].should == @loan.number_of_installments + 3
         end
       end
     end
 
-    describe "database" do
-      it "should have correct values" do
-        repository.adapter.query("SELECT SUM(principal_paid) from loan_history")[0].should == 280
+    describe "advances" do
+      before :all do
+        Payment.all.destroy!
+        LoanHistory.all.destroy!
+        @loan = Factory.build(:disbursed_loan)
+        @loan.save
+        @loan.repay(100, @user, @loan.scheduled_first_payment_date, @center.manager)
       end
-      it "should have correct number of rows" do
-        repository.adapter.query("SELECT COUNT(*) from loan_history")[0].should == @loan.number_of_installments + 3
+      
+      it "should show correct advance figure" do
+        lh = @loan.loan_history.find{|lh| lh.date == @loan.scheduled_first_payment_date}
+        lh.advance_principal_paid_today.should == 52
       end
+
+      it "should show correct advance adjusted figure" do
+        lh = @loan.loan_history.find{|lh| lh.date == @loan.scheduled_first_payment_date + 7}
+        lh.advance_principal_adjusted_today.should == 40
+      end
+
     end
   end
-
-
-
+    
+    
   it "should not be deleteable if verified" do
     @loan.verified_by = User.first
     @loan.save
