@@ -52,6 +52,7 @@ class Loan
   attr_accessor :orig_attrs
   attr_accessor :loan_extended          # set to true if you have mixed in the appropriate loan repayment functions
   attr_accessor :installment_date_methods
+  attr_accessor :payment_schedule_hooks
 
   property :id,                             Serial
   property :discriminator,                  Discriminator, :nullable => false, :index => true
@@ -609,8 +610,10 @@ class Loan
 
     @schedule[dd] = {:principal => 0, :interest => 0, :total_principal => 0, :total_interest => 0, :balance => balance, :total => 0, :fees => fees_so_far}
 
+    [@payment_schedule_hooks[:pre]].flatten.each{|hook| self.send(*[hook].flatten)}
+
     (1..actual_number_of_installments).each do |number|
-      date      = installment_dates[number-1] 
+      date      = installment_dates.select{|d| d >= scheduled_first_payment_date}[number-1] 
       principal = scheduled_principal_for_installment(number).round(2)
       interest  = scheduled_interest_for_installment(number).round(2)
 
@@ -1133,11 +1136,16 @@ class Loan
     self.installment_frequency = self.loan_product.installment_frequency
   end
 
-  def interest_calculation(balance)
+  def interest_calculation(balance, d1 = nil, d2 = nil)
     # need to have this is one place because a lot of functions need to know how interest is calculated given a balance
     # this is bound to become more complex as we add all kinds of dates 
+    return 0 if d2 and d1 and d2 == d1
     rs = self.repayment_style || self.loan_product.repayment_style
-    ((balance * interest_rate) / get_divider).round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
+    if d1 and d2
+      ((balance * interest_rate) / (365/(d2-d1))).round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
+    else
+      ((balance * interest_rate) / get_divider).round(2).round_to_nearest(rs.round_interest_to, rs.rounding_style)
+    end
   end
 
   private
