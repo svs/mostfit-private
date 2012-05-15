@@ -57,7 +57,7 @@ class LoanProduct
   end
 
   def loan_validations
-    (loan_validation_methods or "").split(",").map{|m| m.to_sym}
+    (loan_validation_methods or "").split(",").map{|m| m.gsub(' ','')}.select{|c| Foremost::LoanValidators.instance_methods.include?(c)}
   end
 
   def has_loan_validation?(method_name)

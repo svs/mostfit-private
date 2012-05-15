@@ -1,8 +1,11 @@
 # dont call save or update or anything on this method directly!!
 # this class is managed by the loan, and should be completely managed by it.
-
+# This class will soon be renamed Transactions
 class Payment
   include DataMapper::Resource
+  include Foremost::PaymentValidators
+  include DateParser  # mixin for the hook "before: valid?, :parse_dates"
+
   before :valid?, :parse_dates
   before :valid?, :check_client
   before :valid?, :add_center_and_branch
@@ -15,9 +18,12 @@ class Payment
   property :id,                  Serial
   property :guid,                String, :default => lambda{ |obj, p| UUID.generate }
   property :amount,              Float, :nullable => false, :index => true
-  property :type,                Enum.send('[]',*PAYMENT_TYPES), :index => true
+  property :type,                Enum.send('[]',*PAYMENT_TYPES), :index => true  # is it principal, interest or fees?
+  property :timeliness,          String, :length => 12
+  #property :transaction_type,    String, :length => 50
   property :comment,             String, :length => 50
   property :received_on,         Date,    :nullable => false, :index => true
+  property :received_for,        Date,    :nullable => true, :index => true
   property :deleted_by_user_id,  Integer, :nullable => true
   # Default this one to today?
   property :created_at,          DateTime,:nullable => false, :index => true
@@ -35,6 +41,7 @@ class Payment
   belongs_to :loan, :nullable => true
   belongs_to :client
   belongs_to :fee
+  
   belongs_to :created_by,  :child_key => [:created_by_user_id],   :model => 'User'
   belongs_to :received_by, :child_key => [:received_by_staff_id], :model => 'StaffMember'
   belongs_to :deleted_by,  :child_key => [:deleted_by_user_id],   :model => 'User'
@@ -58,8 +65,9 @@ class Payment
   # validates_with_method :is_last_payment?, :if => Proc.new{|p| p.deleted_at == nil and p.deleted_by == nil}
   
   def add_center_and_branch
-    self.c_center_id = self.loan.center.id
-    self.c_branch_id = self.loan.center.branch.id
+    center = self.loan.center(received_on)
+    self.c_center_id = center.id
+    self.c_branch_id = center.branch.id
   end
 
   def self.from_csv(row, headers, loans)
@@ -198,8 +206,6 @@ class Payment
   end
 
   private
-  include DateParser  # mixin for the hook "before: valid?, :parse_dates"
-  include Misfit::PaymentValidators
   def add_loan_product_validations
     return unless loan and loan.loan_product
     # THIS WORKS

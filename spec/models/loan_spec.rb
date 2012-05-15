@@ -387,9 +387,7 @@ describe Loan do
       @disbursed_loan.status(@loan.scheduled_first_payment_date - 1).should == :outstanding
     end
 
-    it "should not repay unsaved loan" do
-      lambda{@disbursed_loan.repay(@loan.total_to_be_received, @user, Date.today, @manager)}.should raise_error
-    end
+    it "should not repay unsaved loan"
     
     it "should be repaid when repaid" do
       @disbursed_loan2 = Factory.build(:disbursed_loan, :loan_product => @loan_product)
@@ -397,8 +395,9 @@ describe Loan do
       @disbursed_loan2.id.should_not be_nil
       @disbursed_loan2.history_disabled=false
       @disbursed_loan2.update_history
+      
       r = @disbursed_loan2.repay(@disbursed_loan2.total_to_be_received, @user, Date.today, @manager)
-      r[0].should == true
+      r[:status].should == true
       @disbursed_loan2.status.should == :repaid
       @disbursed_loan2.status(@disbursed_loan2.scheduled_disbursal_date - 1).should == :approved
     end
@@ -478,7 +477,7 @@ describe Loan do
       @disbursed_loan = Loan.get(@disbursed_loan.id)
       7.times do |i|
         status = @disbursed_loan.repay(48, @user, @disbursed_loan.scheduled_first_payment_date + (7*i), @manager)
-        status[0].should be_true      
+        status[:status].should be_true      
       end
       @disbursed_loan.update_history
       @disbursed_loan.payments_hash.keys.sort.each_with_index do |k,i|
@@ -498,62 +497,94 @@ describe Loan do
   end
     
   describe "loan history" do
-    before :all do
-      Payment.all.destroy!
-      LoanHistory.all.destroy!
-      @center2 = Factory.create(:center, :manager => @manager, :branch => @branch, :meeting_day => (Date.today + 10).weekday, :creation_date => Date.new(1999,12,31))
-      @center2.save
-      @client2 = Factory.create(:client, :center => @center2, :created_by_user_id => @user.id)
-      @loan2 = Factory.build(:disbursed_loan, :client => @client2, :repayment_style => @flat, :history_disabled => false)
-      @loan2.save
-      7.times do |i|
-        p = @loan2.repay(48, @user, @loan2.scheduled_first_payment_date + (7*i), @manager)
-        p[0].should be_true
+    describe "normal operation" do
+      before :all do
+        Payment.all.destroy!
+        LoanHistory.all.destroy!
+        @center2 = Factory.create(:center, :manager => @manager, :branch => @branch, :meeting_day => (Date.today + 10).weekday, :creation_date => Date.new(1999,12,31))
+        @center2.save
+        @client2 = Factory.create(:client, :center => @center2, :created_by_user_id => @user.id)
+        @loan2 = Factory.build(:disbursed_loan, :client => @client2, :repayment_style => @flat, :history_disabled => false)
+        @loan2.save
+        7.times do |i|
+          p = @loan2.repay(48, @user, @loan2.scheduled_first_payment_date + (7*i), @manager)
+          p[:status].should be_true
+        end
       end
-    end
       
-    it "should be correctly calculated" do
-      @loan2.clear_cache
-      hist = @loan2.calculate_history
-      os_prin = 1000
-      os_tot = 1200
-      hist.each_with_index do |h,i|
-        h[:scheduled_outstanding_principal].should == 1000 - (40*([0,i-2].max))
-        h[:scheduled_outstanding_total].should == 1200 -(48 * ([0,i-2].max))
-        h[:status].should == STATUSES.index(:disbursed) + 1 if i == 2
-        if i > 2
-          if i < 10
-            h[:principal_due].should == 0
-            h[:interest_due].should == 0
-            h[:principal_paid].should == 40
-            h[:interest_paid].should == 8
-            h[:actual_outstanding_principal].should == 1000 -(40 * ([0,i-2].max)) 
-          else
-            h[:principal_due].should == (i - 9) * 40
-            h[:interest_due].should == (i - 9) * 8
-            h[:principal_paid].should == 0
-            h[:interest_paid].should == 0
-            h[:actual_outstanding_principal].should == 1000 -(40 * 7) 
-            #if h[:date] > @loan2.scheduled_first_payment_date + (7 * 6)
-            #  h[:days_overdue].should ==  (h[:date] - @loan2.scheduled_first_payment_date - 42).to_i
-            #end
+      it "should be correctly calculated" do
+        @loan2.clear_cache
+        hist = @loan2.calculate_history
+        os_prin = 1000
+        os_tot = 1200
+        hist.each_with_index do |h,i|
+          h[:scheduled_outstanding_principal].should == 1000 - (40*([0,i-2].max))
+          h[:scheduled_outstanding_total].should == 1200 -(48 * ([0,i-2].max))
+          h[:status].should == STATUSES.index(:disbursed) + 1 if i == 2
+          if i > 2
+            if i < 10
+              h[:principal_due].should == 0
+              h[:interest_due].should == 0
+              h[:principal_paid].should == 40
+              h[:interest_paid].should == 8
+              h[:actual_outstanding_principal].should == 1000 -(40 * ([0,i-2].max)) 
+            else
+              h[:principal_due].should == (i - 9) * 40
+              h[:interest_due].should == (i - 9) * 8
+              h[:principal_paid].should == 0
+              h[:interest_paid].should == 0
+              h[:actual_outstanding_principal].should == 1000 -(40 * 7) 
+              #if h[:date] > @loan2.scheduled_first_payment_date + (7 * 6)
+              #  h[:days_overdue].should ==  (h[:date] - @loan2.scheduled_first_payment_date - 42).to_i
+              #end
+            end
           end
+        end
+      end
+      
+      describe "database" do
+        it "should have correct values" do
+          repository.adapter.query("SELECT SUM(principal_paid) from loan_history")[0].should == 280
+        end
+        it "should have correct number of rows" do
+          repository.adapter.query("SELECT COUNT(*) from loan_history")[0].should == @loan.number_of_installments + 3
         end
       end
     end
 
-    describe "database" do
-      it "should have correct values" do
-        repository.adapter.query("SELECT SUM(principal_paid) from loan_history")[0].should == 280
+    describe "advances" do
+      before :all do
+        Payment.all.destroy!
+        LoanHistory.all.destroy!
+        @loan = Factory.build(:disbursed_loan)
+        @loan.save
+        @loan.repay(100, @user, @loan.scheduled_first_payment_date, @center.manager)
       end
-      it "should have correct number of rows" do
-        repository.adapter.query("SELECT COUNT(*) from loan_history")[0].should == @loan.number_of_installments + 3
+      
+      it "should show correct advance figure" do
+        lh = @loan.loan_history.find{|lh| lh.date == @loan.scheduled_first_payment_date}
+        lh.advance_principal_paid_today.should == 52
+      end
+
+      it "should show correct advance adjusted figure" do
+        lh = @loan.loan_history.find{|lh| lh.date == @loan.scheduled_first_payment_date + 7}
+        lh.advance_principal_adjusted_today.should == 40
+      end
+
+      it "should show the same numbers when the schedule changes" do
+        @loan.clear_cache
+        @loan.scheduled_first_payment_date += 7
+        @loan.save
+        @loan.reload
+        lh = @loan.loan_history.find{|lh| lh.date == @loan.scheduled_first_payment_date - 7}
+        lh.advance_principal_paid_today.should == 52
+        lh = @loan.loan_history.find{|lh| lh.date == @loan.scheduled_first_payment_date}
+        lh.advance_principal_adjusted_today.should == 40
       end
     end
   end
-
-
-
+    
+    
   it "should not be deleteable if verified" do
     @loan.verified_by = User.first
     @loan.save
@@ -618,11 +649,11 @@ describe Loan do
     end
     it "should repay principal and interest properly" do
       r = @loan3.repay(500, @user, @loan3.scheduled_first_payment_date, @manager)
-      r[0].should == true
-      r[1].type.should == :principal
-      r[1].amount.should == 492
-      r[2].type.should == :interest
-      r[2].amount.should == 8
+      r[:status].should == true
+      r[:principal][0].type.should == :principal
+      r[:principal].map(&:amount).sum.should == 492
+      r[:interest][0].type.should == :interest
+      r[:interest][0].amount.should == 8
     end
     describe "fees" do
       describe "get_fee_payments" do
@@ -638,13 +669,9 @@ describe Loan do
       end
 
       it "should pay_fees properly" do
-<<<<<<< HEAD
-        result = @loan3.pay_fees(100, @loan3.disbursal_date, @manager, User.first)
-=======
         result = @loan3.pay_fees(100, @loan3.disbursal_date, @manager, @user)
->>>>>>> refs/heads/2.1
-        result[0].should == true
-        result[1][0].errors.should be_blank
+        result[:status].should == true
+        result[:fees][0].errors.should be_blank
       end
 
     end
@@ -658,107 +685,140 @@ describe Loan do
       describe "normal payment split" do
         it "should make a correct split when paid properly" do
           r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager)
-          r[0].should == true
-          r[1].amount.should == 40
-          r[2].amount.should == 8
+          r[:principal] = r[:principal].map{|p| [p.received_for, p]}.to_hash
+          r[:interest]  = r[:interest].map{|p| [p.received_for, p]}.to_hash
+          r[:status].should == true
+          r[:principal][@loan.scheduled_first_payment_date].amount.should == 40
+          r[:interest][@loan.scheduled_first_payment_date].amount.should == 8
         end
         describe "second payment" do
           before :all do
             r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager)
+            @loan3.reload
             @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager)
+            @r[:principal] = @r[:principal].map{|p| [p.received_for, p]}.to_hash
+            @r[:interest]  = @r[:interest].map{|p| [p.received_for, p]}.to_hash
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 40
+            @r[:principal].size.should == 1
+            @r[:principal].first[1].amount.should == 40
           end
           it "should split interest propery" do
-            @r[2].amount.should == 8
+            @r[:interest].size.should == 1
+            @r[:interest].first[1].amount.should == 8
           end
         end
         describe "delayed payment" do
           before :all do
             @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager)
+            @r[:principal] = @r[:principal].map{|r| [r.received_for, r]}.to_hash
+            @r[:interest]  = @r[:interest].map{|r| [r.received_for, r]}.to_hash
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 32
+            @r[:principal][@loan.scheduled_first_payment_date].amount.should == 32
+            @r[:principal][@loan.scheduled_first_payment_date].received_for.should == @loan.scheduled_first_payment_date
+            @r[:principal][@loan.scheduled_first_payment_date].timeliness.should == "overdue"
+            @r[:principal][@loan.scheduled_first_payment_date + 7].should be_nil
           end
           it "should split interest propery" do
-            @r[2].amount.should == 16
+            @r[:interest][@loan.scheduled_first_payment_date].amount.should == 8
+            @r[:interest][@loan.scheduled_first_payment_date].received_for.should == @loan.scheduled_first_payment_date
+            @r[:interest][@loan.scheduled_first_payment_date].timeliness.should == "overdue"
+            @r[:interest][@loan.scheduled_first_payment_date + 7].amount.should == 8
+            @r[:interest][@loan.scheduled_first_payment_date + 7].received_for.should == @loan.scheduled_first_payment_date + 7
+            @r[:interest][@loan.scheduled_first_payment_date + 7].timeliness.should == "normal"
           end
         end
         describe "under payment" do
           before :all do
             @r = @loan3.repay(40, @user, @loan.scheduled_first_payment_date, @manager)
+            @r[:principal] = @r[:principal].map{|p| [p.received_for, p]}.to_hash
+            @r[:interest]  = @r[:interest].map{|p| [p.received_for, p]}.to_hash
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 32
+            @r[:principal][@loan.scheduled_first_payment_date].amount.should == 32
+            @r[:principal][@loan.scheduled_first_payment_date].received_for.should == @loan.scheduled_first_payment_date
+            @r[:principal][@loan.scheduled_first_payment_date].timeliness.should == "normal"
           end
           it "should split interest propery" do
-            @r[2].amount.should == 8
+            @r[:interest][@loan.scheduled_first_payment_date].amount.should == 8
+            @r[:interest][@loan.scheduled_first_payment_date].received_for.should == @loan.scheduled_first_payment_date
+            @r[:interest][@loan.scheduled_first_payment_date].timeliness.should == "normal"
           end
         end
         describe "over payment" do
           before :all do
             @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager)
+            @r[:principal] = @r[:principal].map{|p| [p.received_for, p]}.to_hash
+            @r[:interest]  = @r[:interest].map{|p| [p.received_for, p]}.to_hash
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 47
+            @r[:principal][@loan.scheduled_first_payment_date].amount.should == 40
+            @r[:principal][@loan.scheduled_first_payment_date].received_for.should == @loan.scheduled_first_payment_date
+            @r[:principal][@loan.scheduled_first_payment_date].timeliness.should == "normal"
+            @r[:principal][@loan.scheduled_first_payment_date + 7].amount.should == 7
+            @r[:principal][@loan.scheduled_first_payment_date + 7].received_for.should == @loan.scheduled_first_payment_date + 7
+            @r[:principal][@loan.scheduled_first_payment_date + 7].timeliness.should == "advance"
           end
           it "should split interest propery" do
-            @r[2].amount.should == 8
+            @r[:interest][@loan.scheduled_first_payment_date].amount.should == 8
+            @r[:interest][@loan.scheduled_first_payment_date].received_for.should == @loan.scheduled_first_payment_date
+            @r[:interest][@loan.scheduled_first_payment_date].timeliness.should == "normal"
           end
         end
         describe "all together" do
           it "start with an overpayment" do
             @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager)
-            @r[1].amount.should == 47
-            @r[2].amount.should == 8
+            @r[:principal].map(&:amount).sum.should == 47
+            @r[:interest].map(&:amount).sum.should == 8
             @r = @loan3.repay(20, @user, @loan.scheduled_first_payment_date + 7, @manager)
-            @r[1].amount.should == 12
-            @r[2].amount.should == 8
+            @r[:principal].map(&:amount).sum.should == 12
+            @r[:interest].map(&:amount).sum.should == 8
             @r = @loan3.repay(10, @user, @loan.scheduled_first_payment_date + 21, @manager)
-            @r[1].should == nil            # no principal paid
-            @r[2].amount.should == 10
+            @r[:principal].should == []            # no principal paid
+            @r[:interest].map(&:amount).sum.should == 10
             @r = @loan3.repay(155, @user, @loan.scheduled_first_payment_date + 28, @manager)
-            @r[1].amount.should == 141
-            @r[2].amount.should == 14
+            @r[:principal].map(&:amount).sum.should == 141
+            @r[:interest].map(&:amount).sum.should == 14
           end
         end
 
       end
 
       describe "prorata payment split" do
-        it "should make a correct split when paid properly" do
-          r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
-          r[0].should == true
-          r[1].amount.should == 40
-          r[2].amount.should == 8
+        before :all do
+          @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
+        end
+        it "should split properly when paid normally" do
+          @r[:status].should == true
+          @r[:principal].first.amount.should == 40
+          @r[:interest].first.amount.should == 8
         end
         describe "second payment" do
           before :all do
             r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
-            @loan3.reload
             @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :prorata)
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 40
+            @r[:principal][0].amount.should == 40
           end
           it "should split interest propery" do
-            @r[2].amount.should == 8
+            @r[:interest][0].amount.should == 8
           end
         end
         describe "delayed payment" do
@@ -766,27 +826,28 @@ describe Loan do
             @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :prorata)
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 40
+            @r[:principal][0].amount.should == 40
           end
           it "should split interest propery" do
-            @r[2].amount.should == 8
+            @r[:interest][0].amount.should == 8
           end
         end
         describe "under payment" do
           before :all do
+            @loan3.reload
             @r = @loan3.repay(40, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == (40 * 40/48.0).round(2)
+            @r[:principal][0].amount.should == (40 * 40/48.0).round(2)
           end
           it "should split interest propery" do
-            @r[2].amount.should == (40 * 8 / 48.0).round(2)
+            @r[:interest][0].amount.should == (40 * 8 / 48.0).round(2)
           end
         end
         describe "over payment" do
@@ -794,32 +855,34 @@ describe Loan do
             @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == (55 * 40/48.0).round(2)
+            @r[:principal][0].amount.should == 40
+            @r[:principal][1].amount.should == (7 * 40 / 48.to_f).round(2)
           end
           it "should split interest propery" do
-            @r[2].amount.should == (55 * 8/48.0).round(2)
+            @r[:interest][0].amount.should == 8
+            @r[:interest][1].amount.should == (7 * 8 / 48.to_f).round(2)
           end
         end
         describe "all together" do
           it "start with an overpayment" do
             @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager, false, :prorata)
-            @r[1].amount.should == (55 * 40/48.0).round(2)
-            @r[2].amount.should == (55 * 8/48.0).round(2)
+            @r[:principal].map(&:amount).sum.should == (55 * 40/48.0).round(2)
+            @r[:interest].map(&:amount).sum.should == (55 * 8/48.0).round(2)
             @loan3.reload
             @r = @loan3.repay(20, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :prorata)
-            @r[1].amount.should == (20 * 40/48.0).round(2)
-            @r[2].amount.should == (20 * 8/48.0).round(2)
+            @r[:principal].map(&:amount).sum.should == (20 * 40/48.0).round(2)
+            @r[:interest].map(&:amount).sum.should == (20 * 8/48.0).round(2)
             @loan3.reload
             @r = @loan3.repay(10, @user, @loan.scheduled_first_payment_date + 21, @manager, false, :prorata)
-            @r[1].amount.should == (10 * 40/48.0).round(2)
-            @r[2].amount.should == (10 * 8/48.0).round(2)
+            @r[:principal].map(&:amount).sum.should == (10 * 40/48.0).round(2)
+            @r[:interest].map(&:amount).sum.should == (10 * 8/48.0).round(2)
             @loan3.reload
             @r = @loan3.repay(155, @user, @loan.scheduled_first_payment_date + 28, @manager, false, :prorata)
-            @r[1].amount.round(2).should == (155 * 40/48.0).round(2)
-            @r[2].amount.should == (155 * 8/48.0).round(2)
+            @r[:principal].map(&:amount).sum.round(2).should == (155 * 40/48.0).round(2)
+            @r[:interest].map(&:amount).sum.round(2).should == (155 * 8/48.0).round(2)
           end
         end
 
@@ -827,9 +890,9 @@ describe Loan do
       describe "sequential payment split" do
         it "should make a correct split when paid properly" do
           r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
-          r[0].should == true
-          r[1].amount.should == 40
-          r[2].amount.should == 8
+          r[:status].should == true
+          r[:principal].map(&:amount).sum.should == 40
+          r[:interest].map(&:amount).sum.should == 8
         end
         describe "second payment" do
           before :all do
@@ -838,13 +901,13 @@ describe Loan do
             @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :sequential)
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 40
+            @r[:principal].map(&:amount).sum.should == 40
           end
           it "should split interest propery" do
-            @r[2].amount.should == 8
+            @r[:interest].map(&:amount).sum.should == 8
           end
         end
         describe "delayed payment" do
@@ -852,13 +915,13 @@ describe Loan do
             @r = @loan3.repay(48, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :sequential)
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 40
+            @r[:principal].map(&:amount).sum.should == 40
           end
           it "should split interest propery" do
-            @r[2].amount.should == 8
+            @r[:interest].map(&:amount).sum.should == 8
           end
         end
         describe "under payment" do
@@ -866,13 +929,13 @@ describe Loan do
             @r = @loan3.repay(40, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 32
+            @r[:principal].map(&:amount).sum.should == 32
           end
           it "should split interest propery" do
-            @r[2].amount.should == 8
+            @r[:interest].map(&:amount).sum.should == 8
           end
         end
         describe "over payment" do
@@ -880,32 +943,32 @@ describe Loan do
             @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
           end
           it "should make the second payment also properly" do
-            @r[0].should == true
+            @r[:status].should == true
           end
           it "should split principal properly" do
-            @r[1].amount.should == 40
+            @r[:principal].map(&:amount).sum.should == 40
           end
           it "should split interest propery" do
-            @r[2].amount.should == 15
+            @r[:interest].map(&:amount).sum.should == 15
           end
         end
         describe "all together" do
           it "start with an overpayment" do
             @r = @loan3.repay(55, @user, @loan.scheduled_first_payment_date, @manager, false, :sequential)
-            @r[1].amount.should == 40
-            @r[2].amount.should == 15
+            @r[:principal].map(&:amount).sum.should == 40
+            @r[:interest].map(&:amount).sum.should == 15
             @loan3.reload
             @r = @loan3.repay(20, @user, @loan.scheduled_first_payment_date + 7, @manager, false, :sequential)
-            @r[1].amount.should == 19
-            @r[2].amount.should == 1
+            @r[:principal].map(&:amount).sum.should == 19
+            @r[:interest].map(&:amount).sum.should == 1
             @loan3.reload
             @r = @loan3.repay(10, @user, @loan.scheduled_first_payment_date + 21, @manager, false, :sequential)
-            @r[1].amount.should == 10
+            @r[:principal].map(&:amount).sum.should == 10
             @r[2].should == nil 
             @loan3.reload
             @r = @loan3.repay(155, @user, @loan.scheduled_first_payment_date + 28, @manager, false, :sequential)
-            @r[1].amount.round(2).should == 131
-            @r[2].amount.should == 24
+            @r[:principal].map(&:amount).sum.round(2).should == 131
+            @r[:interest].map(&:amount).sum.should == 24
           end
         end
 
@@ -919,92 +982,6 @@ describe Loan do
     before :all do
       @loan = Factory.build(:approved_loan)
       @loan.save
-    end
-    it "should not be valid if duplicated" do
-      @loan_product.loan_validation_methods = "loans_must_not_be_duplicated"
-      @loan_product.save
-      @loan2 = Loan.new(@loan.attributes.except(:id).merge(:loan_product => @loan_product))
-      @loan2.should_not be_valid
-    end
-
-
-    describe "scheduled dates" do
-      before :each do
-      end
-      describe "without restriction" do
-        it "should be valid if repayment dates are not center meeting dates" do
-          @loan.scheduled_disbursal_date = Date.new(2000, 11, 30)
-          @loan.should be_valid
-          
-          @loan.scheduled_disbursal_date = Date.new(2000, 11, 29)
-          @loan.should be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 11, 23)
-          @loan.applied_by     = @manager
-          @loan.disbursed_by   = @manager
-          @loan.should be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 12, 29)
-          @loan.should be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 12, 30)
-          @loan.should be_valid
-        end
-      end
-
-      describe "with validation scheduled_dates_must_be_center_meeting_days" do
-        before :each do
-          @loan = Factory.build(:approved_loan)
-          @loan.save
-          @loan_product = @loan.loan_product
-          @loan_product.loan_validation_methods = "scheduled_dates_must_be_center_meeting_days"
-          @loan_product.save
-          @cmd = CenterMeetingDay.new(:meeting_day => :tuesday, :valid_from => @loan.scheduled_first_payment_date + 29, :center => @loan.center)
-          @cmd.save
-          @loan.reload
-          @loan.clear_cache
-        end
-        
-        it "should change with center meeting date change" do
-          @loan.installment_dates[5..-1].map(&:weekday).uniq.should == [:tuesday]
-        end
-      end
-
-      describe "with center meeting day restriction" do
-        before :all do
-          @loan_product.loan_validation_methods = "disbursal_dates_must_be_center_meeting_days"
-          @loan_product.save
-          @loan = Factory.build(:approved_loan, :loan_product => @loan_product)
-        end
-        
-        it "should be valid on the same day" do
-          @center.meeting_day_for(Date.new(2000, 11, 29)).should == :wednesday
-          @loan.scheduled_disbursal_date = Date.new(2000, 11, 29)
-          @loan.disbursal_date = nil
-          @loan.disbursed_by   = nil
-          @loan.should be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 11, 22)
-          @loan.disbursed_by   = @manager    
-          @loan.should be_valid
-          
-        end
-        
-        it "should not be valid on another day" do
-          @loan.disbursal_date = Date.new(2000, 11, 30)
-          @loan.disbursed_by   = @manager
-          @loan.should_not be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 11, 02)
-          @loan.disbursed_by   = @manager
-          @loan.should_not be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 11, 27)
-          @loan.disbursed_by   = @manager
-          @loan.should_not be_valid
-        end
-      end
-      
     end
 
     describe "check_payment_of_fees_before_disbursal" do
@@ -1022,7 +999,7 @@ describe Loan do
         @loan.save.should be_false
         
         #when fees are paid
-        result = @loan.pay_fees((@loan.fees[0].amount || 0), @loan.fee_schedule.keys.first, @manager, User.first)
+        result = @loan.pay_fees((@loan.fees[:status].amount || 0), @loan.fee_schedule.keys.first, @manager, User.first)
         @loan.disbursal_date = @loan.scheduled_disbursal_date
         @loan.disbursed_by = @manager
         @loan.save.should be_true

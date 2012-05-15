@@ -1,6 +1,18 @@
-module Misfit
+module Foremost
 
   module PaymentValidators
+
+    def self.included(base)
+      self.instance_methods.map{|m| m.to_sym}.each do |s|
+        clause = Proc.new{|t| t.loan and (t.loan.loan_product.payment_validations.include?(s))}
+        if DataMapper::VERSION == "0.10.1"
+          Payment.add_validator_to_context({:context =>  :default, :if => clause}, [s], DataMapper::Validate::MethodValidator)
+        elsif DataMapper::VERSION == "0.10.2"
+          Payment.send(:add_validator_to_context, {:context => [:default], :if => clause}, [s], DataMapper::Validate::MethodValidator)
+        end
+      end
+    end
+
     # ALL payment validations go in here so that they are available to the loan product
     def amount_must_be_paid_in_full_or_not_at_all
       case type
@@ -87,6 +99,29 @@ module Misfit
   end    #PaymentValidators
 
   module LoanValidators
+    
+    def self.included(base)
+      self.instance_methods.map{|m| m}.each do |s|
+        clause = Proc.new{|t| t.loan_product.loan_validations.include?(s)}
+        if DataMapper::VERSION == "0.10.1"
+          base.add_validator_to_context({:context =>  :default, :if => clause}, [s], DataMapper::Validate::MethodValidator)
+        elsif DataMapper::VERSION == "0.10.2"
+          base.send(:add_validator_to_context,{:context => [:default], :if => clause}, [s], DataMapper::Validate::MethodValidator)
+        end
+      end
+    end
+    
+    def self.extended(base)
+      vms = base.loan_product.loan_validations
+      if vms.include?("scheduled_dates_must_be_center_meeting_days")
+        base.installment_date_methods = {:provider => :center, :method => :slice, :args => [base.scheduled_first_payment_date, base.number_of_installments]}
+      end
+      if vms.include?("collect_stub_period_interest")
+        base.installment_date_methods << {:provider => :stub_dates }
+        base.payment_schedule_hooks = {:pre => :calculate_stub_interest_payments}
+      end
+    end
+
     def installments_are_integers?
       self.payment_schedule.each do |date, val|
         pri = val[:principal]
@@ -198,6 +233,15 @@ module Misfit
       lh_statuses  = LoanHistory.latest(:client_id => @client.id, :loan_product_id => lp_ids).map{|x| x.status} # using map because aggregate returns nil! bug?
       outstanding_statuses = [:applied_in_future, :applied, :approved, :disbursed, :outstanding]
       return [false, "Cannot create loan as client: #{@client.name} (id: #{@client.id}) already has an active loan"] if outstanding_statuses.map{|s| lh_statuses.include?(s)}.include?(true)
+      return true
+    end
+
+    def collect_stub_period_interest
+      # check this if you want to collect interest on installment dates between the disbursal date and the scheduled first payment date.
+      # the (scheduled) disbursal date and the scheduled first payment date must be more than the installment frequency
+      debugger
+      properly_apart = shift_date_by_installments((self.disbursal_date || self.scheduled_disbursal_date), 1,false) <= self.scheduled_first_payment_date
+      return [false, "The (scheduled) disbursal date and scheduled first payment date must be atleast one #{installment_frequency} apart"] unless properly_apart
       return true
     end
 
