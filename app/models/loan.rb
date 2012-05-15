@@ -6,12 +6,18 @@ class Loan
   include ExcelFormula
   include LoanDisplay
   include LoanFiddling
+  include Foremost::LoanValidators
+  include Foremost::Grameen::Loan
+  include DateParser  # mixin for the hook "before :valid?, :parse_dates"
+
+
   DAYS = [:none, :monday, :tuesday, :wednesday, :thursday, :friday, :saturday, :sunday]
 
   before :valid?,    :parse_dates
   before :valid?,    :convert_blank_to_nil
   before :valid?,    :set_center
   before :valid?,    :set_loan_product_parameters
+  before :valid?,    :extend_loan
 
   after  :create,    :levy_fees_new          # we need a separate one for create for a variety of reasons to  do with overwriting old fees
   after  :create,    :update_cycle_number
@@ -45,6 +51,7 @@ class Loan
   attr_accessor :already_updated
   attr_accessor :orig_attrs
   attr_accessor :loan_extended          # set to true if you have mixed in the appropriate loan repayment functions
+  attr_accessor :installment_date_methods
 
   property :id,                             Serial
   property :discriminator,                  Discriminator, :nullable => false, :index => true
@@ -104,7 +111,8 @@ class Loan
   property :repayment_style_id,                 Integer, :nullable => true
 
   # property :center_id, Integer                 #temporary, while we fix the loan_center_memberships
-  
+
+  attr_accessor :installment_date_methods
 
   # associations
   belongs_to :client
@@ -274,7 +282,7 @@ class Loan
 
   # clears all cached values
   def clear_cache
-    @payments_cache = @schedule = @history_array = @fee_schedule = @holidays = @_installment_dates = @statuses = @schedulr = nil
+    @payments_cache = @schedule = @history_array = @fee_schedule = @holidays = @_installment_dates = @statuses = @schedulr = @loan_extended = nil
   end
 
   def interest_percentage  # code dup with the FundingLine
@@ -673,6 +681,10 @@ class Loan
 
   def extend_loan
     unless @loan_extended
+      @installment_date_methods = [{ :provider => :scheduler, 
+                                     :method => :slice, 
+                                     :args => [self.scheduled_first_payment_date, self.number_of_installments]}]
+      self.extend(Foremost::LoanValidators)
       if rs
         self.extend(Kernel.module_eval("Mostfit::PaymentStyles::#{rs.style.to_s}"))
         @loan_extended = true
@@ -835,15 +847,19 @@ class Loan
   end
 
   # the loan per se has no idea of calendars, etc. all it knows is that it needs some dates and for those dates it has to ask someone.
-  # installment_source -> the method to call to get the fellow to ask for installment dates
-  # installment source must respond to a :slice method which takes the following arguments
+  # anyone who needs to change the installment dates basically adds the method name to the @installment_date_methods variable
+  # the return value must respond to a #slice method which extracts the given dates which takes the following arguments
   # start_date
   # end date or number of dates to fetch
   #
   # Public: returns the dates on which SCHEDULED installments fall due for this loan
   def installment_dates
     return @_installment_dates if @_installment_dates
-    @_installment_dates = self.send(installment_source).send(:slice, scheduled_first_payment_date, actual_number_of_installments)
+    extend_loan
+    @_installment_dates =  @installment_date_methods.map do |options|
+      r = self.send(options[:provider])
+      options[:method] ? r.send(*([options[:method]] + (options[:args] || [])).flatten) : r
+    end.flatten.sort.uniq
   end
 
 
@@ -948,7 +964,6 @@ class Loan
       actual_outstanding_interest            = outstanding ? (actual_outstanding_total - actual_outstanding_principal) : 0
 
       # ADVANCES
-      # debugger if date == Date.new(2000,12,6)
       advance                                = advances_on(date)
       advance_principal_paid_today           = advance[:received][:principal]
       advance_principal_adjusted_today       = advance[:adjusted][:principal]
@@ -1127,8 +1142,6 @@ class Loan
 
   private
 
-  include DateParser  # mixin for the hook "before :valid?, :parse_dates"
-  include Misfit::LoanValidators
 
   # Sets the center of the loan to be whatever the client's center was when he applied for the loan.
   # this can subsequently be changed manually as we move stuff around.
@@ -1146,14 +1159,6 @@ class Loan
         raise "Need to specify a center as the client is a member of #{client_centers.count} centers"
       end
     end
-  end
-
-  def installment_source
-    if loan_product and loan_product.has_validation?("scheduled_dates_must_be_center_meeting_days")
-      set_center
-      return "center" 
-    end
-    return "scheduler"
   end
 
   def scheduler

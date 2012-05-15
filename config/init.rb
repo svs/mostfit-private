@@ -113,29 +113,6 @@ end
 Merb::BootLoader.after_app_loads do
   # This will get executed after your app's classes have been loaded.
 
-  # Load the validation hooks
-  # ruby is too beautiful. 3 lines of code and all payments can get their appropriate validations which are decided by the
-  # loan product.
-  Misfit::PaymentValidators.instance_methods.map{|m| m.to_sym}.each do |s|
-    clause = Proc.new{|t| t.loan and (t.loan.loan_product.payment_validations.include?(s))}
-    if DataMapper::VERSION == "0.10.1"
-      Payment.add_validator_to_context({:context =>  :default, :if => clause}, [s], DataMapper::Validate::MethodValidator)
-    elsif DataMapper::VERSION == "0.10.2"
-      Payment.send(:add_validator_to_context, {:context => [:default], :if => clause}, [s], DataMapper::Validate::MethodValidator)
-    end
-  end
-
-  Misfit::LoanValidators.instance_methods.map{|m| m.to_sym}.each do |s|
-    clause = Proc.new{|t| t.loan_product.loan_validations.include?(s)}
-    Loan.descendants.each do |loan|
-      if DataMapper::VERSION == "0.10.1"
-        loan.add_validator_to_context({:context =>  :default, :if => clause}, [s], DataMapper::Validate::MethodValidator)
-      elsif DataMapper::VERSION == "0.10.2"
-        loan.send(:add_validator_to_context,{:context => [:default], :if => clause}, [s], DataMapper::Validate::MethodValidator)
-      end
-    end
-  end
-
   # set the rights
   require 'config/misfit'
   require 'lib/reportage.rb'

@@ -3,6 +3,9 @@
 # This class will soon be renamed Transactions
 class Payment
   include DataMapper::Resource
+  include Foremost::PaymentValidators
+  include DateParser  # mixin for the hook "before: valid?, :parse_dates"
+
   before :valid?, :parse_dates
   before :valid?, :check_client
   before :valid?, :add_center_and_branch
@@ -29,8 +32,8 @@ class Payment
   property :verified_by_user_id, Integer, :nullable => true, :index => true
   property :loan_id,             Integer, :nullable => true, :index => true
   property :client_id,           Integer, :nullable => true, :index => true
-  property :c_center_id,           Integer, :nullable => true, :index => true
-  property :c_branch_id,           Integer, :nullable => false, :index => true
+  #property :center_id,           Integer, :nullable => true, :index => true
+  #property :branch_id,           Integer, :nullable => false, :index => true
   property :fee_id,              Integer, :nullable => true, :index => true
   property :desktop_id,          Integer
   property :origin,              String, :default => DEFAULT_ORIGIN
@@ -38,6 +41,11 @@ class Payment
   belongs_to :loan, :nullable => true
   belongs_to :client
   belongs_to :fee
+  
+  #belongs_to :center
+  #belongs_to :branch
+
+
   belongs_to :created_by,  :child_key => [:created_by_user_id],   :model => 'User'
   belongs_to :received_by, :child_key => [:received_by_staff_id], :model => 'StaffMember'
   belongs_to :deleted_by,  :child_key => [:deleted_by_user_id],   :model => 'User'
@@ -61,8 +69,8 @@ class Payment
   # validates_with_method :is_last_payment?, :if => Proc.new{|p| p.deleted_at == nil and p.deleted_by == nil}
   
   def add_center_and_branch
-    self.c_center_id = self.loan.center.id
-    self.c_branch_id = self.loan.center.branch.id
+    self.center = self.loan.center(received_on)
+    self.branch = self.center.branch
   end
 
   def self.from_csv(row, headers, loans)
@@ -201,8 +209,6 @@ class Payment
   end
 
   private
-  include DateParser  # mixin for the hook "before: valid?, :parse_dates"
-  include Misfit::PaymentValidators
   def add_loan_product_validations
     return unless loan and loan.loan_product
     # THIS WORKS

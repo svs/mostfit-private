@@ -387,9 +387,7 @@ describe Loan do
       @disbursed_loan.status(@loan.scheduled_first_payment_date - 1).should == :outstanding
     end
 
-    it "should not repay unsaved loan" do
-      lambda{@disbursed_loan.repay(@loan.total_to_be_received, @user, Date.today, @manager)}.should raise_error
-    end
+    it "should not repay unsaved loan"
     
     it "should be repaid when repaid" do
       @disbursed_loan2 = Factory.build(:disbursed_loan, :loan_product => @loan_product)
@@ -861,7 +859,6 @@ describe Loan do
           end
           it "should split principal properly" do
             @r[:principal][0].amount.should == 40
-            debugger
             @r[:principal][1].amount.should == (7 * 40 / 48.to_f).round(2)
           end
           it "should split interest propery" do
@@ -985,92 +982,6 @@ describe Loan do
     before :all do
       @loan = Factory.build(:approved_loan)
       @loan.save
-    end
-    it "should not be valid if duplicated" do
-      @loan_product.loan_validation_methods = "loans_must_not_be_duplicated"
-      @loan_product.save
-      @loan2 = Loan.new(@loan.attributes.except(:id).merge(:loan_product => @loan_product))
-      @loan2.should_not be_valid
-    end
-
-
-    describe "scheduled dates" do
-      before :each do
-      end
-      describe "without restriction" do
-        it "should be valid if repayment dates are not center meeting dates" do
-          @loan.scheduled_disbursal_date = Date.new(2000, 11, 30)
-          @loan.should be_valid
-          
-          @loan.scheduled_disbursal_date = Date.new(2000, 11, 29)
-          @loan.should be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 11, 23)
-          @loan.applied_by     = @manager
-          @loan.disbursed_by   = @manager
-          @loan.should be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 12, 29)
-          @loan.should be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 12, 30)
-          @loan.should be_valid
-        end
-      end
-
-      describe "with validation scheduled_dates_must_be_center_meeting_days" do
-        before :each do
-          @loan = Factory.build(:approved_loan)
-          @loan.save
-          @loan_product = @loan.loan_product
-          @loan_product.loan_validation_methods = "scheduled_dates_must_be_center_meeting_days"
-          @loan_product.save
-          @cmd = CenterMeetingDay.new(:meeting_day => :tuesday, :valid_from => @loan.scheduled_first_payment_date + 29, :center => @loan.center)
-          @cmd.save
-          @loan.reload
-          @loan.clear_cache
-        end
-        
-        it "should change with center meeting date change" do
-          @loan.installment_dates[5..-1].map(&:weekday).uniq.should == [:tuesday]
-        end
-      end
-
-      describe "with center meeting day restriction" do
-        before :all do
-          @loan_product.loan_validation_methods = "disbursal_dates_must_be_center_meeting_days"
-          @loan_product.save
-          @loan = Factory.build(:approved_loan, :loan_product => @loan_product)
-        end
-        
-        it "should be valid on the same day" do
-          @center.meeting_day_for(Date.new(2000, 11, 29)).should == :wednesday
-          @loan.scheduled_disbursal_date = Date.new(2000, 11, 29)
-          @loan.disbursal_date = nil
-          @loan.disbursed_by   = nil
-          @loan.should be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 11, 22)
-          @loan.disbursed_by   = @manager    
-          @loan.should be_valid
-          
-        end
-        
-        it "should not be valid on another day" do
-          @loan.disbursal_date = Date.new(2000, 11, 30)
-          @loan.disbursed_by   = @manager
-          @loan.should_not be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 11, 02)
-          @loan.disbursed_by   = @manager
-          @loan.should_not be_valid
-          
-          @loan.disbursal_date = Date.new(2000, 11, 27)
-          @loan.disbursed_by   = @manager
-          @loan.should_not be_valid
-        end
-      end
-      
     end
 
     describe "check_payment_of_fees_before_disbursal" do
