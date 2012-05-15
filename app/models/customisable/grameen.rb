@@ -2,6 +2,14 @@ module Foremost
   module Grameen
     module Loan
 
+      # A stub period is the time between the disbursal of the loan and the first payment date. During this period, interest is payable.
+      # So, we need to find all the dates that would have been installment dates between the disbursal and scheduled first payment.
+      # i.e. for a weekly loan which pays on thursdays and is disbursed on tuesday of week 2 with first payment date 9 days later,
+      # the intervening thursday will see an interest payment. The below functions provide this functionality.
+
+      # If we can make our thermostat gem calculate schedules backwards, then we can use that instead of having our custom logic.
+
+      # TODO turn the two functions below this one into this one.
       def _stub_dates
         dd = self.disbursal_date || self.scheduled_disbursal_date
         self.center.slice(dd, self.scheduled_first_payment_date) - [self.scheduled_first_payment_date]
@@ -18,6 +26,7 @@ module Foremost
         eds
       end
 
+      # Public: Calculates the interest payable on stub periods
       def calculate_stub_interest_payments
         d1 = disbursal_date || scheduled_disbursal_date
         interest_so_far = 0
@@ -41,8 +50,8 @@ module Foremost
       
       
       # Actually, this methid has no business being here. It is here to support stub period calculation. The correct answer is to beef up
-      # our Thermostat gem to generate schedules that go backwards
-      # in the meantime, welcome to the suck!
+      # our Thermostat gem to generate schedules that go backwards so we can use the #_stub_dates method instead of this pile of crap
+      # in the meantime, welcome to the suck! atleast we don't have to recalculate all the loan schedules again ;-)
 
       def shift_date_by_installments(date, number, ensure_meeting_day = true)
         return date if number == 0

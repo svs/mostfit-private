@@ -32,8 +32,8 @@ class Payment
   property :verified_by_user_id, Integer, :nullable => true, :index => true
   property :loan_id,             Integer, :nullable => true, :index => true
   property :client_id,           Integer, :nullable => true, :index => true
-  #property :center_id,           Integer, :nullable => true, :index => true
-  #property :branch_id,           Integer, :nullable => false, :index => true
+  property :c_center_id,           Integer, :nullable => true, :index => true
+  property :c_branch_id,           Integer, :nullable => false, :index => true
   property :fee_id,              Integer, :nullable => true, :index => true
   property :desktop_id,          Integer
   property :origin,              String, :default => DEFAULT_ORIGIN
@@ -42,10 +42,6 @@ class Payment
   belongs_to :client
   belongs_to :fee
   
-  #belongs_to :center
-  #belongs_to :branch
-
-
   belongs_to :created_by,  :child_key => [:created_by_user_id],   :model => 'User'
   belongs_to :received_by, :child_key => [:received_by_staff_id], :model => 'StaffMember'
   belongs_to :deleted_by,  :child_key => [:deleted_by_user_id],   :model => 'User'
@@ -69,8 +65,9 @@ class Payment
   # validates_with_method :is_last_payment?, :if => Proc.new{|p| p.deleted_at == nil and p.deleted_by == nil}
   
   def add_center_and_branch
-    self.center = self.loan.center(received_on)
-    self.branch = self.center.branch
+    center = self.loan.center(received_on)
+    self.c_center_id = center.id
+    self.c_branch_id = center.branch.id
   end
 
   def self.from_csv(row, headers, loans)

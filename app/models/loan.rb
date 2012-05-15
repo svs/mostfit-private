@@ -354,7 +354,7 @@ class Loan
       timeliness = (lh.date == received_on ? "normal" : (lh.date > received_on ? "advance" : "overdue"))
       [:interest, :principal].each do |type|
         amt_due_today = lh.send("#{type}_due_today".to_sym)
-        if amt_due_today > 0 and payment_split[type] > 0
+        if amt_due_today > 0 and (payment_split.has_key?(type) and payment_split[type] > 0)
           amt = [payment_split[type], amt_due_today].min.round(2)
           payments << Payment.new(default_attributes.merge(:timeliness => timeliness, :amount => amt, :received_for => lh.date, :type => type))
           payment_split[type] -= amt
