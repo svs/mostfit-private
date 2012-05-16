@@ -39,7 +39,9 @@
         %td== #{@center.meeting_day_for(Date.today)}#{(@center.meeting_time_hours and @center.meeting_time_minutes) ? ", #{@center.meeting_time_hours}:#{@center.meeting_time_minutes}" : ''}
       %tr
         %td Address
-        %td=@center.address
+        %td
+          =@center.address
+          == (#{@center.urban})
       %tr.odd
         %td Contact number
         %td=@center.contact_number
