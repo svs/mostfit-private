@@ -15,31 +15,40 @@ Merb.start_environment(:environment => ENV['MERB_ENV'] || 'production')
 namespace :mostfit do
   namespace :conversion do
     desc "upgrade sahayog"
-    task :convert_sahayog do
-      puts "upgrading"
-      repository.adapter.execute("truncate table loan_history")
+    task :convert_sahayog, :start_id, :end_id do |task, args|
+      already_done = File.read("log/upgrade-#{args[:start_id]}").split("\n").map(&:to_i) rescue []
+      logfile = File.open("log/upgrade-#{args[:start_id]}","w")
+      logfile.write "upgrading\n"
       Rake::Task['db:autoupgrade'].invoke
-      puts "done"
-      lids = Loan.all.aggregate(:id)
-      c = lids.count
+      logfile.write "done\n"
+      lids = Loan.all(:id => (args[:start_id].to_i)..(args[:end_id].to_i)).aggregate(:id)
+      ct = lids.count
       t = Time.now
       lids.each_with_index do |lid,i|
+        next if already_done.include?(lid)
         begin
-          puts "#{lid} - #{i}/#{c}"
+          logfile.write "#{lid} - #{i}/#{ct}"
           l = Loan.get lid
           c = l.client
           c.center = Center.get(c.center_id)
-          c.gender = :female
-          c.save
-          l.set_center
+          # c.gender = :female
+          c.save!
+          l.send(:set_center)
           l.save
+          l.reload
+          debugger
+          next if l.status != :outstanding
           l.remake_payments
           print ".".green
-        rescue
+          logfile.write("(#{Time.now - t} secs)\n")
+          logfile.flush
+        rescue Exception => e
+          debugger
           print ".".red
         end
         print (Time.now - t).round(2)
       end
+      logfile.close
     end
   end
 end

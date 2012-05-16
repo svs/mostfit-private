@@ -221,7 +221,7 @@ class Loan
 
   def holidays
     return @holidays if @holidays
-    @holidays = center.branch.holidays.map{|h| [h.date, h.new_date]}.to_hash
+    @holidays = self.center.branch.holidays.map{|h| [h.date, h.new_date]}.to_hash
   end
 
   def amt_sanctioned
@@ -347,15 +347,18 @@ def self.installment_frequencies
     # if vals is a single number, then split it per the chosen style
     # else vals is like {:fees => <Payment>, :interest => <Payment>, :principal => <Payment>}
     payment_split = input.is_a?(Hash) ? input : self.send("split_#{style}",input, received_on) 
+    #puts "payment split is #{payment_split}"
     payments = []
     default_attributes = {:loan => self, :created_by => user, :received_by => received_by, :received_on => received_on}
     # once we have the payment split, we go sequentially down the loan history and pay off interest from the interest portion and p from p
     loan_history.all(:order => [:date]).each do |lh|
+      #puts "#{lh.date} #{lh.interest_due_today} #{lh.principal_due_today}"
       timeliness = (lh.date == received_on ? "normal" : (lh.date > received_on ? "advance" : "overdue"))
       [:interest, :principal].each do |type|
         amt_due_today = lh.send("#{type}_due_today".to_sym)
         if amt_due_today > 0 and (payment_split.has_key?(type) and payment_split[type] > 0)
           amt = [payment_split[type], amt_due_today].min.round(2)
+          #puts "paying #{type} #{amt} for #{lh.date}"
           payments << Payment.new(default_attributes.merge(:timeliness => timeliness, :amount => amt, :received_for => lh.date, :type => type))
           payment_split[type] -= amt
         end
@@ -610,7 +613,7 @@ def self.installment_frequencies
 
     @schedule[dd] = {:principal => 0, :interest => 0, :total_principal => 0, :total_interest => 0, :balance => balance, :total => 0, :fees => fees_so_far}
 
-    [@payment_schedule_hooks[:pre]].flatten.each{|hook| self.send(*[hook].flatten)}
+    [@payment_schedule_hooks[:pre]].flatten.each{|hook| self.send(*[hook].flatten)} if @payment_schedule_hooks
 
     (1..actual_number_of_installments).each do |number|
       date      = installment_dates.select{|d| d >= scheduled_first_payment_date}[number-1] 

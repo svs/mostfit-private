@@ -114,7 +114,7 @@ module Foremost
     def self.extended(base)
       vms = base.loan_product.loan_validations
       if vms.include?("scheduled_dates_must_be_center_meeting_days")
-        base.installment_date_methods = {:provider => :center, :method => :slice, :args => [base.scheduled_first_payment_date, base.number_of_installments]}
+        base.installment_date_methods = [{:provider => :center, :method => :slice, :args => [base.scheduled_first_payment_date, base.number_of_installments]}]
       end
       if vms.include?("collect_stub_period_interest")
         base.installment_date_methods << {:provider => :stub_dates }
