@@ -15,13 +15,14 @@ Merb.start_environment(:environment => ENV['MERB_ENV'] || 'production')
 namespace :mostfit do
   namespace :conversion do
     desc "upgrade sahayog"
-    task :convert_sahayog, :start_id, :end_id do |task, args|
-      already_done = File.read("log/upgrade-#{args[:start_id]}").split("\n").map(&:to_i) rescue []
-      logfile = File.open("log/upgrade-#{args[:start_id]}","w")
+    task :convert_sahayog, :branch_id do |task, args|
+      exit if Time.now.hour > 6
+      already_done = File.read("log/upgrade-#{args[:branch_id]}").scan(/\d+\s/).map(&:to_i)
+      logfile = File.open("log/upgrade-#{args[:branch_id]}","w+")
       logfile.write "upgrading\n"
       Rake::Task['db:autoupgrade'].invoke
       logfile.write "done\n"
-      lids = Loan.all(:id => (args[:start_id].to_i)..(args[:end_id].to_i)).aggregate(:id)
+      lids = LoanHistory.all(:branch_id => args[:branch_id]).aggregate(:loan_id)
       ct = lids.count
       t = Time.now
       lids.each_with_index do |lid,i|
@@ -43,7 +44,8 @@ namespace :mostfit do
           logfile.write("(#{Time.now - t} secs)\n")
           logfile.flush
         rescue Exception => e
-          debugger
+          logfile.write("failed!\n")
+          logfile.flush
           print ".".red
         end
         print (Time.now - t).round(2)
