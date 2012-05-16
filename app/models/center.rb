@@ -23,6 +23,7 @@ class Center
   property :meeting_time_hours,   Integer, :length => 2, :index => true
   property :meeting_time_minutes, Integer, :length => 2, :index => true
   property :meeting_calendar,     Text # this is a comma separated list of dates and takes precedence over everything else.
+  property :urban,                Enum[:urban, :rural]
   property :created_at,           DateTime, :nullable => false, :default => Time.now, :index => true
   property :creation_date,        Date
   belongs_to :branch
