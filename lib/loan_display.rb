@@ -41,6 +41,7 @@ module LoanDisplay
     unless keys.class == Array
       keys = ReportFormat.get(report_format_id).keys rescue [:scheduled_outstanding_total, :scheduled_outstanding_principal,
                                                              :actual_outstanding_total   , :actual_outstanding_principal,    :actual_outstanding_interest,
+                                                             :principal_due, :interest_due, :principal_due_today, :interest_due_today,
                                                              :principal_paid,  :interest_paid]
     end
     puts keys.map{|t| t.to_s.rjust(width - padding/2).ljust(width)}.join("|")

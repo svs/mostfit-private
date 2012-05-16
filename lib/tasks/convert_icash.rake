@@ -15,7 +15,7 @@ Merb.start_environment(:environment => ENV['MERB_ENV'] || 'production')
 namespace :mostfit do
   namespace :conversion do
     desc "convert intellecash db to takeover-intellecash"
-    task :convert_sahayog do
+    task :convert_icash do
       puts "upgrading"
       repository.adapter.execute("drop table loan_history")
       Rake::Task['db:autoupgrade'].invoke

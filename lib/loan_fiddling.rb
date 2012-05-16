@@ -75,20 +75,24 @@ module LoanFiddling
   # Takes each interest and principal payment and makes it again.
   # This has been specifically written to split our payments using the new received_on and received_for methodology
   def remake_payments
-    debugger
-    pmts = payments.all(:type => [:principal, :interest])
-    # Payment.transaction do |t|
-      debugger
-      payments.all.map{|p| p.deleted_at = DateTime.now; p.deleted_by = User.first; p.save!}
+    pmts = payments.all(:type => [:principal, :interest]).to_a.dup.freeze
+    sql = "update payments set deleted_at='#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}' where loan_id = #{self.id} and type in (1,2)"
+    x = repository.adapter.execute(sql)
+    puts pmts.map(&:deleted_at)
+    #Payment.transaction do |t|
+    now = DateTime.now
+    clear_cache
+    update_history(true)
+    reload
+    pmts.sort_by{|p| p[:received_on]}.each do |p|
+      #puts "--------#{p.received_on} #{p.amount} #{p.type}-------"
+      repay({p.type => p.amount}, p.created_by, p.received_on, p.received_by, false, :sequential, :reallocate, nil, nil)
       clear_cache
       update_history
-      pmts.sort_by{|p| p.received_on}.each do |p|
-        repay({p.type => p.amount}, p.created_by, p.received_on, p.received_by, false, nil, :reallocate, nil, nil)
-        clear_cache
-        update_history
-        print "."
-      end
-    # end
+      reload
+      print "."
+    end
+    #end
   end
   
 end
