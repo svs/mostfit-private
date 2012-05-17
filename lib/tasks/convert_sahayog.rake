@@ -16,8 +16,7 @@ namespace :mostfit do
   namespace :conversion do
     desc "upgrade sahayog"
     task :convert_sahayog, :branch_id do |task, args|
-      exit if Time.now.hour > 6
-      already_done = File.read("log/upgrade-#{args[:branch_id]}").scan(/\d+\s/).map(&:to_i)
+      already_done = File.read("log/upgrade-#{args[:branch_id]}").scan(/\d+\s/).map(&:to_i) rescue []
       logfile = File.open("log/upgrade-#{args[:branch_id]}","w+")
       logfile.write "upgrading\n"
       Rake::Task['db:autoupgrade'].invoke
@@ -26,6 +25,7 @@ namespace :mostfit do
       ct = lids.count
       t = Time.now
       lids.each_with_index do |lid,i|
+        exit if Time.now.hour > 6
         next if already_done.include?(lid)
         begin
           logfile.write "#{lid} - #{i}/#{ct}"
