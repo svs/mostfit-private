@@ -8,7 +8,11 @@
       %h2
         = report_type.to_s.camelcase(' ')
       - reports.each do |report|
-        = link_to_with_rights(report.name, url(:show_report, :report_type => report), :class => "report_links")
+        - if [DailyTransactionSummary, ConsolidatedReport, CashProjectedReport].include?(report)
+          - report_format = ReportFormat.all.aggregate(:id, :name).map{|k,v| k if v.downcase.gsub(" ","") == report.to_s.downcase}.compact[0]
+          = link_to report, url(:controller => :cachers, :action => :live, :report_format => report_format), :class => "report_links"
+        - else
+          = link_to_with_rights(report.name, url(:show_report, :report_type => report), :class => "report_links")
 .reports
   %h2 Custom
   .report
