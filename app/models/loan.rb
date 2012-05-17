@@ -895,7 +895,7 @@ class Loan
   # Public: Gives a list of all dates that are relevant to the loan
   def history_dates
     (([applied_on, approved_on, scheduled_disbursal_date, disbursal_date, written_off_on, scheduled_first_payment_date]).map{|d|
-               (self.holidays[d] ? self.holidays[d].new_date : d)
+               (self.holidays[d] ? self.holidays[d] : d)
      } +  installment_dates + payment_dates + loan_center_memberships.aggregate(:from)).compact.uniq.sort
   end
 
