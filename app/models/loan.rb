@@ -1010,7 +1010,7 @@ class Loan
       center_id_for_date                     = center_for_date.id
       branch_id_for_date                     = (last_row ? (center_id_for_date == last_row[:center_id] ? last_row[:branch_id] : center_for_date.branch.id) : center_for_date.branch.id)
 
-      next_change_date                       = loan_center_memberships.map(&:from).select{|x| x > date}.sort[0] || dates.max
+      next_change_date                       = loan_center_memberships.map(&:from).select{|x| x > date}.sort[0] || SEP_DATE
 
       current_row = {
         :loan_id                             => self.id,
