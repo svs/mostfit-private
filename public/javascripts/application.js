@@ -8,11 +8,11 @@ function addFloater(link, form){
 	    var left =  link.width() + link.offset().left - form.width();
 	}
 	if((window.document.height > form.offset().top + form.height()) && !$(".floatingBox").hasClass("shiftUp")){
-	    var top = link.offset().top + link.height();
+	  var top = 0;//link.offset().top + link.height();
 	}else{
 	    var top = link.offset().top - form.height();
 	}
-	$(form).offset({top: top, left: left});
+	$(form).offset({left: left});
     }
 
     if($(".floater").length>0){
