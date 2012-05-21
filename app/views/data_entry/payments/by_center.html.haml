@@ -169,29 +169,29 @@
             %tr
               %td{:colspan => "20", :style => "text-align: center"}
                 %b Fees paid today
-          - frt.each do |f|
-            %tr
-              %td.number
-              %td.text
-                = link_to f.client.name, resource(f.client)
-              %td.text
-                = (link_to f.loan.description, url_for_loan(f.loan)) if f.loan
-              %td.text
-              %td.number
-                = f.amount
-              %td
-              %td.text
-                = f.fee.description
-          %tr.total
-            %td
-            %td
-              = frt.count
-              fee payments
-            %td
-            %td
-            %td
-              = frt.aggregate(:amount.sum)
-            %td
+            - frt.each do |f|
+              %tr
+                %td.number
+                  %td.text
+                    = link_to f.client.name, resource(f.client)
+                  %td.text
+                    = (link_to f.loan.description, url_for_loan(f.loan)) if f.loan
+                  %td.text
+                  %td.number
+                    = f.amount
+                  %td
+                  %td.text
+                    = f.fee.description
+              %tr.total
+                %td
+                %td
+                  = frt.count
+                  fee payments
+                %td
+                %td
+                %td
+                  = frt.aggregate(:amount.sum)
+                %td
       - unless @fee_paying_things.values.inject({}){|s,x| s+=x}.length==0
 
         No fees due today
