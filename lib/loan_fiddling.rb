@@ -78,14 +78,12 @@ module LoanFiddling
     pmts = payments.all(:type => [:principal, :interest]).to_a.dup.freeze
     sql = "update payments set deleted_at='#{DateTime.now.strftime('%Y-%m-%d %H:%M:%S')}' where loan_id = #{self.id} and type in (1,2)"
     x = repository.adapter.execute(sql)
-    puts pmts.map(&:deleted_at)
     #Payment.transaction do |t|
     now = DateTime.now
     clear_cache
     update_history(true)
     reload
     pmts.sort_by{|p| p[:received_on]}.each do |p|
-      #puts "--------#{p.received_on} #{p.amount} #{p.type}-------"
       repay({p.type => p.amount}, p.created_by, p.received_on, p.received_by, false, :sequential, :reallocate, nil, nil)
       clear_cache
       update_history

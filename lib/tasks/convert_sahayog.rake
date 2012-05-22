@@ -14,31 +14,36 @@ Merb.start_environment(:environment => ENV['MERB_ENV'] || 'production')
 
 namespace :mostfit do
   namespace :conversion do
-    desc "upgrade sahayog"
-    task :convert_sahayog, :branch_id do |task, args|
-      already_done = File.read("log/upgrade-#{args[:branch_id]}").scan(/\d+\s/).map(&:to_i) rescue []
-      logfile = File.open("log/upgrade-#{args[:branch_id]}","w+")
-      logfile.write "upgrading\n"
-      Rake::Task['db:autoupgrade'].invoke
-      logfile.write "done\n"
-      lids = LoanHistory.all(:branch_id => args[:branch_id]).aggregate(:loan_id)
+    desc "adds centers to clients and loans"
+    task :add_centers do 
+      @uncentered_loans = Loan.all.aggregate(:id) - LoanCenterMembership.all.aggregate(:member_id)
+      total = @uncentered_loans.count
+      puts "Found total #{total} loans without centers on them"
+      @uncentered_loans.each_with_index do |lid,i|
+        l = Loan.get lid
+        c = l.client
+        c.center = Center.get(c.center_id)
+        # c.gender = :female
+        c.save!
+        l.send(:set_center)
+        l.save!
+        print "."
+        if i%50 == 0
+          puts "#{i}/#{total}"
+        end
+      end
+    end
+    
+    desc "makes all payments again in order to split them into normal, advance or overdue. DOES NOT REALLOCATE"
+    task :remake_payments, :branch_id do |task, args|
+      lids = Payment.all(:received_for => nil).aggregate(:loan_id)
       ct = lids.count
       t = Time.now
       lids.each_with_index do |lid,i|
-        exit if Time.now.hour > 6
         next if already_done.include?(lid)
         begin
-          debugger
           logfile.write "#{lid} - #{i}/#{ct}"
           l = Loan.get lid
-          c = l.client
-          c.center = Center.get(c.center_id)
-          # c.gender = :female
-          c.save!
-          l.send(:set_center)
-          l.save!
-          l.reload
-          debugger
           next if l.status != :outstanding
           l.remake_payments
           print ".".green
