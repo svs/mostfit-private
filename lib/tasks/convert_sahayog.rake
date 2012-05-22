@@ -28,6 +28,7 @@ namespace :mostfit do
         exit if Time.now.hour > 6
         next if already_done.include?(lid)
         begin
+          debugger
           logfile.write "#{lid} - #{i}/#{ct}"
           l = Loan.get lid
           c = l.client
@@ -35,7 +36,7 @@ namespace :mostfit do
           # c.gender = :female
           c.save!
           l.send(:set_center)
-          l.save
+          l.save!
           l.reload
           debugger
           next if l.status != :outstanding
@@ -44,7 +45,7 @@ namespace :mostfit do
           logfile.write("(#{Time.now - t} secs)\n")
           logfile.flush
         rescue Exception => e
-          logfile.write("failed!\n")
+	  logfile.write("failed!\n")
           logfile.flush
           print ".".red
         end
