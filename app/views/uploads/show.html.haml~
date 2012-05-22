@@ -1,8 +1,0 @@
-%h1 Upload
-
-%table.tall
-  %tr
-    %th
-      Filename
-    %td
-      = @upload.filename

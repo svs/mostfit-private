@@ -1,6 +1,0 @@
-= partial :form
-%table.report{:class => @data.keys.length == 1 ? "" : "nojs"}
-  = partial :header
-  - center_id, branch_id = nil, nil
-  - length = 16
-  = partial :results, :length => length

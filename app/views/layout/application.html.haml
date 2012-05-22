@@ -43,7 +43,7 @@
             = link_to_with_class('Data entry', url(:data_entry))
             = link_to_with_class('Admin', url(:admin))
             = link_to_with_class('Dashboard', url(:dashboard))
-            = link_to_with_class('Reports', url(:reports))
+            = link_to_with_class('Reports', url(:cachers))
         #header_search_div
           %form._remote_{:action => '/search', :class => 'search', :method => "POST", :style => "float:left;", :id => "search-form"}
             %input{:name => 'query', :value => params[:query], :autocomplete => "off"}

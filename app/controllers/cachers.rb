@@ -3,17 +3,8 @@ class Cachers < Application
   before :parse_dates
 
   def index
-    # @date ||= Date.today
-    # @from_date = @to_date = @date
-    # @report_format = ReportFormat.get(params[:report_format]) || ReportFormat.first
-    # if @report_format
-    #   get_cachers
-    #   @keys = [:date] + @keys
-    #   display @cachers
-    # else
-    #   redirect(resource(:report_formats), :message => {:error => "Could not generate Caches as no Report formats were found. Create one to generate Caches"})
-    # end
-    redirect url(:live_cachers)
+    @reports = ReportFormat.all
+    render
   end
 
   

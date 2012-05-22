@@ -1,5 +1,0 @@
-= partial :form
-%table.report{:class => @report.group_by_types.length == 1 ? "nojs" : ""}
-  = partial :header
-  - length = 12
-  = partial :results, :length => length

@@ -1,9 +1,0 @@
-- form_url   =  resource(:accounts, {:return => params[:return]})
-=error_messages_for @account
-
-= form_for(@account, :action => form_url, :class => "form" ) do
-  %h1 New Account
-  = partial "accounts/fields"
-  = submit "Create Account"
-  = link_to 'Cancel', url(:accounts)
-
