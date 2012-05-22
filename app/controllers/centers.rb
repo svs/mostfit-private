@@ -152,7 +152,7 @@ class Centers < Application
       @as_of = Date.parse(params[:as_of])
       if @clients
         client_count = 0
-        if params[:action] == "move" # we have to close the previous memberships
+        if params[:do] == "move" # we have to close the previous memberships
           ClientCenterMembership.all(:member_id => @clients.aggregate(:id), :club_id => params[:old_center_id]).map do |c|
             c.upto = @as_of - 1
             c.save

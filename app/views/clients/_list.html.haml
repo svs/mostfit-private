@@ -38,10 +38,11 @@
               Not attached to any group
         - clients.sort_by{|c| c.name}.each do |client|
           = partial 'clients/list_client_row', :client => client
+    - debugger
     %tr.group
       %td{:colspan => 5}
         Loans whose clients are elsewhere
-    - (@loans.clients - @clients).each do |client|
+    - (@loans.clients.uniq - @clients.uniq).each do |client|
       = partial 'clients/list_client_row', :client => client
     - ClientGroup.all(:center => @center).reject{|cg| cg.clients.count!=0}.each do |client_group|
       %tr.group

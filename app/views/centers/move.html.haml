@@ -2,8 +2,8 @@
   %h1== Move clients of center #{@center.name}
   
   
-  = form_for(@center, :action => :move) do
-    = select :name => "action", :collection => ["move","add"]
+  = form_for(@center, :action => url(:controller => :centers, :action => :move)) do
+    = select :name => "do", :collection => ["move","add"]
     selected clients to branch
     = select :name => 'branch_id', :id => "branch_selector", :collection => Branch.all, :text_method => :name, :value_method => :id, :selected => @branch.id.to_s, :prompt => 'Select a branch', :class => 'chosen'
     and center
