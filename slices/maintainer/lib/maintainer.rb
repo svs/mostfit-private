@@ -7,8 +7,8 @@ if defined?(Merb::Plugins)
   dependency 'git', '1.2.5'
   Merb::Plugins.add_rakefiles "maintainer/merbtasks", "maintainer/slicetasks", "maintainer/spectasks"
   
-  require 'slices/maintainer/lib/constants.rb'
-  require 'slices/maintainer/lib/utils.rb'
+  require File.join(Merb.root,'slices/maintainer/lib/constants.rb')
+  require File.join(Merb.root,'slices/maintainer/lib/utils.rb')
   include Merb::Maintainer::Constants
   include Merb::Maintainer::Utils
   include Merb::Maintainer::Utils::Log

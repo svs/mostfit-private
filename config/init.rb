@@ -2,8 +2,6 @@
 # require 'lib/irb.rb'
 require 'yaml'
 
-require 'config/dependencies.rb'
-
 use_orm :datamapper
 use_test :rspec
 use_template_engine :haml
@@ -38,27 +36,17 @@ Merb::BootLoader.before_app_loads do
     :in_with_paise   => { :number =>   {:precision => 3, :delimiter => ',',  :separator => '.', :regex => /(\d+?)(?=(\d\d)+(\d)(?!\d))(\.\d+)?/},
                           :currency => { :format => '%u %n', :precision => 2, :delimiter => ',' } })
   Numeric::Transformer.change_default_format(:mostfit_default)
-  require 'config/constants.rb'
-  require 'lib/rules'
-  require 'lib/reporting'
-  require 'uuid'
-  require 'ftools'
-  # require 'logger'
-  require 'dm-pagination'
-  require 'dm-pagination/paginatable'
-  require 'dm-pagination/pagination_builder'
-  require 'lib/string.rb'
-  require 'lib/grapher.rb'
-  require 'lib/functions.rb'
-  require 'lib/core_ext.rb'
-  require 'lib/fees_container.rb'
-  require 'lib/datevector.rb'
-  require 'lib/loan_display.rb'
-  require 'lib/loan_fiddling.rb'
-  require 'lib/irblib.rb'
-  require 'gettext'
-  require 'haml_gettext'
-  require 'thermostat'
+  require File.join(Merb.root,'config','constants.rb')
+  require File.join(Merb.root,'lib','string.rb')
+  require File.join(Merb.root,'lib','grapher.rb')
+  require File.join(Merb.root,'lib','functions.rb')
+  require File.join(Merb.root,'lib','core_ext.rb')
+  require File.join(Merb.root,'lib','fees_container.rb')
+  require File.join(Merb.root,'lib','datevector.rb')
+  require File.join(Merb.root,'lib','loan_display.rb')
+  require File.join(Merb.root,'lib','loan_fiddling.rb')
+  require File.join(Merb.root,'lib','irblib.rb')
+
 
   #initialize i18n
   require 'i18n'
@@ -81,7 +69,7 @@ Merb::BootLoader.before_app_loads do
     puts "--------Do a gem install pdf-writer otherwise pdf generation won't work---------"
     puts "--------------------------------------------------------------------------------"
   end
-  DataMapper::Model.append_extensions DmPagination::Paginatable
+  # DataMapper::Model.append_extensions DmPagination::Paginatable
   if Merb.env=="development"
     Paperclip.options[:image_magick_path] = "/usr/bin"
     Paperclip.options[:command_path] = "/usr/bin"
@@ -90,7 +78,7 @@ Merb::BootLoader.before_app_loads do
     Paperclip.options[:command_path] = "/usr/bin"
   end
   # load the extensions
-  require 'lib/extensions.rb'
+  require File.join(Merb.root,'lib','extensions.rb')
   Net::SMTP.enable_tls(OpenSSL::SSL::VERIFY_NONE)
   Merb::Plugins.config[:exceptions] = {
     :email_addresses => ['svs@svs.io'],
@@ -114,8 +102,7 @@ Merb::BootLoader.after_app_loads do
   # This will get executed after your app's classes have been loaded.
 
   # set the rights
-  require 'config/misfit'
-  require 'lib/reportage.rb'
+  require File.join(Merb.root,'config','misfit')
   Mostfit::Business::Rules.deploy
   # enable the extensions
   Misfit::Extensions.hook
