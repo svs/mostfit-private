@@ -85,35 +85,12 @@ class Branches < Application
   def centers
     if params[:id] 
       branch = Branch.get(params[:id])
-      next unless branch
+      return unless branch
       centers = params[:paying] ? Center.paying_today(session.user, Date.parse(params[:date]), params[:id]) : branch.centers(:order => [:name]) 
       return("<option value=''>Select center</option>"+centers.map{|cen| "<option value=#{cen.id}>#{cen.id} : #{cen.name}</option>"}.join)
     end
   end
 
-  def accounts
-    if params[:id]
-      branch = Branch.get(params[:id])
-      next unless branch
-      return("<option value=''>Select account</option>"+branch.accounts(:order => [:name]).map{|acc| "<option value=#{acc.id}>#{acc.name}</option>"}.join)
-    end
-  end
-
-  def cash_accounts
-    if params[:id]
-      branch = Branch.get(params[:id])
-      next unless branch
-      return("<option value=''>Select account</option>"+branch.accounts(:account_category => "Cash", :order => [:name]).map{|a| "<option value=#{a.id}>#{a.name}</option>"}.join)
-    end
-  end
-
-  def bank_accounts
-    if params[:id]
-      branch = Branch.get(params[:id])
-      next unless branch
-      return("<option value=''>Select account</option>"+branch.accounts(:account_category => "Bank", :order => [:name]).map{|a| "<option value=#{a.id}>#{a.name}</option>"}.join)
-    end
-  end
 
   # this redirects to the proper url, used from the router
   def redirect_to_show(id)

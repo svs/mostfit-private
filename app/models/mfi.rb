@@ -10,28 +10,28 @@ class Mfi
 
   attr_accessor :subdomain, :city_name, :state_id, :district_id, :logo, :fetched
 
-  property :id,           Serial, :nullable => false, :index => true
-  property :name,         String, :nullable => true, :index => true
+  property :id,           Serial, :required => true, :index => true
+  property :name,         String, :required => false, :index => true
   property :address,      Text
   property :website,      String
   property :telephone,    String
 
-  property :in_operation_since, Date, :nullable => false, :index => true, :default => Date.new(2000, 1, 1)
+  property :in_operation_since, Date, :required => true, :index => true, :default => Date.new(2000, 1, 1)
 
-  property :number_of_past_days, Integer, :nullable => true, :index => true, :default => 5
-  property :min_date_from, Enum.send('[]', *MinDateFrom.keys), :nullable => true, :index => true, :default => :in_operation_since
+  property :number_of_past_days, Integer, :required => false, :index => true, :default => 5
+  property :min_date_from, Enum.send('[]', *MinDateFrom.keys), :required => false, :index => true, :default => :in_operation_since
 
-  property :number_of_future_transaction_days, Integer, :nullable => true, :index => true, :default => 0
+  property :number_of_future_transaction_days, Integer, :required => false, :index => true, :default => 0
 
-  property :number_of_future_days, Integer, :nullable => true, :index => true, :default => 100
+  property :number_of_future_days, Integer, :required => false, :index => true, :default => 100
 
   property :date_box_editable, Boolean, :default => true, :index => true
   property :allow_grt_date_on_form, Boolean, :default => false, :index => true
 
-  property :email, String, :nullable => false, :index => true, :format => :email_address
-  property :created, Boolean, :nullable => false, :index => true, :default => false
-  property :color, String, :nullable => true
-  property :logo_name,  String, :nullable => true
+  property :email, String, :required => true, :index => true, :format => :email_address
+  property :created, Boolean, :required => true, :index => true, :default => false
+  property :color, String, :required => false
+  property :logo_name,  String, :required => false
   property :accounting_enabled, Boolean, :default => false, :index => true
   property :transaction_logging_enabled, Boolean, :default => false, :index => true
   property :event_model_logging_enabled, Boolean, :default => false, :index => true
@@ -45,20 +45,20 @@ class Mfi
   property :default_repayment_style, Enum.send('[]', *REPAYMENT_STYLES), :default => NORMAL_REPAYMENT_STYLE, :index => true
   property :generate_day_sheet_before, Integer, :default => 1, :max => 5
 
-  property :currency_format,  String,  :nullable => true, :length => 20, :default => "in_with_paise"
-  property :session_expiry,   Integer, :nullable => true, :min => 60, :max => 86400
-  property :password_change_in, Integer, :nullable => true
+  property :currency_format,  String,  :required => false, :length => 20, :default => "in_with_paise"
+  property :session_expiry,   Integer, :required => false, :min => 60, :max => 86400
+  property :password_change_in, Integer, :required => false
   property :org_locale, String
-  property :prefered_date_pattern, String, :nullable => true
-  property :prefered_date_separator, String, :nullable => true
-  property :prefered_date_style, String, :nullable => true
+  property :prefered_date_pattern, String, :required => false
+  property :prefered_date_separator, String, :required => false
+  property :prefered_date_style, String, :required => false
 
-  property :report_access_rules, Yaml, :nullable => true, :default => {}
+  property :report_access_rules, Yaml, :required => false, :default => {}
 
   property :system_state, Enum.send('[]', *SYSTEM_STATES), :default => :running
 
-  property :main_text, Text, :nullable => true, :lazy => true
-  validates_length :name, :min => 0, :max => 20
+  property :main_text, Text, :required => false, :lazy => true
+  validates_length_of :name, :min => 0, :max => 20
   before :valid?, :save_image
   
   validates_with_method :check_contact_details, :if => Proc.new{|m| m.new?}

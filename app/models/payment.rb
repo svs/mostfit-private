@@ -17,28 +17,28 @@ class Payment
 
   property :id,                  Serial
   property :guid,                String, :default => lambda{ |obj, p| UUID.generate }
-  property :amount,              Float, :nullable => false, :index => true
+  property :amount,              Float, :required => true, :index => true
   property :type,                Enum.send('[]',*PAYMENT_TYPES), :index => true  # is it principal, interest or fees?
   property :timeliness,          String, :length => 12
   #property :transaction_type,    String, :length => 50
   property :comment,             String, :length => 50
-  property :received_on,         Date,    :nullable => false, :index => true
-  property :received_for,        Date,    :nullable => true, :index => true
-  property :deleted_by_user_id,  Integer, :nullable => true
+  property :received_on,         Date,    :required => true, :index => true
+  property :received_for,        Date,    :required => false, :index => true
+  property :deleted_by_user_id,  Integer, :required => false
   # Default this one to today?
-  property :created_at,          DateTime,:nullable => false, :index => true
-  property :deleted_at,          ParanoidDateTime, :nullable => true, :index => true
-  property :created_by_user_id,  Integer, :nullable => false, :index => true
-  property :verified_by_user_id, Integer, :nullable => true, :index => true
-  property :loan_id,             Integer, :nullable => true, :index => true
-  property :client_id,           Integer, :nullable => true, :index => true
-  property :c_center_id,           Integer, :nullable => true, :index => true
-  property :c_branch_id,           Integer, :nullable => false, :index => true
-  property :fee_id,              Integer, :nullable => true, :index => true
+  property :created_at,          DateTime,:required => true, :index => true
+  property :deleted_at,          ParanoidDateTime, :required => false, :index => true
+  property :created_by_user_id,  Integer, :required => true, :index => true
+  property :verified_by_user_id, Integer, :required => false, :index => true
+  property :loan_id,             Integer, :required => false, :index => true
+  property :client_id,           Integer, :required => false, :index => true
+  property :c_center_id,           Integer, :required => false, :index => true
+  property :c_branch_id,           Integer, :required => true, :index => true
+  property :fee_id,              Integer, :required => false, :index => true
   property :desktop_id,          Integer
   property :origin,              String, :default => DEFAULT_ORIGIN
 
-  belongs_to :loan, :nullable => true
+  belongs_to :loan, :required => false
   belongs_to :client
   belongs_to :fee
   
@@ -47,7 +47,7 @@ class Payment
   belongs_to :deleted_by,  :child_key => [:deleted_by_user_id],   :model => 'User'
   belongs_to :verified_by,  :child_key => [:verified_by_user_id],        :model => 'User'
 
-  validates_present     :created_by, :received_by, :if => Proc.new{|p| p.deleted_at == nil}
+  validates_presence_of     :created_by, :received_by, :if => Proc.new{|p| p.deleted_at == nil}
   validates_with_method :loan_or_client_present?,  :method => :loan_or_client_present?, :when => [:default, :reallocate]
   validates_with_method :only_take_payments_on_disbursed_loans?, :if => Proc.new{|p| (p.type == :principal or p.type == :interest)}
   validates_with_method :created_by,  :method => :created_by_active_user?, :if => Proc.new{|p| p.deleted_at == nil}

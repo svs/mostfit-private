@@ -5,20 +5,20 @@ class InsurancePolicy
   POLICY_STATUSES = [:active, :expired, :claim_pending, :claim_settled]
   COVER_FOR       = [:self, :spouse, :both, :son, :daughter, :mother, :father, :other]
   property :id, Serial
-  property :application_number, String, :nullable => true
-  property :policy_no, String, :nullable => true
-  property :sum_insured, Integer, :nullable => false
-  property :premium, Integer, :nullable => false
-  property :date_from, Date, :nullable => false
-  property :date_to, Date, :nullable => false
-  property :nominee, String, :nullable => true
-  property :status, Enum.send("[]", *POLICY_STATUSES), :nullable => true
-  property :cover_for, Enum.send("[]", *COVER_FOR), :nullable => true, :default => 'self'
+  property :application_number, String, :required => false
+  property :policy_no, String, :required => false
+  property :sum_insured, Integer, :required => true
+  property :premium, Integer, :required => true
+  property :date_from, Date, :required => true
+  property :date_to, Date, :required => true
+  property :nominee, String, :required => false
+  property :status, Enum.send("[]", *POLICY_STATUSES), :required => false
+  property :cover_for, Enum.send("[]", *COVER_FOR), :required => false, :default => 'self'
   property :beneficiary_name, Text
 
   belongs_to :insurance_product
   belongs_to :client
-  belongs_to :loan, :nullable => true
+  belongs_to :loan, :required => false
   has n, :applicable_fees,    :child_key => [:applicable_id], :applicable_type => "InsurancePolicy"
   after  :save,   :levy_fees
 

@@ -12,9 +12,9 @@ class HolidayCalendar
   property :id, Serial
   property :name, String
 
-  property :branch_id, Integer, :nullable => true
-  property :region_id, Integer, :nullable => true
-  property :area_id,   Integer, :nullable => true
+  property :branch_id, Integer, :required => false
+  property :region_id, Integer, :required => false
+  property :area_id,   Integer, :required => false
   property :deleted_at, ParanoidDateTime
 
   belongs_to :region

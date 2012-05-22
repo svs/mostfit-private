@@ -1,8 +1,5 @@
 - if @branch
   .shaded{:style => "padding: 5px; margin-bottom: 10px;"}
-    -#  .graph{:style => "height: 200px; position: relative; top: 30px;"}
-    -#    = ofc2(550, 250, url(:graph_data, :action => 'branch', :id => @branch.id, :scope_unit => 'months', :scope_size => 3) )
-
     %h1== Branch: <i>#{@branch.name}</i>
     %p.menu-strip{:style => "width: 44%; margin-bottom: 0.2em;"}
       = link_to_with_rights 'edit this branch\'s details ', resource(@branch, :edit), :class => "edit grey_button"
@@ -62,8 +59,6 @@
         Documents
       %li#comments
         Comments
-      %li#audit
-        Audit
       %li#history
         History
       %li#accounting
@@ -95,8 +90,6 @@
       %p
         %h3 Add a comment
         = partial 'comments/form'
-    %div.tab
-      %input{:type => "hidden", :name => "_load_remote", :value => resource(:audit_items, :id => @branch.id, :model => "Branch")}
     %div.tab
       %input{:type => "hidden", :name => "_load_remote", :value => audit_trail_url}
     %div.tab

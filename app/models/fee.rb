@@ -30,17 +30,17 @@ class Fee
   FeeDue        = Struct.new(:applicable, :paid, :due)
   FeeApplicable = Struct.new(:loan_id, :client_id, :fees_applicable)
   property :id,            Serial
-  property :name,          String, :nullable => false
+  property :name,          String, :required => true
   property :percentage,    Float
   property :percentage_of, Enum.send('[]', *PERCENTAGE_OF), :default => :amount
   property :amount,        Integer
   property :min_amount,    Integer
   property :max_amount,    Integer
-  property :payable_on,    Enum.send('[]',*PAYABLE.map{|m| m[0]}), :nullable => false
+  property :payable_on,    Enum.send('[]',*PAYABLE.map{|m| m[0]}), :required => true
   property :overridable_by, Flag[:data_entry, :mis_manager, :admin,:staff_member]
 
   property :round_to,       Float
-  property :rounding_style, Enum[:round, :ceil, :floor], :default => :round, :nullable => false
+  property :rounding_style, Enum[:round, :ceil, :floor], :default => :round, :required => true
 
   has n, :loan_products, :through => Resource
   has n, :client_types, :through => Resource
@@ -56,7 +56,7 @@ class Fee
   has n, :insurance_policies, :through => :applicable_insurance_policies
   has n, :audit_trails, :auditable_type => "Fee", :child_key => ["auditable_id"]
 
-  validates_is_unique   :name  
+  validates_uniqueness_of   :name  
   validates_with_method :amount_is_okay
   validates_with_method :min_lte_max
   validates_with_method :is_payable_on_compatible_with_fee_metric?

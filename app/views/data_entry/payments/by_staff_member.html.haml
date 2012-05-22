@@ -24,10 +24,10 @@
       %h3
         = @centers.count
         Centers
-      - @centers.each do |@center|
+      - @centers.each do |center|
         %a{:name => 'weeksheet' }
           %h2
-            = "Week #{@date.cweek} meeting sheet for center #{@center.name}"
+            = "Week #{@date.cweek} meeting sheet for center #{center.name}"
         = hidden_field :name => 'center_id', :value => @center.id
         = partial :cds
       = submit 'Make Payments', :onclick => "javascript:$('#darkenBackground').show(); return true;"

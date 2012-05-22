@@ -6,9 +6,9 @@ class LoanPurpose
   property :code, String, :length => 3
   property :parent_id, Integer, :default => 0
 
-  validates_present :name
-  validates_is_unique :name
-  validates_is_unique :code
+  validates_presence_of :name
+  validates_uniqueness_of :name
+  validates_uniqueness_of :code
 
   has n, :loans
   # For consistency's sake shouldn't this association be either :children or :loan_purposes?

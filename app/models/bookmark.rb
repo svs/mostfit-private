@@ -4,17 +4,17 @@ class Bookmark
   #ShareWith = [:none, :all, :admin, :staff_member, :mis_manager, :data_entry, :read_only]
 
   property :id, Serial
-  property :name,            String, :length => 50, :nullable => false
-  property :title,           String, :length => 100, :nullable => false
-  property :route,           Text,   :nullable => false
-  property :type,            Enum.send('[]', *BookmarkTypes), :nullable => false,   :default => :system, :index => true
-  property :method_name,     Enum.send('[]', *MethodNames), :nullable => true, :default => :get, :index => true
-  property :params,          Text,    :nullable => true
-  property :user_id,         Integer, :nullable => false, :index => true
-  property :share_with,      Flag.send('[]', *User::ROLES), :nullable => false, :default => :none, :index => true
+  property :name,            String, :length => 50, :required => true
+  property :title,           String, :length => 100, :required => true
+  property :route,           Text,   :required => true
+  property :type,            Enum.send('[]', *BookmarkTypes), :required => true,   :default => :system, :index => true
+  property :method_name,     Enum.send('[]', *MethodNames), :required => false, :default => :get, :index => true
+  property :params,          Text,    :required => false
+  property :user_id,         Integer, :required => true, :index => true
+  property :share_with,      Flag.send('[]', *User::ROLES), :required => true, :default => :none, :index => true
   belongs_to :user
   
-  validates_is_unique :name, :with_scope => [:type, :user]
+  validates_uniqueness_of :name, :with_scope => [:type, :user]
 
   def self.for(user, type=:system)
     {

@@ -2,9 +2,9 @@ class Holiday
   include DataMapper::Resource
   property :id, Serial
 
-  property :name, String, :length => 50, :nullable => false
-  property :date, Date, :nullable => false, :unique => true
-  property :shift_meeting, Integer, :nullable => true
+  property :name, String, :length => 50, :required => true
+  property :date, Date, :required => true, :unique => true
+  property :shift_meeting, Integer, :required => false
   property :new_date, Date
   property :deleted_at, ParanoidDateTime
 

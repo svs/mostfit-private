@@ -4,18 +4,18 @@ class ClientGroup
   after :save, :sync_clients
 
   property :id,                Serial
-  property :name,              String, :nullable => false
-  property :number_of_members, Integer, :nullable => true, :min => 1, :max => 20, :default => 5
-  property :code,              String, :length => 100, :nullable => false, :index => true
-  property :created_by_staff_member_id,  Integer, :nullable => false, :index => true
+  property :name,              String, :required => true
+  property :number_of_members, Integer, :required => false, :min => 1, :max => 20, :default => 5
+  property :code,              String, :length => 100, :required => true, :index => true
+  property :created_by_staff_member_id,  Integer, :required => true, :index => true
 
-  validates_is_unique   :code, :scope => :center_id
-  validates_length      :code, :min => 1, :max => 100
+  validates_uniqueness_of   :code, :scope => :center_id
+  validates_length_of      :code, :min => 1, :max => 100
 
   has n, :clients
-  belongs_to :center, :nullable => false
+  belongs_to :center, :required => true
   belongs_to :created_by_staff,  :child_key => [:created_by_staff_member_id], :model => 'StaffMember'
-  validates_is_unique :name, :scope => :center_id
+  validates_uniqueness_of :name, :scope => :center_id
   validates_with_method :client_should_be_migratable
 
   has n, :cgts

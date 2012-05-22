@@ -5,15 +5,15 @@ class Attendance
 
   property :id,              Serial
   property :date,            Date, :index => true
-  property :status,          Enum.send('[]', *ATTENDANCY_STATES), :nullable => false, :index => true
+  property :status,          Enum.send('[]', *ATTENDANCY_STATES), :required => true, :index => true
   property :desktop_id,          Integer
   property :origin,              String, :default => DEFAULT_ORIGIN
 
   belongs_to :client
   belongs_to :center
 
-  validates_present     :status
-  validates_present     :client,:date
+  validates_presence_of     :status
+  validates_presence_of     :client,:date
   validates_with_method :date, :method=>:not_in_future? 
 
   def self.attendancy_states

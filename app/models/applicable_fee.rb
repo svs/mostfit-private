@@ -5,16 +5,16 @@ class ApplicableFee
   FeeApplicableTypes = ['Loan', 'Client', 'InsurancePolicy']
 
   property :id, Serial
-  property :applicable_id,   Integer, :index => true, :nullable => false
-  property :applicable_type, Enum.send('[]', *FeeApplicableTypes), :index => true, :nullable => false
-  property :scheduled_on,    Date, :nullable => true
-  property :applicable_on,   Date, :nullable => true
-  property :fee_id,          Integer, :index => true, :nullable => false
-  property :amount,          Float,   :index => true, :nullable => false
-  property :deleted_at,      ParanoidDateTime, :nullable => true, :index => true
+  property :applicable_id,   Integer, :index => true, :required => true
+  property :applicable_type, Enum.send('[]', *FeeApplicableTypes), :index => true, :required => true
+  property :scheduled_on,    Date, :required => false
+  property :applicable_on,   Date, :required => false
+  property :fee_id,          Integer, :index => true, :required => true
+  property :amount,          Float,   :index => true, :required => true
+  property :deleted_at,      ParanoidDateTime, :required => false, :index => true
 
-  property :waived_off_on,   Date, :nullable => true
-  property :waived_off_by_id,Integer, :nullable => true
+  property :waived_off_on,   Date, :required => false
+  property :waived_off_by_id,Integer, :required => false
 
   belongs_to :fee
   belongs_to :waived_off_by,    'StaffMember',     :child_key => [:waived_off_by_id]

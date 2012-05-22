@@ -9,10 +9,10 @@ class CenterMeetingDay
   after :save,    :add_loans_to_queue
 
   property :id, Serial
-  property :center_id, Integer, :index => false, :nullable => false
-  property :meeting_day, Enum.send('[]', *DAYS), :nullable => false, :default => :none, :index => true
-  property :valid_from,  Date, :nullable => true # if nil then this must be the first CMD for the center
-  property :valid_upto,  Date, :nullable => true # we do not really need valid upto.  CMDs are valid up to the next center meeting days start from
+  property :center_id, Integer, :index => false, :required => true
+  property :meeting_day, Enum.send('[]', *DAYS), :required => true, :default => :none, :index => true
+  property :valid_from,  Date, :required => false # if nil then this must be the first CMD for the center
+  property :valid_upto,  Date, :required => false # we do not really need valid upto.  CMDs are valid up to the next center meeting days start from
   
   property :deleted_at,  ParanoidDateTime
   
@@ -25,7 +25,7 @@ class CenterMeetingDay
   property :every, CommaSeparatedList 
   property :what, Enum.send('[]',*([:day] + DAYS[1..-1]))
   property :of_every, Integer
-  property :period, Enum[nil,:week, :month], :nullable => true
+  property :period, Enum[nil,:week, :month], :required => false
 
   # end datevector properties
 

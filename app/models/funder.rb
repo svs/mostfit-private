@@ -2,10 +2,10 @@ class Funder
   include DataMapper::Resource
   
   property :id,   Serial
-  property :name, String, :length => 50, :nullable => false, :index => true
-  property :user_id, Integer, :nullable => true, :index => true
+  property :name, String, :length => 50, :required => true, :index => true
+  property :user_id, Integer, :required => false, :index => true
 
-  belongs_to :user, :nullable => true
+  belongs_to :user, :required => false
 
   has n, :funding_lines
   has n, :portfolios  

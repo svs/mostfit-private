@@ -5,11 +5,11 @@ class User
   after  :save,    :set_staff_member
 
   property :id,           Serial
-  property :login,        String, :nullable => false
+  property :login,        String, :required => true
   property :created_at,   DateTime              
   property :updated_at,   DateTime
-  property :password_changed_at, DateTime, :default => Time.now, :nullable => false
-  property :active,       Boolean, :default => true, :nullable => false
+  property :password_changed_at, DateTime, :default => Time.now, :required => true
+  property :active,       Boolean, :default => true, :required => true
   property :preferred_locale,        String
 
   # permissions
@@ -19,17 +19,17 @@ class User
   ALLOWED_ROLES = ROLES - PROHIBITED_ROLES
   ROLES_TO_S = Hash.new{ |hash, role| hash[role] = role.to_s.split('_').join(' ').capitalize }
 
-  property :role, Enum.send('[]', *ROLES), :nullable => false
+  property :role, Enum.send('[]', *ROLES), :required => true
 
   # it gets                                   
   #   - :password and :password_confirmation accessors
   #   - :crypted_password and :salt db columns        
   # from the mixin.
-  validates_present :login
+  validates_presence_of :login
   validates_format :login, :with => /^[A-Za-z0-9_]+$/
-  validates_length :login, :min => 3
-  validates_is_unique :login
-  validates_length :password, :min => 6, :if => Proc.new{|u| not u.password.nil?}
+  validates_length_of :login, :min => 3
+  validates_uniqueness_of :login
+  validates_length_of :password, :min => 6, :if => Proc.new{|u| not u.password.nil?}
   has 1, :staff_member
   has 1, :funder
 
@@ -103,7 +103,7 @@ class User
     end
   end
 
-  def method_missing(name, params)
+  def method_missing(name, *params)
     if x = /can_\w+\?/.match(name.to_s)
       return true if role == :admin
       function = x[0].split("_")[1].gsub("?","").to_sym # wtf happened to $1?!?!?

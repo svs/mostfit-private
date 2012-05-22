@@ -1,6 +1,5 @@
 class FundingLine
   include DataMapper::Resource
-  extend Reporting::FundingLineReports
 
   before :valid?, :parse_dates
 
@@ -23,7 +22,7 @@ class FundingLine
   validates_with_method  :first_payment_date,   :method => :disbursed_before_first_payment?
   validates_with_method  :first_payment_date,   :method => :first_payment_before_last_payment?
   validates_with_method  :last_payment_date,    :method => :first_payment_before_last_payment?
-  validates_present :amount, :interest_rate, :disbursal_date, :first_payment_date, :last_payment_date, :funder
+  validates_presence_of :amount, :interest_rate, :disbursal_date, :first_payment_date, :last_payment_date, :funder
 
   def self.from_csv(row, headers)
     funder = Funder.create(:name => row[headers[:funder_name]])

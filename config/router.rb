@@ -1,54 +1,36 @@
 Merb.logger.info("Compiling routes...")
 Merb::Router.prepare do
-  resources :memberships, :collection => {:move => [:post], :update => [:post]}
   resources :staff_member_attendances
-  resources :report_formats
-  resources :checkers
 
-  resources :holiday_calendars
   resources :cachers, :id => %r(\d+), :collection => {:consolidate => [:get], :rebuild => [:get], :split => [:get], :missing => [:get], :reallocate => [:get], :live => [:get]}
+  resources :report_formats
 
-  resources :api_accesses
-  resources :monthly_targets
-  resources :account_balances
-  resources :bookmarks
-  resources :branch_diaries
-  resources :stock_registers
-  resources :asset_registers
-  resources :locations, :id => %r(\d+)
+  resources :holidays
+  resources :holiday_calendars
+
+
   resources :insurance_products
-  resources :accounting_periods
-  resources :journals, :id => %r(\d+)
   resources :loan_utilizations
-  resources :rule_books, :id => %r(\d+)
   resources :applicable_fees
-  resources :account_types
-  resources :accounts, :id => %r(\d+) do
-    resources :accounting_periods do
-      resources :account_balances
-    end
-  end
-  resources :rules, :id => %r(\d+)
-  resources :bookmarks
-  resources :audit_items
+
   resources :attendances
   resources :client_types
+  resources :documents
   resources :document_types
   resources :comments        
-  resources :documents
   resources :audit_trails
   resources :insurance_policies
   resources :insurance_companies
   resources :occupations
   resources :loan_purposes
+
+  resources :memberships, :collection => {:move => [:post], :update => [:post]}
   resources :regions do
     resources :areas do
       resources :branches
     end
   end
   resources :areas
-  resources :targets, :id => %r(\d+)
-  resources :holidays
   resources :fees
   resources :verifications
   resources :ledger_entries
@@ -75,7 +57,6 @@ Merb::Router.prepare do
   end
   resources :payments
   resources :branches, :id => %r(\d+)  do    
-    resources :journals
     resources :centers, :id => %r(\d+) do
       resources :client_groups
       resources :clients do

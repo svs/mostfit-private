@@ -3,7 +3,7 @@ class Comment
   
   property :id, Serial
   
-  property :text,           Text, :min => 5
+  property :text,           Text
   # Perhaps we should validate these two
   property :parent_model,   String
   property :parent_id,      Integer

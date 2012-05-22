@@ -2,54 +2,54 @@ class LoanProduct
   include DataMapper::Resource  
   before :save, :convert_blank_to_nil
 
-  property :id, Serial, :nullable => false, :index => true
-  property :name, String, :nullable => false, :index => true, :min => 3
+  property :id, Serial, :required => true, :index => true
+  property :name, String, :required => true, :index => true, :length => 3..255
 #  property :reference, String
-  property :max_amount, Integer, :nullable => false, :index => true
-  property :min_amount, Integer, :nullable => false, :index => true
-  property :amount_multiple, Float, :nullable => false, :index => true, :default => 1, :min => 0.01
-  property :max_interest_rate, Float, :nullable => false, :index => true, :max => 100
-  property :min_interest_rate, Float, :nullable => false, :index => true, :min => 0
-  property :interest_rate_multiple, Float, :nullable => false, :index => true, :default => 0.1
-  property :installment_frequency, Enum.send('[]', *([:any] + INSTALLMENT_FREQUENCIES)), :nullable => true, :index => true
+  property :max_amount, Integer, :required => true, :index => true
+  property :min_amount, Integer, :required => true, :index => true
+  property :amount_multiple, Float, :required => true, :index => true, :default => 1, :min => 0.01
+  property :max_interest_rate, Float, :required => true, :index => true, :max => 100
+  property :min_interest_rate, Float, :required => true, :index => true, :min => 0
+  property :interest_rate_multiple, Float, :required => true, :index => true, :default => 0.1
+  property :installment_frequency, Enum.send('[]', *([:any] + INSTALLMENT_FREQUENCIES)), :required => false, :index => true
 
-  property :max_number_of_installments, Integer, :nullable => false, :index => true, :max => 1000
-  property :min_number_of_installments, Integer, :nullable => false, :index => true, :min => 0
+  property :max_number_of_installments, Integer, :required => true, :index => true, :max => 1000
+  property :min_number_of_installments, Integer, :required => true, :index => true, :min => 0
 
   #This property is defined in init.rb after app load as Loan may not have loaded by the time this class initializes
-  #  property :loan_type, Enum.send('[]'), :nullable => false, :index => true
+  #  property :loan_type, Enum.send('[]'), :required => true, :index => true
   property :loan_type_string, String
  
   # this is a dirty hack. all this should go into the RepaymentStyle
   property :rounding, Integer
-  property :rounding_style, Enum.send('[]', *['', 'round', 'floor', 'ceil']), :default => 'round', :nullable => true, :index => true
+  property :rounding_style, Enum.send('[]', *['', 'round', 'floor', 'ceil']), :default => 'round', :required => false, :index => true
 
-  property :valid_from, Date, :nullable => false, :index => true
-  property :valid_upto, Date, :nullable => false, :index => true
+  property :valid_from, Date, :required => true, :index => true
+  property :valid_upto, Date, :required => true, :index => true
   
-  property :created_at, DateTime, :nullable => false, :default => DateTime.now
-  property :updated_at, DateTime, :nullable => true
+  property :created_at, DateTime, :required => true, :default => DateTime.now
+  property :updated_at, DateTime, :required => false
 
   property :payment_validation_methods, Text
   property :loan_validation_methods, Text
-  property :linked_to_insurance, Boolean, :nullable => false, :index => true, :default => false
-  property :insurance_product_id, Integer, :nullable => true, :index => true
+  property :linked_to_insurance, Boolean, :required => true, :index => true, :default => false
+  property :insurance_product_id, Integer, :required => false, :index => true
 
   has n, :fees, :through => Resource#, :mutable => true
   has n, :loans
   has n, :audit_trails, :auditable_type => "LoanProduct", :child_key => ["auditable_id"]
   
-  belongs_to :insurance_product, :nullable => true
+  belongs_to :insurance_product, :required => false
   belongs_to :repayment_style
 
   validates_with_method :min_is_less_than_max
-  validates_is_unique   :name
+  validates_uniqueness_of   :name
   validates_is_number   :max_amount, :min_amount
   # validates_with_method :check_loan_type_correctness
 
   # while migrating, we have to provde a reference for every data point
   # this is for reasons of sanity.
-  # validates_present :reference, :if => Proc.new{|t| Mfi.first.state == :migration}
+  # validates_presence_of :reference, :if => Proc.new{|t| Mfi.first.state == :migration}
   
 
   def payment_validations

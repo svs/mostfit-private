@@ -4,10 +4,10 @@ class DirtyLoan
 
   property :id, Serial
   # loan_id should be automatically created with the belongs_to association below
-  property :loan_id, Integer, :index => true, :nullable => false
-  property :created_at, DateTime, :index => true, :nullable => false, :default => Time.now
-  property :cleaning_started, DateTime, :index => true, :nullable => true
-  property :cleaned_at, DateTime, :index => true, :nullable => true
+  property :loan_id, Integer, :index => true, :required => true
+  property :created_at, DateTime, :index => true, :required => true, :default => Time.now
+  property :cleaning_started, DateTime, :index => true, :required => false
+  property :cleaned_at, DateTime, :index => true, :required => false
 
   belongs_to :loan
 

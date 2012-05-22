@@ -1,3 +1,4 @@
+# encoding: utf-8
 module Merb
   module GlobalHelpers
     CRUD_ACTIONS = ["list", "index", "show", "edit", "new"]

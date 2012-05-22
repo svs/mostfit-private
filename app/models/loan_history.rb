@@ -10,7 +10,7 @@ class LoanHistory
   # loan_history rows have a concept of relevance embedded into them. hope that made sense. email me (svs@svs.io) if you need more explanation.
 
   property :created_at,                DateTime                                   # automatic, nice for benchmarking runs
-  property :run_number,                Integer, :nullable => false, :default => 0 
+  property :run_number,                Integer, :required => true, :default => 0 
   property :current,                   Boolean                                    # tracks the row refering to the loans current status. we can query for these
                                                                                   # during reporting. I put it here to save an extra write to the db during update_history_now
   property :amount_in_default,          Float                                     # less normalisation = faster queries
@@ -18,46 +18,46 @@ class LoanHistory
   property :week_id,                    Integer                                   # good for aggregating.
 
   # some properties for similarly named methods of a loan:
-  property :scheduled_outstanding_total,     Float, :nullable => false
-  property :scheduled_outstanding_principal, Float, :nullable => false
-  property :actual_outstanding_total,        Float, :nullable => false
-  property :actual_outstanding_principal,    Float, :nullable => false
-  property :actual_outstanding_interest,     Float, :nullable => false
-  property :scheduled_principal_due,         Float, :nullable => false
-  property :scheduled_interest_due,          Float, :nullable => false
+  property :scheduled_outstanding_total,     Float, :required => true
+  property :scheduled_outstanding_principal, Float, :required => true
+  property :actual_outstanding_total,        Float, :required => true
+  property :actual_outstanding_principal,    Float, :required => true
+  property :actual_outstanding_interest,     Float, :required => true
+  property :scheduled_principal_due,         Float, :required => true
+  property :scheduled_interest_due,          Float, :required => true
 
-  property :principal_due,                   Float, :nullable => false # this is total principal due - total interest due
-  property :interest_due,                    Float, :nullable => false # and represents the amount payable today
-  property :principal_due_today,             Float, :nullable => false # this is the principal and interest 
-  property :interest_due_today,              Float, :nullable => false  #that has become payable today
+  property :principal_due,                   Float, :required => true # this is total principal due - total interest due
+  property :interest_due,                    Float, :required => true # and represents the amount payable today
+  property :principal_due_today,             Float, :required => true # this is the principal and interest 
+  property :interest_due_today,              Float, :required => true  #that has become payable today
 
-  property :principal_paid,                  Float, :nullable => false
-  property :interest_paid,                   Float, :nullable => false
-  property :total_principal_due,             Float, :nullable => false
-  property :total_interest_due,              Float, :nullable => false
-  property :total_principal_paid,            Float, :nullable => false
-  property :total_interest_paid,             Float, :nullable => false
-  property :advance_principal_paid,          Float, :nullable => false   # these three rows
-  property :advance_interest_paid,           Float, :nullable => false   # are for the total advance paid on the
-  property :total_advance_paid,              Float, :nullable => false   # loan, without adjustments
-  property :advance_principal_paid_today,    Float, :nullable => false
-  property :advance_interest_paid_today,     Float, :nullable => false
-  property :total_advance_paid_today,        Float, :nullable => false
-  property :advance_principal_adjusted,      Float, :nullable => false
-  property :advance_interest_adjusted,       Float, :nullable => false
-  property :advance_principal_adjusted_today,      Float, :nullable => false
-  property :advance_interest_adjusted_today,       Float, :nullable => false
-  property :total_advance_adjusted_today,   Float, :nullable => false
-  property :advance_principal_outstanding,   Float, :nullable => false  #
-  property :advance_interest_outstanding,    Float, :nullable => false  # these are adjusted balances
-  property :total_advance_outstanding,       Float, :nullable => false  #
-  property :principal_in_default,            Float, :nullable => false
-  property :interest_in_default,             Float, :nullable => false
-  property :total_fees_due,                  Float, :nullable => false
-  property :total_fees_paid,                 Float, :nullable => false
-  property :fees_due_today,                  Float, :nullable => false
-  property :fees_paid_today,                 Float, :nullable => false
-  property :principal_at_risk,               Float, :nullable => false
+  property :principal_paid,                  Float, :required => true
+  property :interest_paid,                   Float, :required => true
+  property :total_principal_due,             Float, :required => true
+  property :total_interest_due,              Float, :required => true
+  property :total_principal_paid,            Float, :required => true
+  property :total_interest_paid,             Float, :required => true
+  property :advance_principal_paid,          Float, :required => true   # these three rows
+  property :advance_interest_paid,           Float, :required => true   # are for the total advance paid on the
+  property :total_advance_paid,              Float, :required => true   # loan, without adjustments
+  property :advance_principal_paid_today,    Float, :required => true
+  property :advance_interest_paid_today,     Float, :required => true
+  property :total_advance_paid_today,        Float, :required => true
+  property :advance_principal_adjusted,      Float, :required => true
+  property :advance_interest_adjusted,       Float, :required => true
+  property :advance_principal_adjusted_today,      Float, :required => true
+  property :advance_interest_adjusted_today,       Float, :required => true
+  property :total_advance_adjusted_today,   Float, :required => true
+  property :advance_principal_outstanding,   Float, :required => true  #
+  property :advance_interest_outstanding,    Float, :required => true  # these are adjusted balances
+  property :total_advance_outstanding,       Float, :required => true  #
+  property :principal_in_default,            Float, :required => true
+  property :interest_in_default,             Float, :required => true
+  property :total_fees_due,                  Float, :required => true
+  property :total_fees_paid,                 Float, :required => true
+  property :fees_due_today,                  Float, :required => true
+  property :fees_paid_today,                 Float, :required => true
+  property :principal_at_risk,               Float, :required => true
 
 
   property :status,                      Enum.send('[]', *STATUSES)
@@ -65,8 +65,8 @@ class LoanHistory
 
   # add a column per status to track approvals, disbursals, etc.
   STATUSES.each do |status|
-    property "#{status.to_s}_count".to_sym,  Integer, :nullable => false, :default => 0
-    property status,        Float,   :nullable => false, :default => 0
+    property "#{status.to_s}_count".to_sym,  Integer, :required => true, :default => 0
+    property status,        Float,   :required => true, :default => 0
   end
   
 
@@ -81,14 +81,14 @@ class LoanHistory
   property :funding_line_id,             Integer, :index => true
   property :funder_id,                   Integer, :index => true
   property :loan_product_id,             Integer, :index => true
-  property :loan_pool_id,                Integer, :nullable => true, :index => true
+  property :loan_pool_id,                Integer, :required => false, :index => true
   property :composite_key, Float, :index => true
 
 
 
   belongs_to :loan
   belongs_to :client
-  belongs_to :client_group, :nullable => true
+  belongs_to :client_group, :required => false
   belongs_to :center         
   belongs_to :branch         
 
@@ -96,7 +96,7 @@ class LoanHistory
   belongs_to :funding_line, :funder, :loan_product
 
   
-  validates_present :loan,:scheduled_outstanding_principal,:scheduled_outstanding_total,:actual_outstanding_principal,:actual_outstanding_total
+  validates_presence_of :loan,:scheduled_outstanding_principal,:scheduled_outstanding_total,:actual_outstanding_principal,:actual_outstanding_total
 
   def total_paid
     (principal_paid + interest_paid + fees_paid_today).round(2)

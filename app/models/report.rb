@@ -6,7 +6,7 @@ class Report
   property :start_date, Date
   property :end_date, Date
   property :report, Yaml, :length => 20000
-  property :dirty, Boolean
+  property :is_dirty, Boolean
   property :report_type, Discriminator
   property :created_at, DateTime
   property :generation_time, Integer

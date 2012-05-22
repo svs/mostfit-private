@@ -4,17 +4,14 @@ class StaffMember
   include Pdf::DaySheet if PDF_WRITER
   
   property :id,      Serial
-  property :name,    String, :length => 100, :nullable => false
-  property :mobile_number,  String, :length => 12,  :nullable => true
-  property :creation_date,  Date, :length => 12,  :nullable => true, :default => Date.today
-  property :active,  Boolean, :default => true, :nullable => false  
-  property :user_id,  Integer,  :nullable => true  
+  property :name,    String, :length => 100, :required => true
+  property :mobile_number,  String, :length => 12,  :required => false
+  property :creation_date,  Date, :required => false, :default => Date.today
+  property :active,  Boolean, :default => true, :required => true  
+  property :user_id,  Integer,  :required => false  
   # no designations, they are derived from the relations it has
 
   has n, :branches,          :child_key => [:manager_staff_id]
-  has n, :branch_diaries,    :child_key => [:manager_staff_id]
-  has n, :stock_registers,   :child_key => [:manager_staff_id]
-  has n, :asset_registers,   :child_key => [:manager_staff_id]
   has n, :centers,           :child_key => [:manager_staff_id]
   has n, :regions,           :child_key => [:manager_id]
   has n, :areas,             :child_key => [:manager_id]
@@ -26,14 +23,13 @@ class StaffMember
   has n, :suggested_written_off_loans, :child_key => [:suggested_written_off_by_staff_id], :model => 'Loan'
   has n, :write_off_rejected_loans,    :child_key => [:write_off_rejected_by_staff_id],    :model => 'Loan'
   has n, :payments, :child_key  => [:received_by_staff_id]
-  has n, :monthly_targets
 
   has n, :staff_member_attendances
 
   belongs_to :user
 
-  validates_is_unique :name
-  validates_length :name, :min => 3
+  validates_uniqueness_of :name
+  validates_length_of :name, :min => 3
 
   def self.search(q, per_page)
     if /^\d+$/.match(q)

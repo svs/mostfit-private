@@ -6,26 +6,26 @@ class Claim
   before :valid?, :convert_blank_to_nil
   
   property :id, Serial
-  property :date_of_death, Date, :nullable => false
+  property :date_of_death, Date, :required => true
   property :documents, Flag.send('[]', *CLAIM_DOCUMENTS)
 
   property :stop_further_installments, Boolean, :default => false
   property :refund_all_payments, Boolean, :default => false
 
-  property :amount_of_claim, Float, :nullable => true, :min => 0
-  property :amount_to_be_deducted, Float, :nullable => true, :min => 0
-  property :amount_to_be_paid_to_client, Float, :nullable => true, :min => 0
+  property :amount_of_claim, Float, :required => false, :min => 0
+  property :amount_to_be_deducted, Float, :required => false, :min => 0
+  property :amount_to_be_paid_to_client, Float, :required => false, :min => 0
 
-  property :claim_submission_date, Date, :nullable => true
-  property :receipt_of_claim_on, Date, :nullable => true
-  property :payment_to_client_on, Date, :nullable => true
+  property :claim_submission_date, Date, :required => false
+  property :receipt_of_claim_on, Date, :required => false
+  property :payment_to_client_on, Date, :required => false
 
-  property :claim_id,  String, :nullable => false  
-  property :client_id, Integer, :nullable => false
+  property :claim_id,  String, :required => true  
+  property :client_id, Integer, :required => true
   
   belongs_to :client
   
-  validates_present :client
+  validates_presence_of :client
   validates_with_method :client, :client_marked_inactive
 #  validates_with_method :payment_to_client_on, :payment_to_client_after_receipt
   validates_with_method :amount_to_be_paid_to_client, :payment_to_client_not_more_than_claim

@@ -16,7 +16,7 @@ gem 'merb-slices',              merb_gems_version
 gem 'merb-param-protection',    merb_gems_version
 gem 'merb-exceptions',          merb_gems_version
 gem 'merb-gen',                 merb_gems_version
-
+  
 # Merb authentication
 gem 'merb-auth-core',           merb_related_gems
 gem 'merb-auth-more',           merb_related_gems
@@ -41,7 +41,8 @@ gem 'dm-mysql-adapter',         dm_gems_version
 gem 'dm-paperclip'
 gem 'dm-pagination'
 gem 'dm-observer',              dm_gems_version
-gem 'dm-is-tree',               dm_gems_version
+gem 'dm-is-versioned',          dm_gems_version
+
 
 # DataMapper plugin providing access to validation errors of associated parent and children objects. See the example below to get an idea on how it works.
 # gem 'dm-validations-ext'
@@ -83,6 +84,7 @@ gem 'passenger',                '~> 3.0'
 gem 'debugger'
 
 group :development do
+  gem 'mongrel',                '1.2.0.pre2'
   gem 'rspec',                  '~> 1.3'
   gem 'factory_girl',           '~> 2.3'
   gem 'spork',                  '~> 1.0rc'

@@ -18,8 +18,8 @@ class Membership
   property :id,   Serial
   property :type, Discriminator
   
-  property :from, Date, :nullable => false, :default => Date.new(1900,1,1)
-  property :upto, Date, :nullable => false, :default => SEP_DATE
+  property :from, Date, :required => true, :default => Date.new(1900,1,1)
+  property :upto, Date, :required => true, :default => SEP_DATE
   
   
   # Returns the #club_model for the member as of a particular date

@@ -8,17 +8,17 @@ class Center
   DAYS = [:none, :monday, :tuesday, :wednesday, :thursday, :friday, :saturday, :sunday]
 
   property :id,                   Serial
-  property :name,                 String, :length => 100, :nullable => false, :index => true
-  property :code,                 String, :length => 12, :nullable => true, :index => true
+  property :name,                 String, :length => 100, :required => true, :index => true
+  property :code,                 String, :length => 12, :required => false, :index => true
   property :address,              Text,   :lazy => true
   property :contact_number,       String, :length => 40, :lazy => true
   property :landmark,             String, :length => 100, :lazy => true  
-  property :meeting_day,          Enum.send('[]', *DAYS), :nullable => true, :default => :none, :index => true # DEPRECATED
-  property :meeting_time_hours,   Integer, :length => 2, :index => true
-  property :meeting_time_minutes, Integer, :length => 2, :index => true
+  property :meeting_day,          Enum.send('[]', *DAYS), :required => false, :default => :none, :index => true # DEPRECATED
+  property :meeting_time_hours,   Integer, :index => true
+  property :meeting_time_minutes, Integer, :index => true
   property :meeting_calendar,     Text # this is a comma separated list of dates and takes precedence over everything else.
   property :urban,                Enum[:urban, :rural]
-  property :created_at,           DateTime, :nullable => false, :default => Time.now, :index => true
+  property :created_at,           DateTime, :required => true, :default => Time.now, :index => true
   property :creation_date,        Date
   belongs_to :branch
   belongs_to :manager, :child_key => [:manager_staff_id], :model => 'StaffMember'
@@ -56,13 +56,13 @@ class Center
       
       
 
-  validates_is_unique   :code, :scope => :branch_id
-  validates_length      :code, :min => 1, :max => 12
+  validates_uniqueness_of   :code, :scope => :branch_id
+  validates_length_of      :code, :min => 1, :max => 12
 
-  validates_length      :name, :min => 3
-  validates_is_unique   :name
-  validates_present     :manager
-  validates_present     :branch
+  validates_length_of      :name, :min => 3
+  validates_uniqueness_of   :name
+  validates_presence_of     :manager
+  validates_presence_of     :branch
   validates_with_method :meeting_time_hours,   :method => :hours_valid?
   validates_with_method :meeting_time_minutes, :method => :minutes_valid?
   validates_with_method :calendar_must_have_only_dates

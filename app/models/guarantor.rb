@@ -5,17 +5,17 @@ class Guarantor
   property :name, String, :length => 100, :index => true
   property :father_name, String, :length => 100, :index => true
   property :date_of_birth, Date
-  property :gender,     Enum.send('[]', *['', 'female', 'male']), :nullable => true, :lazy => true
+  property :gender,     Enum.send('[]', *['', 'female', 'male']), :required => false, :lazy => true
   property :address, String, :length => 100 
-  property :relationship_to_client, Enum.send('[]', *['', 'spouse', 'brother', 'brother_in_law', 'father', 'father_in_law', 'adult_son', 'other']), :default => '', :nullable => true, :lazy => true
+  property :relationship_to_client, Enum.send('[]', *['', 'spouse', 'brother', 'brother_in_law', 'father', 'father_in_law', 'adult_son', 'other']), :default => '', :required => false, :lazy => true
   property :created_at,      DateTime, :default => Time.now
  
   belongs_to :client
-  belongs_to :guarantor_occupation, :nullable => true, :child_key => [:guarantor_occupation_id], :model => 'Occupation'  
-  validates_present :name
-  validates_present :father_name
-  validates_length :name,   :minimum => 3
-  validates_length :father_name,   :minimum => 3
+  belongs_to :guarantor_occupation, :required => false, :child_key => [:guarantor_occupation_id], :model => 'Occupation'  
+  validates_presence_of :name
+  validates_presence_of :father_name
+  validates_length_of :name,   :minimum => 3
+  validates_length_of :father_name,   :minimum => 3
 end
 
 # We migrated data for Intellecash using the followng

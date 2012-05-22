@@ -5,9 +5,9 @@ class Occupation
   property :name, String
   property :code, String, :length => 3
 
-  validates_present :name
-  validates_is_unique :name
-  validates_is_unique :code
+  validates_presence_of :name
+  validates_uniqueness_of :name
+  validates_uniqueness_of :code
 
   has n, :clients
   has n, :loans

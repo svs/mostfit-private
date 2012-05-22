@@ -6,7 +6,7 @@ class DocumentType
   property :parent_model, Enum.send('[]', *ModelsWithDocuments), :index => true
   
   has n, :documents
-  validates_is_unique :name
+  validates_uniqueness_of :name
   
   default_scope(:default).update(:order => [:name])
 end

@@ -47,6 +47,10 @@ Merb::BootLoader.before_app_loads do
   require File.join(Merb.root,'lib','loan_fiddling.rb')
   require File.join(Merb.root,'lib','irblib.rb')
 
+  require 'dm-pagination'
+  require 'dm-pagination/paginatable'
+  require 'dm-pagination/pagination_builder'
+
 
   #initialize i18n
   require 'i18n'
@@ -69,7 +73,7 @@ Merb::BootLoader.before_app_loads do
     puts "--------Do a gem install pdf-writer otherwise pdf generation won't work---------"
     puts "--------------------------------------------------------------------------------"
   end
-  # DataMapper::Model.append_extensions DmPagination::Paginatable
+  DataMapper::Model.append_extensions DmPagination::Paginatable
   if Merb.env=="development"
     Paperclip.options[:image_magick_path] = "/usr/bin"
     Paperclip.options[:command_path] = "/usr/bin"
@@ -103,7 +107,6 @@ Merb::BootLoader.after_app_loads do
 
   # set the rights
   require File.join(Merb.root,'config','misfit')
-  Mostfit::Business::Rules.deploy
   # enable the extensions
   Misfit::Extensions.hook
 

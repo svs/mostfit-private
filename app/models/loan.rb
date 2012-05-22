@@ -43,8 +43,8 @@ class Loan
 
   before :valid?, :set_amount
 
-  validates_with_method :original_properties_specified?, :when => Proc.new{|l| l.taken_over?}
-  validates_with_method :taken_over_properly?, :when => Proc.new{|l| l.taken_over?}
+  validates_with_method :original_properties_specified?, :if => Proc.new{|l| l.taken_over?}
+  validates_with_method :taken_over_properly?,           :if => Proc.new{|l| l.taken_over?}
 
   attr_accessor :history_disabled  # set to true to disable history writing by this object
   attr_accessor :interest_percentage
@@ -55,21 +55,21 @@ class Loan
   attr_accessor :payment_schedule_hooks
 
   property :id,                             Serial
-  property :discriminator,                  Discriminator, :nullable => false, :index => true
+  property :discriminator,                  Discriminator, :required => true, :index => true
 
-  property :amount,                         Float, :nullable => false, :index => true, :min => 0.01  # this is the disbursed amount
+  property :amount,                         Float, :required => true, :index => true, :min => 0.01  # this is the disbursed amount
   property :amount_applied_for,             Float, :index => true
   property :amount_sanctioned,              Float, :index => true
 
-  property :interest_rate,                  Float, :nullable => false, :index => true
-  property :installment_frequency,          Enum.send('[]', *INSTALLMENT_FREQUENCIES), :nullable => false, :index => true
-  property :number_of_installments,         Integer, :nullable => false, :index => true
-  property :weekly_off,                     Integer, :nullable => true # cwday pls
-  property :client_id,                      Integer, :nullable => false, :index => true
+  property :interest_rate,                  Float, :required => true, :index => true
+  property :installment_frequency,          Enum.send('[]', *INSTALLMENT_FREQUENCIES), :required => true, :index => true
+  property :number_of_installments,         Integer, :required => true, :index => true
+  property :weekly_off,                     Integer, :required => false # cwday pls
+  property :client_id,                      Integer, :required => true, :index => true
 
-  property :scheduled_disbursal_date,       Date, :nullable => false, :auto_validation => false, :index => true
-  property :scheduled_first_payment_date,   Date, :nullable => false, :auto_validation => false, :index => true
-  property :applied_on,                     Date, :nullable => false, :auto_validation => false, :index => true, :default => Date.today
+  property :scheduled_disbursal_date,       Date, :required => true, :auto_validation => false, :index => true
+  property :scheduled_first_payment_date,   Date, :required => true, :auto_validation => false, :index => true
+  property :applied_on,                     Date, :required => true, :auto_validation => false, :index => true, :default => Date.today
   property :approved_on,                    Date, :auto_validation => false, :index => true
   property :rejected_on,                    Date, :auto_validation => false, :index => true
   property :disbursal_date,                 Date, :auto_validation => false, :index => true
@@ -85,20 +85,20 @@ class Loan
   property :deleted_at,                     ParanoidDateTime
   property :loan_product_id,                Integer,  :index => true
 
-  property :applied_by_staff_id,               Integer, :nullable => true, :index => true
-  property :approved_by_staff_id,              Integer, :nullable => true, :index => true
-  property :rejected_by_staff_id,              Integer, :nullable => true, :index => true
-  property :disbursed_by_staff_id,             Integer, :nullable => true, :index => true
-  property :written_off_by_staff_id,           Integer, :nullable => true, :index => true
-  property :preclosed_by_staff_id,             Integer, :nullable => true, :index => true
-  property :suggested_written_off_by_staff_id, Integer, :nullable => true, :index => true
-  property :write_off_rejected_by_staff_id,    Integer, :nullable => true, :index => true
-  property :validated_by_staff_id,             Integer, :nullable => true, :index => true
-  property :verified_by_user_id,               Integer, :nullable => true, :index => true
-  property :created_by_user_id,                Integer, :nullable => true, :index => true
-  property :cheque_number,                     String,  :length => 20, :nullable => true, :index => true
-  property :cycle_number,                      Integer, :default => 1, :nullable => false, :index => true
-  property :loan_pool_id,                      Integer, :nullable => true, :index => true
+  property :applied_by_staff_id,               Integer, :required => false, :index => true
+  property :approved_by_staff_id,              Integer, :required => false, :index => true
+  property :rejected_by_staff_id,              Integer, :required => false, :index => true
+  property :disbursed_by_staff_id,             Integer, :required => false, :index => true
+  property :written_off_by_staff_id,           Integer, :required => false, :index => true
+  property :preclosed_by_staff_id,             Integer, :required => false, :index => true
+  property :suggested_written_off_by_staff_id, Integer, :required => false, :index => true
+  property :write_off_rejected_by_staff_id,    Integer, :required => false, :index => true
+  property :validated_by_staff_id,             Integer, :required => false, :index => true
+  property :verified_by_user_id,               Integer, :required => false, :index => true
+  property :created_by_user_id,                Integer, :required => false, :index => true
+  property :cheque_number,                     String,  :length => 20, :required => false, :index => true
+  property :cycle_number,                      Integer, :default => 1, :required => true, :index => true
+  property :loan_pool_id,                      Integer, :required => false, :index => true
 
   #these amount and disbursal dates are required for TakeOver loan types. 
   property :original_amount,                    Integer
@@ -107,9 +107,9 @@ class Loan
   property :taken_over_on,                      Date
   property :taken_over_on_installment_number,   Integer
 
-  property :loan_utilization_id,                Integer, :lazy => true, :nullable => true
-  property :under_claim_settlement,             Date, :nullable => true
-  property :repayment_style_id,                 Integer, :nullable => true
+  property :loan_utilization_id,                Integer, :lazy => true, :required => false
+  property :under_claim_settlement,             Date, :required => false
+  property :repayment_style_id,                 Integer, :required => false
 
   # property :center_id, Integer                 #temporary, while we fix the loan_center_memberships
 
@@ -117,10 +117,10 @@ class Loan
 
   # associations
   belongs_to :client
-  belongs_to :funding_line,              :nullable => true
+  belongs_to :funding_line,              :required => false
   belongs_to :loan_product
-  belongs_to :loan_purpose,              :nullable  => true
-  belongs_to :occupation,                :nullable => true
+  belongs_to :loan_purpose,              :required => false
+  belongs_to :occupation,                :required => false
   belongs_to :applied_by,                :child_key => [:applied_by_staff_id],                :model => 'StaffMember'
   belongs_to :approved_by,               :child_key => [:approved_by_staff_id],               :model => 'StaffMember'
   belongs_to :rejected_by,               :child_key => [:rejected_by_staff_id],               :model => 'StaffMember'
@@ -146,7 +146,7 @@ class Loan
   has n, :loan_center_memberships, :child_key => [:member_id]
 
   #validations
-  validates_present      :client, :scheduled_disbursal_date, :scheduled_first_payment_date, :applied_by, :applied_on
+  validates_presence_of      :client, :scheduled_disbursal_date, :scheduled_first_payment_date, :applied_by, :applied_on
   validates_with_method  :amount,                       :method => :amount_greater_than_zero?
   validates_with_method  :interest_rate,                :method => :interest_rate_greater_than_or_equal_to_zero?
   validates_with_method  :number_of_installments,       :method => :number_of_installments_greater_than_zero?

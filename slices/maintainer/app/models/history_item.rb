@@ -21,10 +21,10 @@ class Maintainer::HistoryItem
   }
   
   property :id,         Serial
-  property :user_name,  String,   :nullable => false
-  property :ip,         String,   :nullable => false
-  property :time,       DateTime, :nullable => false
-  property :action,     String,   :nullable => false, :set => ACTIONS.keys
+  property :user_name,  String,   :required => true
+  property :ip,         String,   :required => true
+  property :time,       DateTime, :required => true
+  property :action,     String,   :required => true, :set => ACTIONS.keys
   property :data,       String
   
   def stringify
