@@ -62,8 +62,6 @@
         Weeksheet
       %li#documents
         Documents
-      %li#audit
-        Audit
       %li#data_entry
         Data Entry
       %li#history
@@ -86,8 +84,6 @@
       /=partial "centers/weeksheet"
     %div.tab
       %input{:type => "hidden", :name => "_load_remote", :value => resource(:documents, :parent_id => @center.id, :parent_model => Center)}
-    %div.tab
-      %input{:type => "hidden", :name => "_load_remote", :value => resource(:audit_items, :id => @center.id, :model => "Center")}
     %div.tab
       %form._remote_{:action => url(:action => "bulk_data_entry", :controller => "centers", :id => @center.id, :branch_id => @branch.id), :method => :get}
         %b &nbsp; Select field to do mass entry

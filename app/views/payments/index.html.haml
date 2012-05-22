@@ -188,7 +188,6 @@
       %li#repayments_made Repayments made
       - if @loan.insurance_policy
         %li#insurance Insurance policy
-      %li#audit Audits
       %li#misc Miscellaneous
       %li#history History
       %li#deleted Deleted Payments
@@ -271,8 +270,6 @@
     - if @loan.insurance_policy
       %div.tab
         %input{:type => "hidden", :name => "_load_remote", :value => resource(@loan.insurance_policy)}
-    %div.tab 
-      %input{:type => "hidden", :name => "_load_remote", :value => resource(:audit_items, :model => "Loan", :id => @loan.id)}
     %div.tab
       %input{:type => "hidden", :name => "_load_remote", :value => url(:controller => :loans, :action => "misc", :id => @loan.id)}
     %div.tab 

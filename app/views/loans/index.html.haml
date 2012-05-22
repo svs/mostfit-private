@@ -106,7 +106,6 @@
     %ul.tabs
       %li#loans Loans
       %li#comments Comments
-      %li#audit Audits
       %li#trail History
       %li#documents Documents
       %li#insurance Insurance
@@ -197,9 +196,6 @@
       %p
         %h3 Add a comment
         = partial 'comments/form'
-    %div.tab 
-      %input{:type => "hidden", :name => "_load_remote", :value => resource(:audit_items, :id => @client.id, :model => "Client")}
-      
     %div.tab 
       %input{:type => "hidden", :name => "_load_remote", :value => audit_trail_url}
     %div.tab 

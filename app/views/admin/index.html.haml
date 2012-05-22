@@ -30,10 +30,6 @@
     %ul.icon_links
       %li
         = link_to_with_rights 'Funders and funding lines', resource(:funders), :class => 'funder icon'
-      %li      
-        = link_to_with_rights 'Manage Business Rules', resource(:rules), :class => 'rules icon'
-      %li
-        = link_to_with_rights 'Manage Targets', resource(:targets), :class => 'icon target'
       %li
         = link_to_with_rights 'Fees', resource(:fees), :class => 'icon coins'
       %li
@@ -42,8 +38,6 @@
         = link_to_with_rights 'Repayment Styles', resource(:repayment_styles), :class => 'loan icon'
       %li
         = link_to_with_rights 'Insurance companies & products', url(:action => :insurance), :class => 'insurance icon'
-      %li
-        = link_to_with_rights 'Perform Audits', resource(:audit_items), :class => 'icon audit'
 
   .admin-box
     %h2 Manage commonly-used lists (masters)
@@ -58,10 +52,6 @@
         = link_to_with_rights 'Loan Utilizations', resource(:loan_utilizations), :class => 'icon accept'
       %li
         = link_to_with_rights 'Document Types', resource(:document_types), :class => 'icon documents'
-      %li
-        = link_to_with_rights 'Stock Master', resource(:stock_registers), :class => 'report icon'
-      %li
-        = link_to_with_rights 'Asset Master', resource(:asset_registers), :class => 'report icon'
   .admin-box
     %h2 Data Administration
     %ul.icon_links
@@ -78,8 +68,3 @@
         = link_to_with_rights 'Upload data', url(:controller => 'uploads'), :class => 'upload icon'
       %li
         = link_to_with_rights 'Download data', url(:controller => 'admin', :action => "download"), :class => 'download icon'
-  .admin-box
-    %h2 API Use
-    %ul
-      %li 
-        = link_to_with_rights "API Access", resource(:api_accesses), :class => 'edit'

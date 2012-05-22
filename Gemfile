@@ -9,6 +9,7 @@ dm_gems_version   = '~> 1.2'
 
 # Merb
 gem 'merb-core',                merb_gems_version
+gem 'merb-action-args',         merb_gems_version
 gem 'merb-assets',              merb_gems_version
 gem 'merb-helpers',             merb_gems_version
 gem 'merb-mailer',              merb_gems_version
@@ -66,9 +67,7 @@ gem 'ice_cube'
 gem 'thermostat', :git => 'git://github.com/svs/thermostat.git'
 gem 'hirb'
 
-# PDF functionality should be ported to Prawn, pdf-writer is no longer maintained.
-# We use this fork because it contains fixes for ruby 1.9
-gem 'pdf-writer',               :git => "git://github.com/metaskills/pdf-writer.git"
+gem 'pdf-writer'
 
 # Additional dependencies of the Mostfit Maintainer slice:
 gem 'dm-sqlite-adapter',        dm_gems_version
@@ -79,12 +78,9 @@ gem 'git',                      '~> 1.2'
 #       More info on this is found in `INSTALL.md`.
 gem 'passenger',                '~> 3.0'
 
-# The following gems do not currently (jan'12) work with ruby-1.9.3-head.
-# They should be pre-installed as detailed in `INSTALL.md`.
-gem 'debugger'
-
 group :development do
-  gem 'mongrel',                '1.2.0.pre2'
+  gem 'ruby-debug'
+  gem 'mongrel'
   gem 'rspec',                  '~> 1.3'
   gem 'factory_girl',           '~> 2.3'
   gem 'spork',                  '~> 1.0rc'
