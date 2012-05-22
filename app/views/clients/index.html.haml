@@ -78,6 +78,7 @@
       %p.menu-strip 
         = link_to 'Create new client', resource(@branch, @center, :clients, :new), :class => "add grey_button"
         = link_to "Bulk entry of loans", url(:enter_loans, :action => :bulk_form, :query => @center), :class => "edit grey_button"
+        = link_to "Bulk move", url(:controller => :centers, :action => :move, :id => @center.id), :class => "edit grey_button"
     %div.tab    
       %input{:type => "hidden", :name => "_load_remote", :value => "/info/moreinfo/#{@center.id}?for=center"}
     %div.tab
