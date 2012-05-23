@@ -201,6 +201,7 @@ class CenterMeetingDay
   # Private: ensures that every CMD has a valid datevector so we can depend only on those properties
   # for our calculations and representations
   def set_date_vector_properties
+    return unless new?
     if meeting_day and meeting_day != :none
       self.every = "1"; self.what = self.meeting_day; self.of_every = 1; self.period = :week
     else

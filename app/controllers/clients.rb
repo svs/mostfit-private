@@ -15,7 +15,6 @@ class Clients < Application
   end
 
   def show(id)
-    debugger
     @option = params[:option] if params[:option]
     @date ||= Date.today
     @client = Client.get(id)
@@ -80,7 +79,6 @@ class Clients < Application
   end
 
   def update(id, client)
-    debugger
     @client = Client.get(id)
     raise NotFound unless @client
     disallow_updation_of_verified_clients
@@ -123,7 +121,6 @@ class Clients < Application
   end
 
   def move_to_center(id)
-    debugger
     @client = Client.get(id)
     raise NotFound unless @client
     @center = @client.center
@@ -197,7 +194,6 @@ class Clients < Application
       @clients = @center.clients
       render
     else
-      debugger
       @center = Center.get(params[:center_id])
       raise NotFound unless @center
       @date = Date.parse(params[:date]) rescue nil
@@ -205,7 +201,6 @@ class Clients < Application
       if @date and @new_center
         Client.transaction do |t|
           @center.clients.each do |c|
-            debugger
             c.move_to_center(@new_center, @date)
           end
         end

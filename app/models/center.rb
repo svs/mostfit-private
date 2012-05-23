@@ -119,7 +119,7 @@ class Center
       # sometimes loans from another center might be moved to this center. they can be created before this centers creation date
       # therefore, we refer to the loan history table first and if there are no rows there, we refer to the creation date for the 'from' date if none is specified
       min_max_dates = LoanHistory.all(:center_id => self.id).aggregate(:date.min, :date.max)
-      f = (min_max_dates[0] || self.creation_date)
+      f = (self.creation_date)
       t = SEP_DATE
       
       # first check if we have an explicitly defined meeting calendar
@@ -129,7 +129,14 @@ class Center
         @meeting_dates_array = ds
       else
         select = t.class == Date ? {:valid_from.lte => t} : {}
-        dvs = center_meeting_days.all.select{|dv| dv.valid_from.nil? or dv.valid_from <= t}.map{|dv| [(dv.valid_from.nil? ? f : dv.valid_from), dv]}.to_hash
+        dvs = center_meeting_days.all(select).map{|cmd| [cmd.valid_from, cmd.date_vector]}.to_hash
+        #dvs = center_meeting_days.all.select{|dv| dv.valid_from.nil? or dv.valid_from <= t}.map{|dv| [(dv.valid_from.nil? ? f : dv.valid_from), dv]}.to_hash
+
+        # if from is after the center creation but before the first additional center meeting date then deal with this
+        if dvs.blank? or (f < dvs.keys.min and meeting_day != :none)
+          dvs[from] =       DateVector.new(1, meeting_day, 1, :week, creation_date, dvs.keys.min || Date.new(2100,12,31))
+        end
+
         # then cycle through this hash and get the appropriate dates
         dates = []
         dvs.keys.sort.each_with_index{|date,i|
