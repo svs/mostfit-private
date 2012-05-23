@@ -8,6 +8,7 @@ class GraphData < Application
   
 
   def tm_collections
+    return {}.to_json
     @date = begin; Date.parse(params[:date]); rescue; Date.today; end
     if params[:branch_id]
       @history_totals = Cacher.all(:model_name => "Center", :date => @date, :branch_id => params[:branch_id])
@@ -167,7 +168,8 @@ class GraphData < Application
   end
 
   def common_aggregate_loan_graph(loan_ids, start_date, end_date) # __DEPRECATED__
-    return "{\"title\":{\"text\": \"No data to display\", \"style\": \"{font-size: 20px;color:##{COLORS[0]}; text-align: center;}\"}}" unless (start_date and end_date)
+    
+    return "{\"title\":{\"text\": \"No data to display\", \"style\": \"{font-size: 20px;color:##{COLORS[0]}; text-align: center;}\"}}" 
     days = (end_date - start_date).to_i
     step_size = 1; i = 0   # make a nice round step size, not more than 20 steps
     while days/step_size > 50
