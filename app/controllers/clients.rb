@@ -1,5 +1,5 @@
 class Clients < Application
-  before :get_context, :exclude => ['redirect_to_show', 'bulk_entry']
+  #before :get_context, :exclude => ['redirect_to_show', 'bulk_entry']
   provides :xml, :yaml, :js
   before :do_params, :only => [:create, :update]
 
@@ -15,10 +15,17 @@ class Clients < Application
   end
 
   def show(id)
-    @option = params[:option] if params[:option]    
+    debugger
+    @option = params[:option] if params[:option]
+    @date ||= Date.today
     @client = Client.get(id)
     raise NotFound unless @client
-    
+    if params[:center_id]
+      @center = Center.get(params[:center_id])
+    else
+      @center = @client.center(@date)[0]
+    end
+    @branch = @center.branch
     # if @center
       @loans = @loans ? @loans.find_all{|l| l.client_id == @client.id} : @client.loans
       display [@client, @loans, @option], 'loans/index'
@@ -249,9 +256,14 @@ class Clients < Application
   end
 
   def get_context
+    @client = Client.get(id)
     if params[:branch_id] and params[:center_id] 
       @branch = Branch.get(params[:branch_id]) 
-      @center = Center.get(params[:center_id]) 
+      @center = Center.get(params[:center_id])
+    else
+      @date ||= Date.today
+      @center = @client.center(@date)
+      @branch = @center.branch
       raise NotFound unless @branch and @center
     end
   end
