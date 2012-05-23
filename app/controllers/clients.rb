@@ -1,5 +1,5 @@
 class Clients < Application
-  #before :get_context, :exclude => ['redirect_to_show', 'bulk_entry']
+  before :get_context, :exclude => ['redirect_to_show', 'bulk_entry']
   provides :xml, :yaml, :js
   before :do_params, :only => [:create, :update]
 
