@@ -109,7 +109,7 @@
       %td
         = @loan.number_of_installments
         = @loan.installment_frequency
-        == (#{@loan.number_of_installments_before(Date.today)} past installments)
+        == (#{@loan.number_of_installments_before(Date.today) rescue nil} past installments)
     %tr
       %th.even First repayment
       %td
@@ -173,7 +173,7 @@
       %th.even
         Status
       %td
-        - st = @loan.status
+        - st = @loan.status rescue :error
         %h2{:class => st}
           = st.to_s.gsub('_', ' ')
         - if @status == :written_off

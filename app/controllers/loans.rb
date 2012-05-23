@@ -125,6 +125,7 @@ class Loans < Application
   end
 
   def update(id)
+    debugger
     klass, attrs = get_loan_and_attrs
     attrs[:interest_rate] = attrs[:interest_rate].to_f / 100 if attrs[:interest_rate].to_f > 0
     attrs[:occupation_id] = nil if attrs[:occupation_id] == ''
@@ -138,7 +139,7 @@ class Loans < Application
       @insurance_policy.client = @loan.client
       @insurance_policy.attributes = attrs.delete(:insurance_policy)
     end
-    @loan.attributes = attrs
+    @loan.update(attrs)
     @loan_product = @loan.loan_product
     @loan.insurance_policy = @insurance_policy if @loan_product.linked_to_insurance and @insurance_policy   
 
@@ -560,6 +561,7 @@ class Loans < Application
     end
     attrs[:client_id] ||= params[:client_id] if params[:client_id]
     attrs[:client] = Client.get(attrs.delete(:client_id))
+    attrs.delete(:client) if attrs[:client].blank?
     attrs[:loan_product] = LoanProduct.get(attrs.delete(:loan_product_id)) if attrs[:loan_product_id]
     attrs[:insurance_policy] = params[:insurance_policy] if params[:insurance_policy]
     attrs[:repayment_style_id] ||= loan_product.repayment_style.id

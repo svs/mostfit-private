@@ -46,7 +46,7 @@ module Merb
         base = url(:branch_center_client, branch.id, center.id, client.id)
         base + "/loans/#{loan.id}/" + action.to_s + (opts.length>0 ? "?#{opts.inject([]){|s,x| s << "#{x[0]}=#{x[1]}"}.join("&")}" : '')
       rescue
-        "javascript:alert('something went wrong while generating the url');"
+        "/loans/#{loan.id}" + (action.blank? ? "" : "/#{action}" )
       end
     end
 
