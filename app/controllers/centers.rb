@@ -214,8 +214,8 @@ class Centers < Application
   end
 
   def weeksheet
-    @clients_grouped = grouped_clients
     @clients = @center.clients
+    @clients_grouped = grouped_clients(@clients)
     partial "centers/weeksheet"
   end
   
