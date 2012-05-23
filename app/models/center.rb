@@ -244,7 +244,7 @@ class Center
   #
   # Returns a Boolean
   def meeting_day?(date)
-    self.meeting_dates(date, date).include?(date)
+    self.meeting_dates(date, date).include?(date) || (LoanHistory.all(:center_id => self.id, :date => date).aggregate(:date.count) > 0)
   end
 
   # Public: returns a list of centers that meet on a particular weekday, filtered by a selection
