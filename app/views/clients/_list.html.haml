@@ -38,7 +38,6 @@
               Not attached to any group
         - clients.sort_by{|c| c.name}.each do |client|
           = partial 'clients/list_client_row', :client => client
-    - debugger
     %tr.group
       %td{:colspan => 5}
         Loans whose clients are elsewhere
