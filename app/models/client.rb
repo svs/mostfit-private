@@ -31,6 +31,7 @@ class Client
   property :place_of_birth,  String, :length => 100, :index => true, :lazy => true
   property :nationality,     String, :length => 100, :index => true, :lazy => true
   property :kyc_documents,   Flag.send('[]',*KYC_DOCUMENTS)
+  property :kyc_document_numbers, Yaml
   property :active,          Boolean, :default => true, :nullable => false, :index => true
   property :inactive_reason, Enum.send('[]', *INACTIVE_REASONS), :nullable => true, :index => true, :default => ''
   property :date_joined,     Date,    :index => true

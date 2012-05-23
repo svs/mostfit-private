@@ -83,6 +83,13 @@ class Clients < Application
     raise NotFound unless @client
     disallow_updation_of_verified_clients
     client = params[:client].merge(params[@client.class.to_s.snake_case])
+
+    # because of dm-is-validated gem, we need to remove blank entries in the hash which should be integers.
+    @client.attributes.each{|k, v|
+      if v.blank? and @client.class.send(k).type==Integer
+        client.delete(k)
+      end
+    }
     @client.update_attributes(client)      
     if @client.errors.blank?
       if params[:tags]

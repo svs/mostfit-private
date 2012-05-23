@@ -18,7 +18,7 @@
   .menu-strip{:style => "margin-bottom: 0.5em; margin-left: 0px; margin-top: 0px"}
     = link_to 'edit this loan', url_for_loan(@loan, 'edit'), :class => "edit"
     = link_to 'make repayment', url_for_loan(@loan, 'payments/new'), :class => "add"
-    = link_to 'visit center', resource(@loan.center)
+    = (link_to 'visit center', resource(@loan.center)) rescue 'pls check client joining date'
     = link_to 'diagnose', url(:controller => :loans, :action => 'diagnose', :id => @loan.id), :class => "edit"
   
   %table.loan{ :style => 'width : 50%; border: solid 1px #c9c9c9' }
