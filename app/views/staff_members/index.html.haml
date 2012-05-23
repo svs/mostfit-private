@@ -57,7 +57,7 @@
     - for staff_member in @staff_members
       %tr{ :class => cycle('odd','') }
         %td.text
-          %b= link_to staff_member.name_and_id, resource(staff_member)
+          %b= link_to staff_member.name, resource(staff_member)
         %td
           %span{:class => staff_member.active? ? '' : 'red'}
             = staff_member.active? ? 'active' : 'disabled'
