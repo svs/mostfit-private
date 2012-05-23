@@ -120,14 +120,10 @@ end
 
 private
 def was_yesterday_holiday_shifted_today?
-  yesterday = self-1
-  return true if $holidays[yesterday] and $holidays[yesterday].shift_meeting==:after
   return false
 end
 
 def is_tommorow_holiday_shifted_today?
-  yesterday = self+1
-  return true if $holidays[yesterday] and $holidays[yesterday].shift_meeting==:before
   return false
 end
 end

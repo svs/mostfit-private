@@ -19,24 +19,30 @@ namespace :mostfit do
       @uncentered_loans = Loan.all.aggregate(:id) - LoanCenterMembership.all.aggregate(:member_id)
       total = @uncentered_loans.count
       puts "Found total #{total} loans without centers on them"
+      t = Time.now
       @uncentered_loans.each_with_index do |lid,i|
-        l = Loan.get lid
-        c = l.client
-        c.center = Center.get(c.center_id)
-        # c.gender = :female
-        c.save!
-        l.send(:set_center)
-        l.save!
-        print "."
-        if i%50 == 0
-          puts "#{i}/#{total}"
+        begin
+          l = Loan.get lid
+          c = l.client
+          c.center = Center.get(c.center_id)
+          # c.gender = :female
+          c.save!
+          l.send(:set_center)
+          l.save!
+          print "."
+          if i%50 == 0
+            puts "#{i}/#{total} #{(Time.now - t).round(0)} secs"
+          end
+        rescue
+          puts "-#{lid}-".red
         end
       end
     end
     
     desc "makes all payments again in order to split them into normal, advance or overdue. DOES NOT REALLOCATE"
     task :remake_payments, :branch_id do |task, args|
-      lids = Payment.all(:received_for => nil).aggregate(:loan_id)
+      logfile = File.open("log/upgrade-#{args[:branch_id]}","w")
+      lids = Payment.all(:received_for => nil, :c_branch_id => args[:branch_id]).aggregate(:loan_id)
       ct = lids.count
       t = Time.now
       lids.each_with_index do |lid,i|
