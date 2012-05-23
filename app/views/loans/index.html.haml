@@ -15,7 +15,7 @@
           - if @client.inactive_reason=='death_of_client' or @client.inactive_reason=='death_of_spouse'
             = link_to('Click here for claim processing', resource(@client, :claims))
       - else
-        = link_to 'add a new loan', resource(@client, :loans, :new), :class => "add grey_button"
+        = link_to 'add a new loan', resource(@branch, @center, @client, :loans, :new), :class => "add grey_button"
 
     %table.narrow.form{ :style =>'width:50%' }
       %tr.odd

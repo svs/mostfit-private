@@ -540,8 +540,7 @@ class Loans < Application
       end
       @center = Center.get(params[:center_id])
       @branch = Branch.get(params[:branch_id])
-      raise NotFound unless @branch and @center
-      raise NotFound unless (@client or @clients)
+      
     end
   end
 
