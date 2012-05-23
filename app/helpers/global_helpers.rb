@@ -38,12 +38,16 @@ module Merb
     def url_for_loan(loan, action = '', opts = {})
       # this is to generate links to loans, as the resouce method doesn't work for descendant classes of Loan
       # it expects the whole context (branch, center, client) to exist
-      date ||= Date.parse(params[:date]) rescue Date.today
-      center = loan.center
-      branch = center.branch
-      client = loan.client
-      base = url(:branch_center_client, branch.id, center.id, client.id)
-      base + "/loans/#{loan.id}/" + action.to_s + (opts.length>0 ? "?#{opts.inject([]){|s,x| s << "#{x[0]}=#{x[1]}"}.join("&")}" : '')
+      begin
+        date ||= Date.parse(params[:date]) rescue Date.today
+        center = loan.center
+        branch = center.branch
+        client = loan.client
+        base = url(:branch_center_client, branch.id, center.id, client.id)
+        base + "/loans/#{loan.id}/" + action.to_s + (opts.length>0 ? "?#{opts.inject([]){|s,x| s << "#{x[0]}=#{x[1]}"}.join("&")}" : '')
+      rescue
+        "javascript:alert('something went wrong while generating the url');"
+      end
     end
 
     # a simple catalog (Hash) of center names and ids grouped by branches
