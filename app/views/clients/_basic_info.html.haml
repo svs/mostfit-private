@@ -4,7 +4,14 @@
       As of
     %td
       = date_select_for(@client, :as_of)
-  - if @client.center.blank? 
+  - if @center
+    %tr
+      %td 
+        For center
+      %td
+        = @center.name
+        %input{:id => "client_center_id", :value => "#{@center.id}", :type => "hidden"}
+  - elsif @client.center.blank? 
     %tr
       %td
         For center:

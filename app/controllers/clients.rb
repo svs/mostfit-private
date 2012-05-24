@@ -34,6 +34,7 @@ class Clients < Application
   end
 
   def new
+    get_context
     if Client.descendants.count == 1
       only_provides :html
       @client = Client.new
