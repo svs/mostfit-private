@@ -807,8 +807,8 @@ def self.installment_frequencies
   def get_status(date = Date.today, total_received = nil) # we have this last parameter so we can speed up get_status
                                                           # considerably by passing total_received, i.e. from history_for
     #return @status if @status
+    @statuses ||= {}
     begin
-      @statuses ||= {}
       date = Date.parse(date)      if date.is_a? String
       
       return :applied_in_future    if applied_on.holiday_bump > date  # non existant
@@ -836,7 +836,7 @@ def self.installment_frequencies
       end
       @statuses[date] = @status
     rescue
-      @status[date] = :error
+      @statuses[date] = :error
     end
   end
   
