@@ -1,7 +1,6 @@
 %h1
   == Editing loan ##{@loan.id} for 
-  - debugger
-  %i= link_to @loan.client.name, resource(@branch, @center, @client)
+  %i= link_to @loan.client.name, resource(@client)
 
 = error_messages_for @loan
 

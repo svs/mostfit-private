@@ -72,8 +72,10 @@ class Clients < Application
 
   def edit(id)
     only_provides :html
+    get_context
     @client = Client.get(id)
     raise NotFound unless @client
+    
     disallow_updation_of_verified_clients
     display @client, :template => "clients/edit"
   end
@@ -258,7 +260,7 @@ class Clients < Application
   end
 
   def get_context
-    @client = Client.get(id)
+    @client = Client.get(params[:id])
     if params[:branch_id] and params[:center_id] 
       @branch = Branch.get(params[:branch_id]) 
       @center = Center.get(params[:center_id])
