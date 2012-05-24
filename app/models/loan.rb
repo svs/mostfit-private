@@ -1132,6 +1132,7 @@ def self.installment_frequencies
   end
 
   def set_loan_product_parameters
+    return unless new?
     self.repayment_style = self.loan_product.repayment_style unless self.repayment_style
     [:amount, :interest_rate, :number_of_installments].each do |attr|
       self.send("#{attr}=", self.loan_product.send("max_#{attr}")) if self.loan_product.send("max_#{attr}") == self.loan_product.send("min_#{attr}")
