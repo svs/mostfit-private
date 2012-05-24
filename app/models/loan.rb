@@ -807,33 +807,37 @@ def self.installment_frequencies
   def get_status(date = Date.today, total_received = nil) # we have this last parameter so we can speed up get_status
                                                           # considerably by passing total_received, i.e. from history_for
     #return @status if @status
-    @statuses ||= {}
-    date = Date.parse(date)      if date.is_a? String
-
-    return :applied_in_future    if applied_on.holiday_bump > date  # non existant
-    return :applied              if applied_on.holiday_bump <= date and
-                                 not (approved_on and approved_on.holiday_bump <= date) and
-                                 not (rejected_on and rejected_on.holiday_bump <= date)
-    return :approved             if (approved_on and approved_on.holiday_bump <= date) and not (disbursal_date and disbursal_date.holiday_bump <= date) and 
-                                 not (rejected_on and rejected_on.holiday_bump <= date)
-    return :rejected             if (rejected_on and rejected_on.holiday_bump <= date)
-    return :written_off          if (written_off_on and written_off_on <= date)
-    return :preclosed            if (preclosed_on and preclosed_on <= date)
-    return :claim_settlement     if under_claim_settlement and under_claim_settlement.holiday_bump <= date
-    return @statuses[date] if @statuses[date]
-    total_received ||= total_received_up_to(date)
-    principal_received ||= principal_received_up_to(date)
-    return :disbursed            if (date == disbursal_date.holiday_bump) and total_received < total_to_be_received
-    if total_received >= total_to_be_received
-      @status =  :repaid
-    elsif (amount - principal_received) <= EPSILON and (scheduled_interest_up_to(date)-interest_received_up_to(Date.today) <= EPSILON)
-      @status =  :repaid
-    elsif amount<=principal_received
-      @status =  :repaid
-    else
+    begin
+      @statuses ||= {}
+      date = Date.parse(date)      if date.is_a? String
+      
+      return :applied_in_future    if applied_on.holiday_bump > date  # non existant
+      return :applied              if applied_on.holiday_bump <= date and
+        not (approved_on and approved_on.holiday_bump <= date) and
+        not (rejected_on and rejected_on.holiday_bump <= date)
+      return :approved             if (approved_on and approved_on.holiday_bump <= date) and not (disbursal_date and disbursal_date.holiday_bump <= date) and 
+        not (rejected_on and rejected_on.holiday_bump <= date)
+      return :rejected             if (rejected_on and rejected_on.holiday_bump <= date)
+      return :written_off          if (written_off_on and written_off_on <= date)
+      return :preclosed            if (preclosed_on and preclosed_on <= date)
+      return :claim_settlement     if under_claim_settlement and under_claim_settlement.holiday_bump <= date
+      return @statuses[date] if @statuses[date]
+      total_received ||= total_received_up_to(date)
+      principal_received ||= principal_received_up_to(date)
+      return :disbursed            if (date == disbursal_date.holiday_bump) and total_received < total_to_be_received
+      if total_received >= total_to_be_received
+        @status =  :repaid
+      elsif (amount - principal_received) <= EPSILON and (scheduled_interest_up_to(date)-interest_received_up_to(Date.today) <= EPSILON)
+        @status =  :repaid
+      elsif amount<=principal_received
+        @status =  :repaid
+      else
       @status =  :outstanding
+      end
+      @statuses[date] = @status
+    rescue
+      @status[date] = :error
     end
-    @statuses[date] = @status
   end
   
   # LOAN INFO FUNCTIONS - DATES
