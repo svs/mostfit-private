@@ -51,8 +51,9 @@ class CenterMeetingDay
   
   # Public: Returns a String representation of the meeting day
   def meeting_day_string
-    return meeting_day.to_s if meeting_day and meeting_day != :none
-    "#{every.join(',')} #{what} of every #{of_every} #{period}" rescue meeting_day
+    dates = "from #{valid_from} to #{valid_upto} "
+    return dates + meeting_day.to_s if meeting_day and meeting_day != :none
+    dates + "#{every.join(',')} #{what} of every #{of_every} #{period}" rescue meeting_day
   end
 
   # Public: Returns the weekday of the meeting day 
@@ -205,7 +206,7 @@ class CenterMeetingDay
     if meeting_day and meeting_day != :none
       self.every = "1"; self.what = self.meeting_day; self.of_every = 1; self.period = :week
     else
-      self.every = self.what = self.meeting_day = self.of_every = self.period = nil
+      #self.every = self.what = self.meeting_day = self.of_every = self.period = nil
     end
   end
 

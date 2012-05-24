@@ -19,6 +19,7 @@ class CenterMeetingDays < Application
   end
   
   def create(center_meeting_day)
+    debugger
     @center = Center.get(params[:center_id])
     @cmd = CenterMeetingDay.new(center_meeting_day)
     @cmd.center = @center
