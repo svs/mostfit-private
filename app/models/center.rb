@@ -87,7 +87,7 @@ class Center
   # Returns nil if no calendar
   def calendar
     return nil if meeting_calendar.blank? or !calendar_must_have_only_dates
-    c = self.meeting_calendar.split(/[\s,]/).reject(&:blank?).map{|d| Date.parse(d) rescue nil}.compact.select{|d| d >= from}.sort
+    c = self.meeting_calendar.split(/[\s,]/).reject(&:blank?).map{|d| Date.parse(d) rescue nil}.compact.sort
   end
 
   def get_meeting_dates(to = SEP_DATE,from = creation_date)
