@@ -3,7 +3,7 @@
     %th
       From
     %td
-      = date_select :from
+      = date_select :from, @membership.from
   - if @membership.model.allow_overlap
     %tr
       %th
