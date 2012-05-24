@@ -82,6 +82,7 @@ class Clients < Application
   end
 
   def update(id, client)
+    debugger
     @client = Client.get(id)
     raise NotFound unless @client
     disallow_updation_of_verified_clients
@@ -89,7 +90,9 @@ class Clients < Application
 
     # because of dm-is-validated gem, we need to remove blank entries in the hash which should be integers.
     @client.attributes.each{|k, v|
-      if v.blank? and @client.class.send(k).type==Integer
+      puts "#{k} => #{v}"
+      debugger if k == "client_group_id"
+      if client[k].blank? and @client.class.send(k).type==Integer
         client.delete(k)
       end
     }
@@ -118,7 +121,7 @@ class Clients < Application
         if @branch and @center
           redirect(params[:return]||resource(@branch, @center, @client), :message => {:notice => "Client '#{@client.name}' (Id:#{@client.id}) has been edited"})
         else
-          redirect(resource(@client, :edit), :message => {:notice => "Client '#{@client.name}' (Id:#{@client.id}) has been edited"})
+          redirect(resource(@client), :message => {:notice => "Client '#{@client.name}' (Id:#{@client.id}) has been edited"})
         end
       end
     else
@@ -272,6 +275,7 @@ class Clients < Application
       raise NotFound unless @branch and @center
     end
   end
+
   def disallow_updation_of_verified_clients
     raise NotPrivileged if @client.verified_by_user_id and not session.user.admin?
   end

@@ -1,7 +1,7 @@
 %h1== Edit the '#{@client.name}' client details
 
 = error_messages_for @client
-- form_url   = resource(:clients, {:return => params[:return]})
+- form_url   = resource(@client, {:return => params[:return]})
 - cancel_url = params[:return] ? "/"+params[:return] : resource(@client)
 
 
