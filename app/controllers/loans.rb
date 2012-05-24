@@ -580,7 +580,7 @@ class Loans < Application
   def get_loans(hash, paginate = true)
     if staff = session.user.staff_member
       centers = Center.all(:branch_id => [staff.branches, staff.areas.branches, staff.regions.areas.branches].flatten.map{|x| x.id}).aggregate(:id)
-      client_ids = ClientCenterMembership.all(:club_id => centers)
+      client_ids = ClientCenterMembership.all(:club_id => centers).aggregate(:member_id)
       Loan.all(:client_id => client_ids)
     else
       paginate ? Loan.all(hash).paginate(:page => params[:page], :per_page => 10)  : Loan.all(hash)
