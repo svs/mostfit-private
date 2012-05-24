@@ -15,6 +15,7 @@
       = form_for(@loan, :action => url(:controller => "loans", :id => @loan.id, :action => "reallocate"), :class => "") do
         = submit 'Reallocate loans with style', :class => "grey_button", :style => "margin: 4px"
         = repayment_style_select
+      = link_to("Set Center", url(:controller => "loans", :id => @loan.id, :action => "set_center"), :class => "grey_button")
 
 .box
   %fieldset

@@ -42,10 +42,12 @@ class Memberships < Application
   end
 
   def update(id, membership)
+    debugger
     @membership = Membership.get(id)
+    membership[:upto] = SEP_DATE if membership[:upto].blank?
     raise NotFound unless @membership
     if @membership.update(membership)
-       redirect resource(@membership)
+       redirect resource(@membership.member)
     else
       display @membership, :edit
     end

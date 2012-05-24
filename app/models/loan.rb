@@ -614,8 +614,9 @@ def self.installment_frequencies
     @schedule[dd] = {:principal => 0, :interest => 0, :total_principal => 0, :total_interest => 0, :balance => balance, :total => 0, :fees => fees_so_far}
 
     [@payment_schedule_hooks[:pre]].flatten.each{|hook| self.send(*[hook].flatten)} if @payment_schedule_hooks
-
+    $debug = true
     (1..actual_number_of_installments).each do |number|
+      debugger if $debug
       date      = installment_dates.select{|d| d >= scheduled_first_payment_date}[number-1] 
       principal = scheduled_principal_for_installment(number).round(2)
       interest  = scheduled_interest_for_installment(number).round(2)
@@ -635,6 +636,7 @@ def self.installment_frequencies
         :balance                    => balance.round(2),
       }
     end
+    debugger
     # we have to do the following to avoid the circular reference from total_to_be_received.
     total = @schedule[@schedule.keys.max][:total]
     @schedule.each { |k,v| v[:total_balance] = (total - v[:total]).round(2)}

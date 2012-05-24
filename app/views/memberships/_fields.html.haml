@@ -3,11 +3,11 @@
     %th
       From
     %td
-      = date_select :from, @membership.from
+      = date_select "membership[from]", @membership.from, :id => "from"
   - if @membership.model.allow_overlap
     %tr
       %th
         To
       %td
-        = date_select :upto, (@membership.upto == SEP_DATE ? nil : @membership.to)
+        = date_select "membership[upto]", (@membership.upto == SEP_DATE ? nil : @membership.to), :id => "upto"
   

@@ -414,6 +414,13 @@ class Loans < Application
     redirect url_for_loan(@loan), :message => {:notice => "Prepayments fixed (hopefully)"}
   end
 
+  def set_center(id)
+    @loan = Loan.get(id)
+    @loan.send(:set_center)
+    @loan.save
+    redirect url_for_loan(@loan), :message => {:notice => "Center added"}
+  end
+
 
   def bulk_reallocate
     failures = []
