@@ -14,7 +14,7 @@ module Pdf
       return nil if centers.empty?
       days_absent = Attendance.all(:status => "absent", :center => centers).aggregate(:client_id, :all.count).to_hash 
       days_present = Attendance.all(:center => centers).aggregate(:client_id, :all.count).to_hash
-      centers.sort_by{|x| x.meeting_time_hours*60 + x.meeting_time_minutes}.each_with_index{|center, idx|
+      centers.sort_by{|x| (((x.meeting_time_hours*60) rescue 0) + (x.meeting_time_minutes rescue 0) rescue 0)}.each_with_index{|center, idx|
         pdf.start_new_page if idx > 0
         pdf.text "Center: #{center.name}, Manager: #{self.name}, signature: ______________________", :font_size => 12, :justification => :left
         pdf.text("Center leader: #{center.leader.client.name}, signature: ______________________", :font_size => 12, :justification => :left) if center.leader
