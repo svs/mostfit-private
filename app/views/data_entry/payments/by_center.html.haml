@@ -182,16 +182,16 @@
                   %td
                   %td.text
                     = f.fee.description
-              %tr.total
-                %td
-                %td
-                  = frt.count
-                  fee payments
-                %td
-                %td
-                %td
-                  = frt.aggregate(:amount.sum)
-                %td
+            %tr.total
+              %td
+              %td
+                = frt.count
+                fee payments
+              %td
+              %td
+              %td
+                = frt.aggregate(:amount.sum)
+              %td
       - unless @fee_paying_things.values.inject({}){|s,x| s+=x}.length==0
 
         No fees due today
