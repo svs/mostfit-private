@@ -49,7 +49,7 @@ module Pdf
               principal_due      = [(lh ? lh.principal_due : 0), 0].max
               interest_due       = [(lh ? lh.interest_due : 0), 0].max
               total_due          = [(lh ? (fee+lh.principal_due+lh.interest_due): 0), 0].max
-              number_of_installments = loan.number_of_installments_before(date)
+              number_of_installments = loan.number_of_installments_before(date) rescue "oops!"
               
               table.data.push({"name" => client.name, "loan id" => loan.id, "amount" => loan.amount.to_currency, 
                                 "outstanding" => actual_outstanding.to_currency, "status" => lh.status.to_s,                                
@@ -140,7 +140,7 @@ module Pdf
       pdf.text("\n")
       return nil if centers.empty?   
       days_absent = Attendance.all(:status => "absent", :center => centers).aggregate(:client_id, :all.count).to_hash
-      centers.sort_by{|x| x.meeting_time_hours*60 + x.meeting_time_minutes}.each_with_index{|center, idx|
+      centers.sort_by{|x| (x.meeting_time_hours*60 + x.meeting_time_minutes) rescue 0}.each_with_index{|center, idx|
         pdf.start_new_page if idx > 0
         pdf.text "Center: #{center.name}, Manager: #{self.name}, signature: ______________________", :font_size => 12, :justification => :left
         pdf.text("Center leader: #{center.leader.client.name}, signature: ______________________", :font_size => 12, :justification => :left) if center.leader
