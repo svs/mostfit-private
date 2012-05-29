@@ -15,7 +15,7 @@
           = (link_to l.short_tag, url_for_loan(l), :class => ((l.info ? l.info[:status] : l.get_status) rescue nil)) rescue nil
       - (client.loans - lfc).each do |l|
         %li
-          = (link_to l.short_tag, url_for_loan(l), :class => "repaid") rescue nil
+          = (link_to l.short_tag, url_for_loan(l), :class => "error") rescue nil
 
   %td
     = link_to 'edit', resource(@branch, @center, client, :edit)
