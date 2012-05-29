@@ -45,10 +45,10 @@ namespace :mostfit do
       lids = Payment.all(:received_for => nil, :c_branch_id => args[:branch_id]).aggregate(:loan_id)
       ct = lids.count
       t = Time.now
+      puts "found #{ct} loans in branch #{args[:branch_id]}"
       lids.each_with_index do |lid,i|
-        next if already_done.include?(lid)
         begin
-          logfile.write "#{lid} - #{i}/#{ct}"
+          logfile.write "\n#{lid} - #{i}/#{ct}"
           l = Loan.get lid
           next if l.status != :outstanding
           l.remake_payments
