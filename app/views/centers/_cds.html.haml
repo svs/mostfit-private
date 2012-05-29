@@ -49,7 +49,7 @@
             %td
               = loan.funder_name
             %td.numeric
-              - ins = 0
+              - ins = loan.number_of_installments_before(@date)
               = ins
               - tot_installments += ins
             %td.numeric
