@@ -7,7 +7,7 @@
   - @center_meeting_days.each do |cmd|
     %tr
       %td
-        = cmd
+        = (cmd.to_s rescue "none")
         &nbsp;
         = link_to 'edit', resource(cmd, :edit)
         - if @center_meeting_days.count > 1

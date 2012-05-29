@@ -109,6 +109,17 @@ class Loans < Application
   end
 
   def bulk_restore_payments(id)
+    @loan = Loan.get(id)
+    raise NotFound unless @loan
+    debugger
+    payment_ids = params[:loan][:payments].keys
+    payment_ids.each do |pid|
+      p = Payment.with_deleted{Payment.get(pid)}
+      p.deleted_at = p.deleted_by_user_id = nil
+      p.save!
+    end
+    @loan.update_history
+    redirect resource(@loan), :message => {:success => "#{payment_ids.count} payments restored"}
   end
 
 
@@ -417,7 +428,8 @@ class Loans < Application
   def set_center(id)
     @loan = Loan.get(id)
     @loan.send(:set_center)
-    @loan.save
+    @loan.save!
+    @loan.update_history
     redirect url_for_loan(@loan), :message => {:notice => "Center added"}
   end
 
