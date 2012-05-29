@@ -99,7 +99,8 @@
             %li
               from
               = m.from
-              = link_to m.club.name, resource(m.club)
+              - c = Center.get(m.club_id)
+              = link_to c.name, resource(c)
     %tr
       %th.odd Installments
       %td

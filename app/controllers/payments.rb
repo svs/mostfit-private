@@ -101,6 +101,7 @@ class Payments < Application
     end
   end
 
+    
   private
   include DateParser
 
