@@ -150,12 +150,14 @@ class Fee
     if ids.length > 0
       query = {:applicable_id => ids, :applicable_type => 'Loan', :applicable_on.lte => hash[:date] || Date.today}
       query.merge!(hash)
-      query_str = ApplicableFee.all(query).map{|x| "(#{x.fee_id}, #{x.applicable_id})"}.join(", ")
+      query_str =  ApplicableFee.all(query).map{|x| "(#{x.fee_id}, #{x.applicable_id})"}.join(", ")
+      fee_ids =    ApplicableFee.all(query).map(&:fee_id).uniq
+      parent_ids =  ApplicableFee.all(query).map(&:applicable_id).uniq
       parent_col = ((applicable_type == 'Loan') ? "loan_id" : "client_id")
       if query_str.length > 0
         repository.adapter.query(%Q{SELECT #{parent_col}, SUM(amount) 
                                   FROM payments 
-                                  WHERE (fee_id, #{parent_col}) in (#{query_str})
+                                  WHERE fee_id in (#{fee_ids.join(',')}) and #{parent_col} in (#{parent_ids.join(',')})
                                         AND deleted_at is NULL
                                   GROUP BY #{parent_col}
                               }).map{|x| [x[0], x[1]]}.to_hash
