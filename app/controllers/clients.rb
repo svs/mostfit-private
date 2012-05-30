@@ -5,6 +5,7 @@ class Clients < Application
 
   def index
 #    display @clients
+    get_context
     if request.xhr?
       @clients = @center.clients
       @loans   = @clients.loans
@@ -50,6 +51,7 @@ class Clients < Application
   end
 
   def create(client)
+    get_context
     model_name = (params[:client_type])
     model = Kernel.const_get(model_name)
     client = params[:client].merge(params[model_name.snake_case])
@@ -57,11 +59,8 @@ class Clients < Application
     @client.center = @center if @center# set direct context
     @client.created_by_user_id = session.user.id
     if @client.save
-      if params[:format] and API_SUPPORT_FORMAT.include?(params[:format])
-        display @client
-      else
-        redirect(params[:return]||resource(@branch, @center, :clients), :message => {:notice => "Client '#{@client.name}' (Id:#{@client.id}) successfully created"})
-      end
+      debugger
+      redirect(params[:return]||resource(@branch, @center, :clients), :message => {:notice => "Client '#{@client.name}' (Id:#{@client.id}) successfully created"})
     else
       if params[:format] and API_SUPPORT_FORMAT.include?(params[:format])
         display @client
@@ -265,6 +264,7 @@ class Clients < Application
 
   def get_context
     @client = Client.get(params[:id])
+    debugger
     if params[:branch_id] and params[:center_id] 
       @branch = Branch.get(params[:branch_id]) 
       @center = Center.get(params[:center_id])

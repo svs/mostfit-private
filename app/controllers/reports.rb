@@ -3,7 +3,7 @@ class Reports < Application
   Types = {
     :periodic     => [DailyReport, WeeklyReport, DailyTransactionSummary], 
     :consolidated => [ConsolidatedReport, StaffConsolidatedReport, QuarterConsolidatedReport, AggregateConsolidatedReport], 
-    :registers    => [TransactionLedger, LoanSanctionRegister, LoanDisbursementRegister, ScheduledDisbursementRegister, ClaimReport, InsuranceRegister, PortfolioAllocationReport, OfflinePayments, OfflineAttendance], 
+    :registers    => [TransactionLedger, AccountTransactionLedger, LoanSanctionRegister, LoanDisbursementRegister, ScheduledDisbursementRegister, ClaimReport, InsuranceRegister, PortfolioAllocationReport, OfflinePayments, OfflineAttendance], 
     :targets_and_projections  => [CashProjectedReport, ProjectedReport, TargetReport, StaffTargetReport, MonthlyTargetReport, IncentiveReport],
     :statistics   => [LoanSizePerManagerReport, LoanPurposeReport, ClientOccupationReport, ClosedLoanReport, LastUpdateReport], 
     :exceptions   => [RepaymentOverdue, LateDisbursalsReport, DelinquentLoanReport, ParByCenterReport, ParByStaffReport, ParByLoanAgeingReport, ClientAttendanceReport, DuplicateClientsReport, NonDisbursedClientsAfterGroupRecognitionTest, LoanAgeingAnalysis],
@@ -20,7 +20,7 @@ class Reports < Application
   end
 
   def show(report_type, id)
-    provides :pdf
+    provides :pdf, :csv
     report_type = params[:report_type] if report_type == "show" and params.key?(:report_type)
     klass = Kernel.const_get(report_type)
     @report = Report.get(id) if id
@@ -42,7 +42,11 @@ class Reports < Application
           when 1
             @data = @report.generate(params)
           end
-          display @data
+          if params[:format] == "csv"
+            send_data(@report.to_csv_file, :filename => "#{@report.name}.csv")
+          else
+            display @data
+          end
         else
           params.delete(:submit)
           message[:error] = "Report cannot be generated"          
@@ -58,6 +62,9 @@ class Reports < Application
       display @reports
     elsif id and params[:format] == "pdf"
       send_data(@report.get_pdf.generate, :filename => 'report.pdf')
+    elsif id and params[:format] == "csv"
+      debugger
+      send_data(@report.to_csv_file, :filename => "#{@report.name}.csv")
     end
   end
   

@@ -23,6 +23,7 @@
         For center:
       %td
         = select :center_id, :collection => Center.all(:branch => @client.center.branch), :value_method => :id, :text_method => :name, :selected => @client.center.id.to_s
+        = hidden_field :name => :branch_id, :value => @branch.id
   - else
     %tr
       %td 

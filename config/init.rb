@@ -121,7 +121,7 @@ Merb::BootLoader.after_app_loads do
   Misfit::Extensions.hook
 
   Merb.add_mime_type(:pdf, :to_pdf, %w[application/pdf], "Content-Encoding" => "gzip")
-
+  Merb.add_mime_type( :csv, :to_csv, %w[application/csv])  
   begin
     if User.all.empty?
       u = User.new(:login => 'admin', :password => 'password', :password_confirmation => 'password', :role => :admin)
