@@ -220,7 +220,6 @@ module Foremost
     def collect_stub_period_interest
       # check this if you want to collect interest on installment dates between the disbursal date and the scheduled first payment date.
       # the (scheduled) disbursal date and the scheduled first payment date must be more than the installment frequency
-      debugger
       properly_apart = shift_date_by_installments((self.disbursal_date || self.scheduled_disbursal_date), 1,false) <= self.scheduled_first_payment_date
       return [false, "The (scheduled) disbursal date and scheduled first payment date must be atleast one #{installment_frequency} apart"] unless properly_apart
       return true
@@ -239,7 +238,6 @@ module Foremost
     def collect_stub_period_interest
       # check this if you want to collect interest on installment dates between the disbursal date and the scheduled first payment date.
       # the (scheduled) disbursal date and the scheduled first payment date must be more than the installment frequency
-      debugger
       properly_apart = shift_date_by_installments((self.disbursal_date || self.scheduled_disbursal_date), 1,false) <= self.scheduled_first_payment_date
       return [false, "The (scheduled) disbursal date and scheduled first payment date must be atleast one #{installment_frequency} apart"] unless properly_apart
       return true

@@ -51,18 +51,14 @@ class Payments < Application
   def create(payment)
     raise NotFound unless (@loan or @client)
     success = do_payment(payment)
-    if success  # true if saved
+    if success[:status]  # true if saved
       if params[:format] and API_SUPPORT_FORMAT.include?(params[:format])
         display @payment
       else
         redirect url_for_loan(@loan||@client), :message => {:notice => "Payment of #{@payment.id} has been registered"}
       end
     else
-      if params[:format] and API_SUPPORT_FORMAT.include?(params[:format])
-        display @payment
-      else
-        render :new
-      end
+      render :new
     end
   end
 
@@ -125,14 +121,14 @@ class Payments < Application
       @payment_type = payment[:type]
       # we create payment through the loan, so subclasses of the loan can take full responsibility for it (validations and such)
       if payment[:type] == "total"
-        success, @prin, @int, @fees = @loan.repay(amounts, session.user, date, receiving_staff, false, params[:style].to_sym, context = :default, payment[:desktop_id], payment[:origin])
+        success = @loan.repay(amounts, session.user, date, receiving_staff, false, params[:style].to_sym, context = :default, payment[:desktop_id], payment[:origin])
       else
-        success, @fees = @loan.pay_fees(amounts, date, receiving_staff, session.user)
+        success = @loan.pay_fees(amounts, date, receiving_staff, session.user)
       end
       @payment = Payment.new
-      @prin.errors.to_hash.each{|k,v| @payment.errors.add(k,v)}  if @prin
-      @int.errors.to_hash.each{|k,v| @payment.errors.add(k,v)}  if @int
-      @fees.map{|f| f.errors.to_hash.each{|k,v| @payment.errors.add(k,v)}}  if @fees
+      success[:principal].map{|prin| prin.errors.to_hash.each{|k,v| @payment.errors.add(k,v)}  if prin}
+      success[:interest].map{|int| int.errors.to_hash.each{|k,v| @payment.errors.add(k,v)}  if int}
+      success[:fees].map{|f| f.errors.to_hash.each{|k,v| @payment.errors.add(k,v)}}  if success[:fees]
     else
       @payment_type = payment[:type] if payment[:type]
       @payment = Payment.new(payment)

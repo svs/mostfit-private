@@ -111,7 +111,6 @@ class Loans < Application
   def bulk_restore_payments(id)
     @loan = Loan.get(id)
     raise NotFound unless @loan
-    debugger
     payment_ids = params[:loan][:payments].keys
     payment_ids.each do |pid|
       p = Payment.with_deleted{Payment.get(pid)}
@@ -136,7 +135,6 @@ class Loans < Application
   end
 
   def update(id)
-    debugger
     klass, attrs = get_loan_and_attrs
     attrs[:interest_rate] = attrs[:interest_rate].to_f / 100 if attrs[:interest_rate].to_f > 0
     attrs[:occupation_id] = nil if attrs[:occupation_id] == ''

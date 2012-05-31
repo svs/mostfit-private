@@ -26,7 +26,8 @@ class AccountTransactionLedger < Report
       :branches__name         => :branch, 
       :centers__name          => :center,
       :clients__name          => :client,
-      :loan_products__name    => :product
+      :loan_products__name    => :product,
+      :payments__created_at   => :created_at
     }
     default_from = [:branches, :payments, :centers, :clients, :loans, :loan_products]
     default_where = {:payments__c_branch_id => :branches__id, :payments__c_center_id => :centers__id, :payments__client_id => :clients__id,
@@ -38,9 +39,13 @@ class AccountTransactionLedger < Report
     todays_transactions = normal.select(default_select.merge(type => :type))
 
     # then get all the transactions where received_for is today and mark them as advances adjusted
-    aps = DB.from(default_from).where(default_where.merge(:received_for => @from_date..@to_date))
+    debugger
+    aps = DB.from(default_from).where(default_where.merge(:received_for => @from_date..@to_date)).filter('received_for <> received_on')
     type = :elt.sql_function(:type, "advance principal adjusted","advance interest adjusted","advance fees adjusted")
-    advances = aps.select(default_select.merge(type => :type))
+    new_id = :concat.sql_function(:payments__id, :elt.sql_function(:type, '.11','.12','.13'))
+    s = default_select.dup
+    s.delete(:payments__id)
+    advances = aps.select(s.merge(type => :type, new_id => :id))
     
     # then get [:disbursal, :write_off]
 
@@ -50,9 +55,10 @@ class AccountTransactionLedger < Report
 
   def to_csv_file
     self.generate
-    keys = [:date, :received_for, :type, :amount, :client, :branch, :center, :product]
+    keys = [:id, :source, :date, :received_for, :type, :amount, :client, :branch, :center, :product]
     rv = [keys.map(&:to_s).to_csv]
     @data.each do |d|
+      d[:source] = 'sahayog'
       rv << keys.map{|k| d[k]}.to_csv
     end
     rv.join

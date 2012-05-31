@@ -384,13 +384,15 @@ def self.installment_frequencies
   #
   def make_payments(payments, context = :default, defer_update = false)
     return {:status => false, :reason => "No payments given to make"} if payments.empty?
+    status = reason = nil
     Payment.transaction do |t|
       self.history_disabled=true
       n = DateTime.now
       payments.each{|p| p.override_create_observer = true; p.created_at = n}    
       if payments.collect{|payment| payment.save(context)}.include?(false)
         t.rollback
-        return {:status => false, :reason => payments.map{|p| [p.id, p.errors]}.to_hash}
+        status = false
+        reason = payments.map{|p| [p.id, p.errors]}
       end
     end
     unless defer_update #i.e. bulk updating loans
@@ -401,10 +403,11 @@ def self.installment_frequencies
       update_history(true)  # update the history if we saved a payment
     end
     return {
-      :status => true, 
+      :status => status, 
       :principal => payments.find_all{|p| p.type==:principal}, 
       :interest  => payments.find_all{|p| p.type==:interest},
-      :fees      => payments.find_all{|p| p.type==:fees}
+      :fees      => payments.find_all{|p| p.type==:fees},
+      :reason    => reason
     }
   end
 
@@ -1013,7 +1016,6 @@ def self.installment_frequencies
       center_for_date                        = center(date)
       center_id_for_date                     = center_for_date.id
       branch_id_for_date                     = (last_row ? (center_id_for_date == last_row[:center_id] ? last_row[:branch_id] : center_for_date.branch.id) : center_for_date.branch.id)
-
       next_change_date                       = loan_center_memberships.map(&:from).select{|x| x > date}.sort[0] || SEP_DATE
 
       current_row = {
