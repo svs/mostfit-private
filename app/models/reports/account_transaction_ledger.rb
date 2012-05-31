@@ -2,7 +2,7 @@ class AccountTransactionLedger < Report
   attr_accessor :from_date, :to_date, :branch, :center, :branch_id, :center_id, :staff_member_id, :loan_product_id
 
   validates_with_method :from_date, :date_should_not_be_in_future
-  validates_with_method :branch_id, :branch_should_be_selected
+
 
   def initialize(params, dates, user)
     @from_date = (dates and dates[:from_date]) ? dates[:from_date] : Date.today
@@ -39,7 +39,6 @@ class AccountTransactionLedger < Report
     todays_transactions = normal.select(default_select.merge(type => :type))
 
     # then get all the transactions where received_for is today and mark them as advances adjusted
-    debugger
     aps = DB.from(default_from).where(default_where.merge(:received_for => @from_date..@to_date)).filter('received_for <> received_on')
     type = :elt.sql_function(:type, "advance principal adjusted","advance interest adjusted","advance fees adjusted")
     new_id = :concat.sql_function(:payments__id, :elt.sql_function(:type, '.11','.12','.13'))

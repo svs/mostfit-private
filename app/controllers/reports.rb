@@ -63,7 +63,6 @@ class Reports < Application
     elsif id and params[:format] == "pdf"
       send_data(@report.get_pdf.generate, :filename => 'report.pdf')
     elsif id and params[:format] == "csv"
-      debugger
       send_data(@report.to_csv_file, :filename => "#{@report.name}.csv")
     end
   end
