@@ -54,7 +54,7 @@ class AccountTransactionLedger < Report
 
   def to_csv_file
     self.generate
-    keys = [:id, :source, :date, :received_for, :type, :amount, :client, :branch, :center, :product]
+    keys = [:id, :created_at, :source, :date, :received_for, :type, :amount, :client, :branch, :center, :product]
     rv = [keys.map(&:to_s).to_csv]
     @data.each do |d|
       d[:source] = 'sahayog'
