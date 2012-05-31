@@ -1,103 +1,27 @@
 =partial :form
-%table.report
-  %tr.header
-    %th{:colspan => "2"}
-      Client
-    %th
-      Disbursed amount
-    %th{:colspan => "4"}
-      Repayments
-    %th
-      Balance
-    %th{:colspan => "4"}
-      Overdue Repayment
-  %tr.header
-    %th
-      ID
-    %th
-      Name
-    %th
-    %th
-      Principal
-    %th
-      Interest
-    %th
-      Fee
-    %th
-      Total
-    %th
-      Outstanding
-    %th
-      Principal
-    %th
-      Interest
-    %th
-      Fee
-    %th
-      Total
-  - center_id, branch_id = nil, nil
-  - length = 12
-  - org_total = []
-  - summable_columns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-  - loan_products = LoanProduct.all.map{|lp| [lp.id, lp]}.to_hash
-  - @data.sort_by{|branch, centers| branch.name}.each do |branch, centers|
-    -if centers.keys.length>0
-      -branch_total = []
-      %tr.branch
-        %td{:colspan => length}
-          %b
-            =branch.name
-      - centers.sort_by{|center, clients| center.name}.each do |center, clients|
-        - if clients.length>0
-          %tr.center
-            %td{:colspan => length}
-              %b
-                = center.name
-          - center_total = Array.new(summable_columns.length, 0)
-          - clients.sort_by{|client, loans| client}.each do |client, loans|
-            - loans.each do |loan|
-              %tr.group
-                %td
-                  = client.id
-                %td
-                  = client.name                  
-                - loan[1..-1].each_with_index do |d, idx|
-                  %td
-                    = d.to_currency
-                - center_total << [loan[1], loan[2], loan[3], loan[4], loan[5], loan[6], loan[7], loan[8], loan[9], (loan[7] + loan[8] + loan[9])]
-                %td
-                  = (loan[7] + loan[8] + loan[9]).to_currency
-          %tr.center_total
-            %td
-              %b==Center total:
-
-            %td
-            - branch_total.push(center_total.reject{|x| x.class!=Array}.transpose.collect{|x| x.inject(0){|sum, x| sum+=x}})
-            - 1.upto(length-2).each do |col|
-              %td
-                -if summable_columns.include?(col)
-                  %b
-                    =branch_total.last[summable_columns.index(col)].to_currency
-      %tr.branch_total
-        %td
-          %b==Branch total:
-        %td
-        -branch_total = branch_total.reject{|x| x.class!=Array or (x.class==Array and x.length==0)}.transpose.collect{|x| x.reduce{|sum, x| sum+=x}}
-        - org_total << branch_total
-        - if branch_total.length>0
-          -1.upto(length-2).each do |col|
-            %td
-              -if summable_columns.include?(col)
-                %b
-                  =branch_total[summable_columns.index(col)].to_currency
-  %tr.org_total
-    %td
-      %b==Total:
-    %td
-    -org_total = org_total.reject{|x| x.class!=Array or (x.class==Array and x.length==0)}.transpose.collect{|x| x.reduce{|sum, x| sum+=x}}
-    -1.upto(length-2).each do |col|
+%table.report.nojs
+  %thead
+    %tr
+      %th Branch
+      %th Center
+      %th Client
+      %th Loan
+      %th Principal Due
+      %th Interest Due
+      %th Fees Due
+  - @data.each do |d|
+    %tr
       %td
-        -if summable_columns.include?(col)
-          %b
-            = org_total[summable_columns.index(col)] ? org_total[summable_columns.index(col)].to_currency : 0
-      
+        = link_to d[:branch], url(:controller => :branches, :action => :show, :id => d[:branch_id])
+      %td
+        = link_to d[:center], url(:controller => :centers, :action => :show, :id => d[:center_id])
+      %td
+        = link_to d[:client], url(:controller => :clients, :action => :show, :id => d[:client_id])
+      %td
+        = link_to "loan", url(:controller => :loans, :action => :show, :id => d[:loan_id])
+      %td
+        = d[:principal_due].to_f
+      %td
+        = d[:interest_due].to_f
+      %td
+        = d[:fees_due_today].to_f
