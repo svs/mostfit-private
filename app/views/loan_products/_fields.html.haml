@@ -112,13 +112,13 @@
     %br
 .box
   %h2 Payment Validations
-  - Misfit::PaymentValidators.instance_methods.each do |v|
+  - Foremost::PaymentValidators.instance_methods.each do |v|
     = check_box :name => "payment_validations[#{v}]", :checked => @loan_product.payment_validations.include?(v.to_sym)
     = v.humanize
     %br
 .box
   %h2 Loan Validations
-  - Misfit::LoanValidators.instance_methods.each do |v|
+  - Foremost::LoanValidators.instance_methods.each do |v|
     = check_box :name => "loan_validations[#{v}]", :checked => @loan_product.loan_validations.include?(v.to_sym)  
     = v.humanize
     %br
