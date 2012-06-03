@@ -36,6 +36,24 @@ class Centers < Application
     display [@center, @clients, @loans], 'clients/today'
   end
 
+  # Bulk move centers from one staff member to another
+  def bulk_move
+    errors = {}
+    @staff_member = StaffMember.get(params[:staff_member])
+    params[:center].keys.each do |c|
+      center = Center.get(c)
+      center.manager = @staff_member
+      errors[center.name] = center.errors.values.join(",") unless center.save
+    end
+    if errors.values.join("").blank?
+      redirect request.referer, :message => {:success => "centers moved succesfully"}
+    else
+      msg = errors.map{|k,v| "#{k}: #{v}"}.join("<br>")
+      redirect request.referer, :message => {:error => msg}
+    end
+      
+  end
+
   def bulk_data_entry(id)
     only_provides :html
     @center = Center.get(id)

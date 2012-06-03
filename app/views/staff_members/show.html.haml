@@ -51,14 +51,18 @@
     - if Mfi.first.map_enabled
       %li#map Map
   %div.tab
-    - @manages.keys.each do |type|
-      - if @manages[type].length> 0
-        %h2
-          = "#{type.to_s.capitalize} managed"
-        %ul
-          - @manages[type].each do |obj|
-            %li
-              = link_to(obj.name, resource(obj))
+    = form :method => :post, :action => url(:controller => :centers, :action => :bulk_move) do
+      = submit 'move selected to'
+      = select :name => :staff_member, :collection => staff_members_collection, :class => 'chosen'
+      - @manages.keys.each do |type|
+        - if @manages[type].length> 0
+          %h2
+            = "#{type.to_s.capitalize} managed"
+          %ul
+            - @manages[type].each do |obj|
+              %li
+                = check_box :name => "#{obj.class.to_s.downcase}[#{obj.id}]"
+                = link_to(obj.name, resource(obj))
   %div.tab
     %input{:type => "hidden", :name => "_load_remote", :value => "/info/moreinfo/#{@staff_member.id}?for=staff_member&type=created"}
   %div.tab
