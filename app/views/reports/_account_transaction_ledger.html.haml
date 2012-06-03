@@ -1,6 +1,6 @@
 =partial :form
 - @keys = [:date, :created_at,:received_for, :type, :amount, :client, :branch, :center, :product, :fee_name]
-%table.report
+%table.report.nojs
   %tr.header
     - @keys.each do |k|
       %th

@@ -48,7 +48,13 @@ class AccountTransactionLedger < Report
     advances = aps.select(s.merge(type => :type, new_id => :id))
     debugger
     # then get [:disbursal, :write_off]
-    @data = todays_transactions.all + advances.all
+    disbursals = DB.fetch(%Q{
+      select loans.id + 0.01 as id, now() as created_at, disbursal_date as date,clients.name as client,loans.id + 0.01,branches.name as branch, loan_products.name as product, 
+      centers.name as center, amount, 'disbursal' as type from clients,loans join memberships on loans.id = member_id join centers 
+      on club_id = centers.id, branches, loan_products where memberships.type = 'LoanCenterMembership' and `from` <= disbursal_date 
+      and upto >= disbursal_date and disbursal_date = '2012-4-3' and centers.branch_id = branches.id 
+      and loans.loan_product_id = loan_products.id and loans.client_id = clients.id})
+    @data = todays_transactions.all + advances.all + disbursals.all
     
   end
 
