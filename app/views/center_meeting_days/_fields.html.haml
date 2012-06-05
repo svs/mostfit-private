@@ -28,7 +28,7 @@
         %br
           valid from:
           &nbsp;
-          = date_select_for @cmd, :valid_from
+          = date_select_for @cmd, :valid_from, :min_date => Date.new(1970,1,1)
           &nbsp;
           to
           &nbsp;
