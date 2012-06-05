@@ -224,7 +224,7 @@
                 %td{ :colspan => 6, :style => "text-align: center;" }
                   %span.greytext== today (#{Date.today})
           - first = false
-          - default =  lh.principal_in_default + lh.interest_in_default
+          - default =  (lh.principal_in_default + lh.interest_in_default) + lh.advance_principal_outstanding + lh.advance_interest_outstanding
           - default_class = default ? (default.abs > 0 ? 'due' : (default > 0 ? 'overpaid' : 'paid')) : ""
           
           %tr{ :class => cycle('odd','even') }
