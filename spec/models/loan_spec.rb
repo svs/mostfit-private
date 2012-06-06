@@ -148,15 +148,19 @@ describe Loan do
   
     describe "loan product attributes" do
       describe "if the loan product can give one" do
+        before :all do
+          @loan = Factory.build(:loan)
+        end
         it "should take the amount from the loan product" do
-          @loan_product.max_amount = @loan_product.min_amount = 10000
+          @loan.loan_product.max_amount = @loan.loan_product.min_amount = 10000
           @loan.amount = nil
+          @loan.valid?
           @loan.should be_valid
           @loan.amount.should == 10000
         end
         
         it "should take the interest rate" do
-          @loan_product.max_interest_rate = @loan_product.min_interest_rate = 20
+          @loan.loan_product.max_interest_rate = @loan.loan_product.min_interest_rate = 20
           @loan.interest_rate = nil
           @loan.should be_valid
           @loan.interest_rate.should == 0.2
@@ -425,20 +429,31 @@ describe Loan do
       @dates.sort[-1].should eql(@loan.scheduled_repaid_on)
     end
 
-    it ".installment_dates should correctly deal with holidays" do
-      Holiday.all.destroy!; HolidayCalendar.all.destroy!
-      d1 = @loan.installment_dates[5].dup.freeze
-      _D = @loan.installment_dates[5].dup
-      @h = Holiday.new(:name => "test", :date => _D, :new_date => _D + 2)
-      @h.save
-      @hc = HolidayCalendar.new(:branch_id => @loan.center.branch.id)
-      @hc.add_holiday(@h)
-      @hc.save
-      @loan.update_history
-      @loan.clear_cache
-      @loan.installment_dates[5].should == (d1 + 2)
-      HolidayCalendar.all.destroy!
-      Holiday.all.destroy!
+    describe "holidays" do
+      before :all do
+        @_D = @loan.installment_dates[5].dup        
+        Holiday.all.destroy!; HolidayCalendar.all.destroy!        
+        @h1 = Holiday.new(:name => "test", :date => @_D, :new_date => @_D + 2)
+        @h1.save
+        @h2 = Holiday.new(:name => "test", :date => @loan.scheduled_first_payment_date.dup, :new_date => @_D + 2)
+        @h2.save
+        @hc = HolidayCalendar.new(:branch_id => @loan.center.branch.id)
+        @hc.add_holiday(@h1)
+        @hc.add_holiday(@h2)
+        @hc.save
+        @loan.update_history
+        @loan.clear_cache
+      end
+      
+      after :all do
+        HolidayCalendar.all.destroy!
+        Holiday.all.destroy!
+      end
+
+      it ".installment_dates should correctly deal with holidays" do
+        @loan.installment_dates[5].should == (@_D + 2)
+        @loan.installment_dates[0].should == @loan.scheduled_first_payment_date
+      end
     end
     
   end

@@ -393,6 +393,8 @@ def self.installment_frequencies
         t.rollback
         status = false
         reason = payments.map{|p| [p.id, p.errors]}
+      else
+        status = true
       end
     end
     unless defer_update #i.e. bulk updating loans
@@ -617,8 +619,9 @@ def self.installment_frequencies
     @schedule[dd] = {:principal => 0, :interest => 0, :total_principal => 0, :total_interest => 0, :balance => balance, :total => 0, :fees => fees_so_far}
 
     [@payment_schedule_hooks[:pre]].flatten.each{|hook| self.send(*[hook].flatten)} if @payment_schedule_hooks
+    d0 = holidays[scheduled_first_payment_date] || scheduled_first_payment_date
     (1..actual_number_of_installments).each do |number|
-      date      = installment_dates.select{|d| d >= scheduled_first_payment_date}[number-1] 
+      date      = installment_dates.select{|d| d >= d0}[number-1] 
       principal = scheduled_principal_for_installment(number).round(2)
       interest  = scheduled_interest_for_installment(number).round(2)
 
@@ -798,7 +801,7 @@ def self.installment_frequencies
     scheduled_outstanding_total_on(date) - total_overpaid_on(date)
   end
   def payment_dates
-    payments.all.aggregate(:received_on)
+    payments.all.aggregate(:received_on, :received_for).flatten.compact.sort
   end
 
   def status(date = Date.today)
@@ -900,9 +903,8 @@ def self.installment_frequencies
 
   # Public: Gives a list of all dates that are relevant to the loan
   def history_dates
-    (([applied_on, approved_on, scheduled_disbursal_date, disbursal_date, written_off_on, scheduled_first_payment_date]).map{|d|
-               (self.holidays[d] ? self.holidays[d] : d)
-     } +  installment_dates + payment_dates + loan_center_memberships.aggregate(:from)).compact.uniq.sort
+    ([applied_on, approved_on, scheduled_disbursal_date, disbursal_date, written_off_on, scheduled_first_payment_date] +  
+      installment_dates + payment_dates + loan_center_memberships.aggregate(:from)).compact.uniq.sort
   end
 
   # Public - returns the advance principal received and adjusted on a particular date
@@ -1181,7 +1183,7 @@ def self.installment_frequencies
 
   def scheduler
     return @schedulr if @schedulr
-    @schedulr = Thermostat.new(:start_date => scheduled_first_payment_date, :n => actual_number_of_installments, :frequency => installment_frequency, :holidays => holidays)
+    @schedulr = Thermostat.new(:start_date => scheduled_first_payment_date, :n => actual_number_of_installments, :frequency => installment_frequency, :holidays => holidays.except(scheduled_first_payment_date))
   end
     
 

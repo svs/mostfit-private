@@ -187,6 +187,7 @@ FactoryGirl.define do
     code            { Factory.next(:center_code) }
     meeting_day     :wednesday
     creation_date   Date.new(1999,12,31)
+    urban           :urban
 
     association     :branch
     association     :manager, :factory => :staff_member

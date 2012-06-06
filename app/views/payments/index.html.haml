@@ -221,10 +221,10 @@
             - passed = true
             - if not first
               %tr{ :class => cycle('odd','') }
-                %td{ :colspan => 6, :style => "text-align: center;" }
+                %td{ :colspan => 7, :style => "text-align: center;" }
                   %span.greytext== today (#{Date.today})
           - first = false
-          - default =  (lh.principal_in_default + lh.interest_in_default) + lh.advance_principal_outstanding + lh.advance_interest_outstanding
+          - default =  passed ? 0 : (lh.principal_in_default + lh.interest_in_default) + lh.advance_principal_outstanding + lh.advance_interest_outstanding
           - default_class = default ? (default.abs > 0 ? 'due' : (default > 0 ? 'overpaid' : 'paid')) : ""
           
           %tr{ :class => cycle('odd','even') }
