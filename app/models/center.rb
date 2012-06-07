@@ -128,9 +128,12 @@ class Center
         ds = ds[0..t - 1] if t.class == Fixnum
         @meeting_dates_array = ds
       else
+        debugger
         select = t.class == Date ? {:valid_from.lte => t} : {}
         dvs = center_meeting_days.all(select).map{|cmd| [cmd.valid_from, cmd.date_vector]}.to_hash
         #dvs = center_meeting_days.all.select{|dv| dv.valid_from.nil? or dv.valid_from <= t}.map{|dv| [(dv.valid_from.nil? ? f : dv.valid_from), dv]}.to_hash
+
+        raise ArgumentError.new("This center's meeting schedules start after the creation date. Please fix this") if dvs.keys.min > creation_date
 
         # if from is after the center creation but before the first additional center meeting date then deal with this
         if dvs.blank? or (f < dvs.keys.min and meeting_day != :none)

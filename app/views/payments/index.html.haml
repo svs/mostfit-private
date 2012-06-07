@@ -210,14 +210,15 @@
         - last_payment_date = last_payment.received_on if last_payment
         - principal_so_far = interest_so_far = principal_received_so_far = interest_received_so_far = 0
         - i = 0
+        - installment_dates = @loan.installment_dates
         - @history.each_with_index do |lh, i|
-          - next if lh.date > @loan.scheduled_first_payment_date and lh.interest_paid + lh.interest_due + lh.principal_paid + lh.principal_due == 0
+          - next if lh.date > @loan.scheduled_first_payment_date and lh.interest_paid + lh.scheduled_interest_due + lh.principal_paid + lh.scheduled_principal_due == 0
           - principal_so_far += lh.principal_due
           - interest_so_far += lh.interest_due
           - principal_received_so_far += lh.principal_paid
           - interest_received_so_far += lh.interest_paid
-          - scheduled_principal = lh.scheduled_principal_due
-          - scheduled_interest =  lh.scheduled_interest_due
+          - scheduled_principal = installment_dates.include?(lh.date) ? lh.scheduled_principal_due : 0
+          - scheduled_interest =  installment_dates.include?(lh.date) ? lh.scheduled_interest_due : 0
           - if lh.date > Date.today and not passed
             - passed = true
             - if not first
