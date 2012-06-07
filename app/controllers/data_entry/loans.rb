@@ -8,13 +8,19 @@ module DataEntry
         raise NotFound unless @client
         @center = @client.center
 
+        if @loan.nil?
+          center_freq = @client.center.center_meeting_days.last.frequency
+          @loan_products = LoanProduct.valid.select{|lp| lp.installment_frequency == center_freq}
+        end
+
+
         if params[:product_id] and @loan_product = LoanProduct.is_valid(params[:product_id])
           @loan = Loan.new
           set_insurance_policy
         end
       end
       @loan_types    = Loan.descendants if @loan.nil?
-      @loan_products = LoanProduct.valid if @loan.nil?
+      @loan_products ||= LoanProduct.valid if @loan.nil?
       #    display [@loan_types, @loan_products, @loan, @client]
       render
     end

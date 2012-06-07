@@ -49,6 +49,12 @@ class CenterMeetingDay
     "from #{valid_from} to #{valid_upto} : #{meeting_day_string}"
   end
   
+  def frequency
+    return :weekly if period == :week and of_every == 1
+    return :biweekly if period == :week and of_every == 2
+    return :monthly if period == :monthly and of_every == 1
+  end
+  
   # Public: Returns a String representation of the meeting day
   def meeting_day_string
     dates = "from #{valid_from} to #{valid_upto} "

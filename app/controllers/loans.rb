@@ -28,12 +28,17 @@ class Loans < Application
 
   def new
     only_provides :html
+    if @client
+      center_freq = @client.center.center_meeting_days.last.frequency
+      @loan_products = LoanProduct.valid.select{|lp| lp.installment_frequency == center_freq}
+    end
+
     if params[:product_id] and @loan_product = LoanProduct.is_valid(params[:product_id])      
       @loan = Loan.new
       set_insurance_policy(@loan_product)
     end
 
-    @loan_products = LoanProduct.valid if @loan.nil?
+    @loan_products ||= LoanProduct.valid if @loan.nil?
     display [@loan_types, @loan]
   end
 
