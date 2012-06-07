@@ -84,13 +84,13 @@ class RepaymentOverdue < Report
     Fee.all(:payable_on => [:client_date_joined, :client_grt_pass_date]).each{|fee| 
       client_paid    = Payment.all(:type => :fees, :fee => fee, :amount => fee.amount, :received_on.lte => @date).aggregate(:client_id)
       
-      hash           = {:client_type => fee.client_types, :fields => [:id], :center => @center}
+      hash           = {:client_type => fee.client_types, :fields => [:id]}
       hash[:id]      = Loan.all(:fields => [:id, :client_id], :id => funder_loan_ids).map{|x| x.client_id} if @funder
 
       # set appropriate filter for client GRT pass date or date joined depending on the fee
       fee.payable_on == :client_grt_pass_date ? hash[:grt_pass_date.lte] = @date : hash[:date_joined.lte] = @date 
 
-      client_payable = Client.all(hash).map{|x| x.id}
+      client_payable = Client.all(hash).aggregate(:id)
 
       # get clients which have a payable but have not paid
       clients        = Client.all(:id => (client_payable - client_paid), :fields => [:id, :name, :center_id])      
