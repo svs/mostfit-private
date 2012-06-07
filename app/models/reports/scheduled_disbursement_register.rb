@@ -41,7 +41,7 @@ class ScheduledDisbursementRegister < Report
     hash[:loan_product_id] = loan_product_id if loan_product_id
     Loan.all(hash).each{|l|
       client    = l.client
-      center_id = client.center_id      
+      center_id = l.center.id
       next if not centers.key?(center_id)
       center    = centers[center_id]
       branch    = branches[center.branch_id]
