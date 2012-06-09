@@ -57,7 +57,7 @@ module Pdf
                                 "principal" => principal_due.to_currency, "interest" => interest_due.to_currency, "days absent/total" => (days_absent[client.id]||0).to_s / (days_present[client.id]||0).to_s,"fee" => fee.to_currency, "total due" =>  total_due.to_currency, "signature" => "" })
               group_amount       += loan.amount
               group_outstanding  += actual_outstanding
-              group_installments += number_of_installments
+              # group_installments += number_of_installments
               group_principal    += principal_due
               group_interest     += interest_due
               group_fee          += fee
