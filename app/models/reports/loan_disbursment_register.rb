@@ -41,7 +41,7 @@ class LoanDisbursementRegister < Report
     hash[:loan_product_id] = loan_product_id if loan_product_id
     Loan.all(hash).each{|l|
       client    = l.client
-      center = centers[client.center_id]
+      center = l.center
       next unless center
       branch = branches[center.branch_id]
       data[branch][center][client.client_group] ||= []
