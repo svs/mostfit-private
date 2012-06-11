@@ -52,7 +52,7 @@ class CenterMeetingDay
   def frequency
     return :weekly if period == :week and of_every == 1
     return :biweekly if period == :week and of_every == 2
-    return :monthly if period == :monthly and of_every == 1
+    return :monthly if period == :month and of_every == 1
   end
   
   # Public: Returns a String representation of the meeting day
