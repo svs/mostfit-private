@@ -427,17 +427,18 @@ def self.installment_frequencies
                                                
   def split_sequential(total, received_on)
     int_due = prin_due = 0
+    t = total
     loan_history.all(:order => [:date]).each do |lh|
       next if lh.interest_due_today + lh.principal_due_today == 0
-      int_due_today = [total, lh.interest_due_today].min.round(2)
+      int_due_today = [t, lh.interest_due_today].min.round(2)
       int_due  += int_due_today
-      total -= int_due_today
-      prin_due_today = [total, lh.principal_due_today].min.round(2)
+      t -= int_due_today
+      prin_due_today = [t, lh.principal_due_today].min.round(2)
       prin_due += prin_due_today
-      total -= prin_due_today
-      break if total == 0
+      t -= prin_due_today
+      break if t == 0
     end
-    {:interest => int_due, :principal => prin_due}
+    {:interest => int_due + t, :principal => prin_due}
 
   end
 
