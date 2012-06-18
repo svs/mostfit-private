@@ -983,10 +983,10 @@ def self.installment_frequencies
       advance                                = advances_on(date)
       advance_principal_paid_today           = advance[:received][:principal]
       advance_principal_adjusted_today       = advance[:adjusted][:principal]
-      advance_principal_outstanding          = (last_row ? last_row[:advance_principal_outstanding] : 0) + advance_principal_paid_today - advance_principal_adjusted_today
-
       advance_interest_paid_today            = advance[:received][:interest]
       advance_interest_adjusted_today        = advance[:adjusted][:interest]
+
+      advance_principal_outstanding          = (last_row ? last_row[:advance_principal_outstanding] : 0) + advance_principal_paid_today - advance_principal_adjusted_today
       advance_interest_outstanding           = (last_row ? last_row[:advance_interest_outstanding] : 0) + advance_interest_paid_today - advance_interest_adjusted_today
 
       total_advance_outstanding              = advance_interest_outstanding + advance_principal_outstanding
