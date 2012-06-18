@@ -119,7 +119,7 @@
 .box
   %h2 Loan Validations
   - Foremost::LoanValidators.instance_methods.each do |v|
-    = check_box :name => "loan_validations[#{v}]", :checked => @loan_product.loan_validations.include?(v.to_sym)  
+    = check_box :name => "loan_validations[#{v}]", :checked => @loan_product.loan_validations.include?(v.to_s)  
     = v.humanize
     %br
 
