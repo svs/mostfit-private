@@ -32,7 +32,7 @@ class Reports < Application
     elsif Reports::Types.values.flatten.include?(klass) and not klass==WeeklyReport and not klass==DuplicateClientsReport and not klass==IncentiveReport
       #Generating report
       @report   = klass.new(params[class_key], dates, session.user)
-      if not params[:submit]
+      if !(params[:submit] or params[:format])
         render :form
       else
         if @report.valid?
