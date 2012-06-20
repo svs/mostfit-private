@@ -98,6 +98,11 @@ class LoanHistory
   
   validates_present :loan,:scheduled_outstanding_principal,:scheduled_outstanding_total,:actual_outstanding_principal,:actual_outstanding_total
 
+  @@selects = {Branch => "b.id", Center => "c.id", Client => "cl.id", Loan => "l.id", Area => "a.id", Region => "r.id", ClientGroup => "cg.id", Portfolio => "p.id"}
+  @@tables = ["regions r", "areas a", "branches b", "centers c", "client_groups cg", "clients cl", "loans l"]
+  @@models = [Region, Area, Branch, Center, ClientGroup, Client, Loan]
+  @@optionals = [ClientGroup]
+
   def total_paid
     (principal_paid + interest_paid + fees_paid_today).round(2)
   end
